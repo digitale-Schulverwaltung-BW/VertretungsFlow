@@ -6,14 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.user import User, UserRole
-from app.schemas import User as UserSchema, UserUpdate
+from app.models import User, UserRole
+from app.schemas import UserResponse, UserBase
 from app.api.deps import get_current_user, get_current_admin
 
 router = APIRouter()
 
 
-@router.get("", response_model=List[UserSchema])
+@router.get("", response_model=List[UserResponse])
 async def list_users(
     skip: int = 0,
     limit: int = 100,
@@ -43,7 +43,7 @@ async def list_users(
     return users
 
 
-@router.get("/{user_id}", response_model=UserSchema)
+@router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,
     db: Session = Depends(get_db),
@@ -78,10 +78,10 @@ async def get_user(
     return user
 
 
-@router.patch("/{user_id}", response_model=UserSchema)
+@router.patch("/{user_id}", response_model=UserResponse)
 async def update_user(
     user_id: int,
-    user_data: UserUpdate,
+    user_data: UserBase,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin)
 ):
@@ -115,7 +115,7 @@ async def update_user(
     return user
 
 
-@router.get("/search/{username}", response_model=UserSchema)
+@router.get("/search/{username}", response_model=UserResponse)
 async def search_user_by_username(
     username: str,
     db: Session = Depends(get_db),

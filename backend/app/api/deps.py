@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import decode_access_token
-from app.models.user import User, UserRole
+from app.models import User, UserRole
 
 # HTTP Bearer token scheme
 security = HTTPBearer()
@@ -70,7 +70,7 @@ async def get_current_teacher(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Get current user and verify they are a teacher"""
-    if current_user.role not in [UserRole.TEACHER, UserRole.DEPARTMENT_HEAD, UserRole.SUBSTITUTION_PLANNER, UserRole.ADMIN]:
+    if current_user.role not in [UserRole.TEACHER, UserRole.DEPARTMENT_HEAD, UserRole.PLANNER, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized"
@@ -94,7 +94,7 @@ async def get_current_planner(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Get current user and verify they are a substitution planner or admin"""
-    if current_user.role not in [UserRole.SUBSTITUTION_PLANNER, UserRole.ADMIN]:
+    if current_user.role not in [UserRole.PLANNER, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Substitution planner privileges required"
