@@ -84,7 +84,6 @@ cd absenzflow
 
 2. Umgebungsvariablen konfigurieren:
 ```bash
-cd backend
 cp .env.example .env
 # .env bearbeiten mit deinen Credentials
 ```
