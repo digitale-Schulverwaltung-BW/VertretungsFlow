@@ -46,20 +46,23 @@ class AbsenzFlow_Shortcode {
         );
         
         // AbsenzFlow React App
+        $js_file = ABSENZFLOW_PLUGIN_DIR . 'build/index.js';
+        $css_file = ABSENZFLOW_PLUGIN_DIR . 'build/index.css';
+
         wp_enqueue_script(
             'absenzflow-app',
             ABSENZFLOW_PLUGIN_URL . 'build/index.js',
             array('react', 'react-dom'),
-            ABSENZFLOW_VERSION,
+            ABSENZFLOW_VERSION . '-' . (file_exists($js_file) ? filemtime($js_file) : time()),
             true
         );
-        
+
         // CSS
         wp_enqueue_style(
             'absenzflow-styles',
             ABSENZFLOW_PLUGIN_URL . 'build/index.css',
             array(),
-            ABSENZFLOW_VERSION
+            ABSENZFLOW_VERSION . '-' . (file_exists($css_file) ? filemtime($css_file) : time())
         );
         
         // Config für React App

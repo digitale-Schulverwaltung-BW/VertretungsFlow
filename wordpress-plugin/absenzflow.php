@@ -3,7 +3,7 @@
  * Plugin Name: AbsenzFlow
  * Plugin URI: https://github.com/your-org/absenzflow
  * Description: Abwesenheitsmanagement für Schulen mit WebUntis-Integration
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Your School IT Team
  * Author URI: https://your-school.de
  * License: MIT
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin Konstanten
-define('ABSENZFLOW_VERSION', '1.0.0');
+define('ABSENZFLOW_VERSION', '1.0.1');
 define('ABSENZFLOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ABSENZFLOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 
