@@ -18,6 +18,10 @@ from app.schemas.schemas import (
     AffectedLessonBase,
     AffectedLessonResponse,
     AffectedLessonUpdate,
+    # WebUntis
+    FetchLessonsRequest,
+    WebUntisLesson,
+    WebUntisTimetableResponse,
 )
 
 __all__ = [
@@ -37,4 +41,8 @@ __all__ = [
     "AffectedLessonBase",
     "AffectedLessonResponse",
     "AffectedLessonUpdate",
+    # WebUntis
+    "FetchLessonsRequest",
+    "WebUntisLesson",
+    "WebUntisTimetableResponse",
 ]

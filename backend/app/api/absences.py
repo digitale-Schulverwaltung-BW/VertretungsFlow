@@ -14,7 +14,9 @@ from app.schemas.schemas import (
     AbsenceUpdate,
     AbsenceApproval,
     AffectedLessonUpdate,
-    AffectedLessonResponse
+    AffectedLessonResponse,
+    FetchLessonsRequest,
+    WebUntisLesson
 )
 from app.api.auth import get_current_active_user, require_role
 from app.services.webuntis_service import webuntis_service
@@ -113,8 +115,71 @@ async def create_absence(
     
     # TODO: E-Mail-Benachrichtigungen an Abteilungsleiter und Vertretungsplaner
     # await email_service.send_absence_submitted_notification(...)
-    
+
     return db_absence
+
+
+@router.post("/fetch-lessons", response_model=List[WebUntisLesson])
+async def fetch_lessons_from_webuntis(
+    request: FetchLessonsRequest,
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Lädt Stunden aus WebUntis für Vorschau (ohne DB-Speicherung)
+
+    Wird vom Frontend verwendet, um betroffene Stunden VOR dem Absenden anzuzeigen
+
+    Args:
+        request: Zeitraum und Perioden
+        current_user: Aktueller User
+
+    Returns:
+        Liste von WebUntis-Stunden im angegebenen Zeitraum
+    """
+    # Validierung
+    if request.end_date < request.start_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="End date must be after or equal to start date"
+        )
+
+    if request.start_date.date() == request.end_date.date():
+        if request.end_period < request.start_period:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="End period must be after or equal to start period"
+            )
+
+    # Stunden aus WebUntis abrufen
+    lessons = await webuntis_service.get_timetable_for_teacher(
+        current_user.username,
+        request.start_date,
+        request.end_date
+    )
+
+    # Filtern nach Perioden
+    filtered_lessons = []
+    for lesson in lessons:
+        if request.start_date.date() <= lesson.date.date() <= request.end_date.date():
+            is_in_period = False
+
+            if request.start_date.date() == request.end_date.date():
+                # Eintägige Abwesenheit
+                is_in_period = request.start_period <= lesson.period <= request.end_period
+            elif lesson.date.date() == request.start_date.date():
+                # Erster Tag
+                is_in_period = lesson.period >= request.start_period
+            elif lesson.date.date() == request.end_date.date():
+                # Letzter Tag
+                is_in_period = lesson.period <= request.end_period
+            else:
+                # Tage dazwischen
+                is_in_period = True
+
+            if is_in_period:
+                filtered_lessons.append(lesson)
+
+    return filtered_lessons
 
 
 @router.get("/", response_model=List[AbsenceResponse])

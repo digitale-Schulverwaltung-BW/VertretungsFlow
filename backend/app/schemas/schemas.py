@@ -127,6 +127,14 @@ class AbsenceApproval(BaseModel):
 
 # ============ WebUntis Schemas ============
 
+class FetchLessonsRequest(BaseModel):
+    """Request zum Abrufen von Stunden aus WebUntis"""
+    start_date: datetime
+    end_date: datetime
+    start_period: int = Field(..., ge=1, le=16)
+    end_period: int = Field(..., ge=1, le=16)
+
+
 class WebUntisLesson(BaseModel):
     """WebUntis Stunde"""
     date: datetime
