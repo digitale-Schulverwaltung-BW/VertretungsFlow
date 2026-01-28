@@ -65,9 +65,11 @@ class AbsenzFlow_Shortcode {
         // Config für React App
         $options = get_option('absenzflow_options');
         $current_user = wp_get_current_user();
-        
+
         $config = array(
             'apiUrl' => isset($options['api_url']) ? $options['api_url'] : '',
+            'useProxy' => true, // Use WordPress proxy to avoid HTTPS/HTTP mixed content
+            'proxyUrl' => rest_url('absenzflow/v1/proxy'),
             'nonce' => wp_create_nonce('absenzflow_api'),
             'user' => array(
                 'id' => $current_user->ID,
@@ -77,7 +79,7 @@ class AbsenzFlow_Shortcode {
                 'role' => get_user_meta($current_user->ID, 'absenzflow_role', true) ?: 'teacher'
             )
         );
-        
+
         wp_localize_script('absenzflow-app', 'absenzflowConfig', $config);
     }
     

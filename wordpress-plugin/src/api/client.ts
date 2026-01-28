@@ -1,7 +1,7 @@
 /**
  * API Client for AbsenzFlow Backend
  */
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type {
   User,
   Absence,
@@ -11,17 +11,63 @@ import type {
   CreateAbsenceRequest,
 } from '../types';
 
+// WordPress config interface
+interface AbsenzFlowConfig {
+  apiUrl: string;
+  useProxy?: boolean;
+  proxyUrl?: string;
+  nonce?: string;
+  user?: {
+    id: number;
+    username: string;
+    email: string;
+    displayName: string;
+    role: string;
+  };
+}
+
+declare global {
+  interface Window {
+    absenzflowConfig?: AbsenzFlowConfig;
+  }
+}
+
 class APIClient {
   private baseURL: string;
   private token: string | null;
   private client: AxiosInstance;
+  private useProxy: boolean;
+  private proxyURL: string;
 
   constructor() {
     this.baseURL = 'http://localhost:8000/api';
     this.token = null;
+    this.useProxy = false;
+    this.proxyURL = '/wp-json/absenzflow/v1/proxy';
     this.client = axios.create({
       baseURL: this.baseURL,
     });
+
+    // Initialize from WordPress config if available
+    this.initializeFromConfig();
+  }
+
+  /**
+   * Initialize from WordPress config
+   */
+  private initializeFromConfig(): void {
+    if (typeof window !== 'undefined' && window.absenzflowConfig) {
+      const config = window.absenzflowConfig;
+      if (config.apiUrl) {
+        this.setBaseURL(config.apiUrl);
+      }
+      if (config.useProxy) {
+        this.useProxy = true;
+      }
+      if (config.proxyUrl) {
+        this.proxyURL = config.proxyUrl;
+      }
+    }
   }
 
   /**
@@ -35,6 +81,13 @@ class APIClient {
     if (this.token) {
       this.setToken(this.token);
     }
+  }
+
+  /**
+   * Enable/disable proxy mode
+   */
+  setUseProxy(useProxy: boolean): void {
+    this.useProxy = useProxy;
   }
 
   /**
@@ -59,65 +112,101 @@ class APIClient {
   }
 
   /**
+   * Make request (with proxy support)
+   */
+  private async request<T>(config: AxiosRequestConfig): Promise<T> {
+    if (this.useProxy) {
+      // Use WordPress proxy
+      const proxyData = {
+        method: config.method || 'GET',
+        endpoint: config.url,
+        body: config.data,
+        params: config.params,
+        token: this.token,
+      };
+
+      const response = await axios.post(this.proxyURL, proxyData);
+      return response.data;
+    } else {
+      // Direct backend call
+      const response = await this.client.request<T>(config);
+      return response.data;
+    }
+  }
+
+  /**
    * Login
    */
   async login(username: string, password: string): Promise<LoginResponse> {
-    const response = await this.client.post<LoginResponse>('/auth/login', {
-      username,
-      password,
+    return this.request<LoginResponse>({
+      method: 'POST',
+      url: '/auth/login',
+      data: { username, password },
     });
-    return response.data;
   }
 
   /**
    * Get current user
    */
   async getCurrentUser(): Promise<User> {
-    const response = await this.client.get<User>('/auth/me');
-    return response.data;
+    return this.request<User>({
+      method: 'GET',
+      url: '/auth/me',
+    });
   }
 
   /**
    * Create absence
    */
   async createAbsence(data: CreateAbsenceRequest): Promise<Absence> {
-    const response = await this.client.post<Absence>('/absences', data);
-    return response.data;
+    return this.request<Absence>({
+      method: 'POST',
+      url: '/absences',
+      data,
+    });
   }
 
   /**
    * Get absences
    */
   async getAbsences(params?: Record<string, unknown>): Promise<Absence[]> {
-    const response = await this.client.get<Absence[]>('/absences', { params });
-    return response.data;
+    return this.request<Absence[]>({
+      method: 'GET',
+      url: '/absences',
+      params,
+    });
   }
 
   /**
    * Get single absence
    */
   async getAbsence(id: number): Promise<Absence> {
-    const response = await this.client.get<Absence>(`/absences/${id}`);
-    return response.data;
+    return this.request<Absence>({
+      method: 'GET',
+      url: `/absences/${id}`,
+    });
   }
 
   /**
    * Fetch lessons from WebUntis
    */
   async fetchLessons(data: FetchLessonsRequest): Promise<Lesson[]> {
-    const response = await this.client.post<Lesson[]>('/absences/fetch-lessons', data);
-    return response.data;
+    return this.request<Lesson[]>({
+      method: 'POST',
+      url: '/absences/fetch-lessons',
+      data,
+    });
   }
 
   /**
    * Add lesson to absence
    */
   async addLesson(absenceId: number, lessonData: Lesson): Promise<Lesson> {
-    const response = await this.client.post<Lesson>(
-      `/absences/${absenceId}/lessons`,
-      lessonData
-    );
-    return response.data;
+    return this.request<Lesson>({
+      method: 'POST',
+      url: `/absences/${absenceId}/lessons`,
+      data: lessonData,
+    });
   }
 
   /**
@@ -128,11 +217,11 @@ class APIClient {
     lessonId: number,
     lessonData: Partial<Lesson>
   ): Promise<Lesson> {
-    const response = await this.client.patch<Lesson>(
-      `/absences/${absenceId}/lessons/${lessonId}`,
-      lessonData
-    );
-    return response.data;
+    return this.request<Lesson>({
+      method: 'PATCH',
+      url: `/absences/${absenceId}/lessons/${lessonId}`,
+      data: lessonData,
+    });
   }
 
   /**
@@ -143,37 +232,43 @@ class APIClient {
     approved: boolean,
     comment?: string
   ): Promise<Absence> {
-    const response = await this.client.post<Absence>(
-      `/absences/${absenceId}/approve`,
-      { approved, comment }
-    );
-    return response.data;
+    return this.request<Absence>({
+      method: 'POST',
+      url: `/absences/${absenceId}/approve`,
+      data: { approved, comment },
+    });
   }
 
   /**
    * Complete absence (planner)
    */
   async completeAbsence(absenceId: number): Promise<Absence> {
-    const response = await this.client.post<Absence>(
-      `/absences/${absenceId}/complete`
-    );
-    return response.data;
+    return this.request<Absence>({
+      method: 'POST',
+      url: `/absences/${absenceId}/complete`,
+    });
   }
 
   /**
    * Get users (admin only)
    */
   async getUsers(params?: Record<string, unknown>): Promise<User[]> {
-    const response = await this.client.get<User[]>('/users', { params });
-    return response.data;
+    return this.request<User[]>({
+      method: 'GET',
+      url: '/users',
+      params,
+    });
   }
 
   /**
    * Update user (admin only)
    */
   async updateUser(userId: number, data: Partial<User>): Promise<User> {
-    const response = await this.client.patch<User>(`/users/${userId}`, data);
-    return response.data;
+    return this.request<User>({
+      method: 'PATCH',
+      url: `/users/${userId}`,
+      data,
+    });
   }
 }
 

@@ -44,51 +44,58 @@ class AbsenzFlow_API_Proxy {
     public function proxy_request($request) {
         $options = get_option('absenzflow_options');
         $api_url = $options['api_url'];
-        
+
         if (empty($api_url)) {
             return new WP_Error('no_api_url', 'API URL nicht konfiguriert', array('status' => 500));
         }
-        
+
         // Request-Daten
         $method = $request->get_param('method');
         $endpoint = $request->get_param('endpoint');
         $body = $request->get_param('body');
+        $params = $request->get_param('params');
         $token = $request->get_param('token');
-        
+
         // Request an Backend
         $url = rtrim($api_url, '/') . '/' . ltrim($endpoint, '/');
-        
+
+        // Query params für GET-Requests
+        if (!empty($params) && is_array($params)) {
+            $url = add_query_arg($params, $url);
+        }
+
         $args = array(
             'method' => strtoupper($method),
             'headers' => array(
                 'Content-Type' => 'application/json'
             ),
-            'timeout' => 30
+            'timeout' => 30,
+            'sslverify' => false // Allow self-signed certs in development
         );
-        
+
         // JWT Token hinzufügen falls vorhanden
         if (!empty($token)) {
             $args['headers']['Authorization'] = 'Bearer ' . $token;
         }
-        
+
         // Body hinzufügen bei POST/PUT/PATCH
         if (in_array(strtoupper($method), array('POST', 'PUT', 'PATCH')) && !empty($body)) {
             $args['body'] = json_encode($body);
         }
-        
+
         // Request ausführen
         $response = wp_remote_request($url, $args);
-        
+
         if (is_wp_error($response)) {
             return new WP_Error('proxy_error', $response->get_error_message(), array('status' => 500));
         }
-        
+
         $status_code = wp_remote_retrieve_response_code($response);
-        $body = wp_remote_retrieve_body($response);
-        
+        $response_body = wp_remote_retrieve_body($response);
+
         // Response zurückgeben
         return new WP_REST_Response(
-            json_decode($body, true),
+            json_decode($response_body, true),
             $status_code
         );
     }
