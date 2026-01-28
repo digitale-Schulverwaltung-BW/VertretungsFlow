@@ -125,7 +125,9 @@ class APIClient {
         token: this.token,
       };
 
-      const response = await axios.post(this.proxyURL, proxyData);
+      const response = await axios.post(this.proxyURL, proxyData, {
+        withCredentials: true, // Include cookies for WordPress authentication
+      });
       return response.data;
     } else {
       // Direct backend call

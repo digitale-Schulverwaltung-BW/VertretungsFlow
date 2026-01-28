@@ -27,15 +27,28 @@ class AbsenzFlow_API_Proxy {
         register_rest_route('absenzflow/v1', '/proxy', array(
             'methods' => 'POST',
             'callback' => array($this, 'proxy_request'),
-            'permission_callback' => array($this, 'check_permission')
+            'permission_callback' => array($this, 'check_permission'),
+            'args' => array(
+                'method' => array('required' => true),
+                'endpoint' => array('required' => true),
+            )
         ));
     }
-    
+
     /**
      * Check Permission
      */
-    public function check_permission() {
-        return is_user_logged_in();
+    public function check_permission($request) {
+        // User muss eingeloggt sein
+        if (!is_user_logged_in()) {
+            return new WP_Error(
+                'rest_forbidden',
+                __('Du musst angemeldet sein, um diese Aktion auszuführen.'),
+                array('status' => 401)
+            );
+        }
+
+        return true;
     }
     
     /**
