@@ -39,7 +39,8 @@ def map_wordpress_role(wp_role: str) -> UserRole:
     role_mapping = {
         "admin": UserRole.ADMIN,
         "teacher": UserRole.TEACHER,
-        "student": UserRole.STUDENT,
+        "dept_head": UserRole.DEPARTMENT_HEAD,
+        "planner": UserRole.PLANNER,
     }
     return role_mapping.get(wp_role.lower(), UserRole.TEACHER)
 

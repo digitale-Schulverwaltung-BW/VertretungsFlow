@@ -135,23 +135,20 @@ class AbsenzFlow_API_Proxy {
     }
 
     /**
-     * Mapped WordPress-Rolle zu AbsenzFlow-Rolle
+     * Holt AbsenzFlow-Rolle aus User Meta
      *
      * @param WP_User $user WordPress User Objekt
-     * @return string AbsenzFlow Rolle (admin/teacher/student)
+     * @return string AbsenzFlow Rolle (admin/teacher/dept_head/planner)
      */
     private function map_wp_role_to_absenzflow($user) {
-        // Administrator -> admin
-        if (user_can($user, 'manage_options')) {
-            return 'admin';
-        }
+        // Rolle aus User Meta laden (wird über Rollenverwaltung gesetzt)
+        $role = get_user_meta($user->ID, 'absenzflow_role', true);
 
-        // Editor/Author (kann Beiträge bearbeiten) -> teacher
-        if (user_can($user, 'edit_posts')) {
+        // Fallback zu 'teacher' wenn keine Rolle gesetzt
+        if (empty($role)) {
             return 'teacher';
         }
 
-        // Subscriber/andere -> student
-        return 'student';
+        return $role;
     }
 }
