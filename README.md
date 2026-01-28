@@ -84,9 +84,18 @@ cd absenzflow
 
 2. Umgebungsvariablen konfigurieren:
 ```bash
+cd backend
 cp .env.example .env
 # .env bearbeiten mit deinen Credentials
 ```
+
+**Wichtig:** Setze `WORDPRESS_PROXY_SECRET` auf einen zufälligen, sicheren Wert:
+```bash
+# Beispiel für sicheres Secret generieren
+openssl rand -hex 32
+```
+
+Dieser Secret muss identisch im Backend (.env) und im WordPress Plugin (Einstellungen) konfiguriert werden.
 
 3. Docker Container starten:
 ```bash
@@ -95,6 +104,28 @@ docker-compose up -d
 
 4. Backend ist erreichbar unter: `http://localhost:8000`
 5. API-Dokumentation: `http://localhost:8000/docs`
+
+### WordPress Plugin
+
+1. WordPress Plugin bauen:
+```bash
+cd wordpress-plugin
+npm install
+npm run build
+```
+
+2. Plugin nach WordPress kopieren:
+```bash
+cp -r wordpress-plugin/ /path/to/wordpress/wp-content/plugins/absenzflow/
+```
+
+3. In WordPress aktivieren: **Plugins → AbsenzFlow → Aktivieren**
+
+4. Einstellungen konfigurieren (**AbsenzFlow → Einstellungen**):
+   - **Backend API URL**: `http://your-backend-server:8000/api`
+   - **Backend API Secret**: Identischer Wert wie `WORDPRESS_PROXY_SECRET` aus Backend .env
+
+5. Shortcode `[absenzflow]` auf eine Seite einfügen
 
 ## 📚 Dokumentation
 

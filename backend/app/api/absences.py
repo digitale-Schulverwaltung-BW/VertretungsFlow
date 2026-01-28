@@ -18,7 +18,7 @@ from app.schemas.schemas import (
     FetchLessonsRequest,
     WebUntisLesson
 )
-from app.api.auth import get_current_active_user, require_role
+from app.api.auth import get_current_active_user, require_role, get_wordpress_proxy_user
 from app.services.webuntis_service import webuntis_service
 from app.services.email_service import email_service
 
@@ -122,16 +122,17 @@ async def create_absence(
 @router.post("/fetch-lessons", response_model=List[WebUntisLesson])
 async def fetch_lessons_from_webuntis(
     request: FetchLessonsRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_wordpress_proxy_user),
 ):
     """
     Lädt Stunden aus WebUntis für Vorschau (ohne DB-Speicherung)
 
-    Wird vom Frontend verwendet, um betroffene Stunden VOR dem Absenden anzuzeigen
+    Wird vom WordPress-Frontend verwendet, um betroffene Stunden VOR dem Absenden anzuzeigen.
+    Authentifizierung über WordPress Proxy Secret (kein JWT Token erforderlich).
 
     Args:
         request: Zeitraum und Perioden
-        current_user: Aktueller User
+        current_user: Aktueller User (via WordPress Proxy Auth)
 
     Returns:
         Liste von WebUntis-Stunden im angegebenen Zeitraum

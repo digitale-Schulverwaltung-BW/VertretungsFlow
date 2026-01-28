@@ -4,7 +4,7 @@ Login, JWT Token Management
 """
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -110,10 +110,10 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 def require_role(allowed_roles: list[UserRole]):
     """
     Dependency für Rollen-basierte Zugriffskontrolle
-    
+
     Args:
         allowed_roles: Liste erlaubter Rollen
-        
+
     Returns:
         Dependency Function
     """
@@ -124,8 +124,77 @@ def require_role(allowed_roles: list[UserRole]):
                 detail="Not enough permissions"
             )
         return current_user
-    
+
     return role_checker
+
+
+async def get_wordpress_proxy_user(
+    x_wordpress_secret: Optional[str] = Header(None),
+    x_wordpress_user: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+) -> User:
+    """
+    WordPress Proxy Authentication
+
+    Authentifiziert Requests vom WordPress-Plugin über Shared Secret.
+    Verwendet für Server-to-Server Kommunikation ohne JWT Token.
+
+    Args:
+        x_wordpress_secret: Shared Secret aus WordPress Plugin
+        x_wordpress_user: WordPress Username
+        db: Database Session
+
+    Returns:
+        User Objekt
+
+    Raises:
+        HTTPException: Bei fehlerhaftem Secret oder User
+    """
+    if not x_wordpress_secret or not x_wordpress_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
+
+    # Shared Secret validieren
+    if x_wordpress_secret != settings.WORDPRESS_PROXY_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid proxy secret"
+        )
+
+    # User aus DB laden
+    user = db.query(User).filter(User.username == x_wordpress_user).first()
+
+    if not user:
+        # User existiert noch nicht - aus LDAP laden und anlegen
+        ldap_info = ldap_service.get_user_info(x_wordpress_user)
+
+        if not ldap_info:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found in LDAP"
+            )
+
+        user = User(
+            username=x_wordpress_user,
+            email=ldap_info.get("email"),
+            full_name=ldap_info.get("full_name", x_wordpress_user),
+            role=UserRole.TEACHER,
+            is_active=True
+        )
+
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user"
+        )
+
+    return user
 
 
 @router.post("/login", response_model=Token)

@@ -78,6 +78,15 @@ class AbsenzFlow_Admin {
             'absenzflow-settings',
             'absenzflow_main_section'
         );
+
+        // API Secret Field
+        add_settings_field(
+            'api_secret',
+            'Backend API Secret',
+            array($this, 'api_secret_field_callback'),
+            'absenzflow-settings',
+            'absenzflow_main_section'
+        );
     }
     
     /**
@@ -85,11 +94,15 @@ class AbsenzFlow_Admin {
      */
     public function sanitize_options($input) {
         $sanitized = array();
-        
+
         if (isset($input['api_url'])) {
             $sanitized['api_url'] = esc_url_raw($input['api_url']);
         }
-        
+
+        if (isset($input['api_secret'])) {
+            $sanitized['api_secret'] = sanitize_text_field($input['api_secret']);
+        }
+
         return $sanitized;
     }
     
@@ -106,9 +119,20 @@ class AbsenzFlow_Admin {
     public function api_url_field_callback() {
         $options = get_option('absenzflow_options');
         $api_url = isset($options['api_url']) ? $options['api_url'] : '';
-        
+
         echo '<input type="text" name="absenzflow_options[api_url]" value="' . esc_attr($api_url) . '" class="regular-text" />';
         echo '<p class="description">Backend API URL <strong>mit /api Suffix</strong>, z.B. http://localhost:8000/api oder https://absenzflow.schule.de/api</p>';
+    }
+
+    /**
+     * API Secret Field
+     */
+    public function api_secret_field_callback() {
+        $options = get_option('absenzflow_options');
+        $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
+
+        echo '<input type="password" name="absenzflow_options[api_secret]" value="' . esc_attr($api_secret) . '" class="regular-text" />';
+        echo '<p class="description">Shared Secret für sichere Kommunikation mit dem Backend. Muss identisch mit WORDPRESS_PROXY_SECRET im Backend sein.</p>';
     }
     
     /**

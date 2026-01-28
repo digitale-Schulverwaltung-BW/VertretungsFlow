@@ -65,9 +65,14 @@ class AbsenzFlow_API_Proxy {
     public function proxy_request($request) {
         $options = get_option('absenzflow_options');
         $api_url = $options['api_url'];
+        $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
 
         if (empty($api_url)) {
             return new WP_Error('no_api_url', 'API URL nicht konfiguriert', array('status' => 500));
+        }
+
+        if (empty($api_secret)) {
+            return new WP_Error('no_api_secret', 'API Secret nicht konfiguriert', array('status' => 500));
         }
 
         // Request-Daten
@@ -85,16 +90,21 @@ class AbsenzFlow_API_Proxy {
             $url = add_query_arg($params, $url);
         }
 
+        // Current WordPress user
+        $current_user = wp_get_current_user();
+
         $args = array(
             'method' => strtoupper($method),
             'headers' => array(
-                'Content-Type' => 'application/json'
+                'Content-Type' => 'application/json',
+                'X-WordPress-Secret' => $api_secret,
+                'X-WordPress-User' => $current_user->user_login
             ),
             'timeout' => 30,
             'sslverify' => false // Allow self-signed certs in development
         );
 
-        // JWT Token hinzufügen falls vorhanden
+        // JWT Token hinzufügen falls vorhanden (für direkte Backend-Auth)
         if (!empty($token)) {
             $args['headers']['Authorization'] = 'Bearer ' . $token;
         }
