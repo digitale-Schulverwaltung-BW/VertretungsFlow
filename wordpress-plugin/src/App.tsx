@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import api from './api/client';
 import CreateAbsence from './pages/CreateAbsence';
 import type { User } from './types';
@@ -151,7 +151,7 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="min-h-screen bg-gray-50">
         <Navigation user={displayUser} />
         <Routes>
@@ -160,7 +160,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
