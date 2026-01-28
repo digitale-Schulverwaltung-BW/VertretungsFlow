@@ -12,18 +12,34 @@ AbsenzFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abwesenh
 - 📊 Übersichtliches Dashboard für Vertretungsplaner
 - 🔐 LDAP/AD-Authentifizierung
 - 📧 E-Mail-Benachrichtigungen
-- 🎨 Zwei Frontend-Varianten:
-  - WordPress-Plugin (Shortcode-Integration)
-  - Standalone Web-App
+- 🎨 WordPress-Plugin mit React-Frontend
+  - Shortcode-Integration: `[absenzflow]`
+  - 2-Schritt-Workflow für Abwesenheitsmeldungen
 
 ## 🏗️ Architektur
 
 ```
 absenzflow/
 ├── backend/              # FastAPI Backend (Python)
-├── frontend-wp/          # WordPress Plugin (React)
-├── frontend-standalone/  # Standalone Frontend (React)
+│   └── app/
+│       ├── api/          # API Routes
+│       ├── core/         # Config, Database
+│       ├── models/       # SQLAlchemy Models
+│       ├── schemas/      # Pydantic Schemas
+│       └── services/     # LDAP, WebUntis, Email
+├── wordpress-plugin/     # WordPress Plugin (React + TypeScript)
+│   ├── src/
+│   │   ├── pages/        # React Pages (CreateAbsence)
+│   │   ├── components/   # UI Components
+│   │   ├── api/          # API Client
+│   │   └── types/        # TypeScript Types
+│   ├── includes/         # PHP Classes
+│   └── absenzflow.php    # Plugin Main File
 ├── docs/                 # Dokumentation
+│   ├── SETUP.md          # Installationsanleitung
+│   ├── API.md            # API Dokumentation
+│   └── WEBUNTIS.md       # WebUntis Integration
+├── .env.example          # Beispiel-Konfiguration
 └── docker-compose.yml    # Docker Setup
 ```
 
@@ -59,11 +75,11 @@ docker-compose up -d
 
 ## 📚 Dokumentation
 
-- [Backend Setup](./backend/README.md)
-- [WordPress Plugin Installation](./frontend-wp/README.md)
-- [Standalone Frontend](./frontend-standalone/README.md)
-- [API Dokumentation](./docs/API.md)
-- [Entwickler Guide](./docs/DEVELOPMENT.md)
+- [Vollständiger Setup Guide](./docs/SETUP.md) - Installation Schritt für Schritt
+- [API Dokumentation](./docs/API.md) - Alle API-Endpoints
+- [WebUntis Integration](./docs/WEBUNTIS.md) - WebUntis-Setup
+- [Entwickler Guide](./docs/DEVELOPMENT.md) - Entwicklung und Testing
+- [Projekt-Zusammenfassung](./docs/PROJECT_SUMMARY.md) - Überblick und Status
 
 ## 🔧 Technologien
 
