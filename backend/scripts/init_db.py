@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from app.core.database import engine, Base
-from app.models import User, Absence, AbsenceLesson
+from app.models import User, Absence, AffectedLesson, Notification
 
 
 def init_db():
