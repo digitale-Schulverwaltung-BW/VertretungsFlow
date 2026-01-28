@@ -194,9 +194,39 @@ npm run build
 ```
 
 #### Plugin nach WordPress kopieren
+
+**Variante 1: Manuell kopieren**
 ```bash
-# Gesamten plugin/ Ordner kopieren
-cp -r plugin/ /pfad/zu/wordpress/wp-content/plugins/absenzflow/
+# Erstelle Plugin-Verzeichnis in WordPress
+mkdir -p /pfad/zu/wordpress/wp-content/plugins/absenzflow
+
+# Kopiere Plugin-Dateien
+cp wordpress-plugin/absenzflow.php /pfad/zu/wordpress/wp-content/plugins/absenzflow/
+cp -r wordpress-plugin/includes /pfad/zu/wordpress/wp-content/plugins/absenzflow/
+cp -r wordpress-plugin/build /pfad/zu/wordpress/wp-content/plugins/absenzflow/
+```
+
+**Variante 2: Deployment-Script**
+```bash
+# Erstelle ein Deployment-Script
+cd wordpress-plugin
+rsync -av --exclude='node_modules' --exclude='src' \
+  absenzflow.php includes/ build/ \
+  /pfad/zu/wordpress/wp-content/plugins/absenzflow/
+```
+
+**Benötigte Dateien im WordPress-Plugin-Ordner:**
+```
+wp-content/plugins/absenzflow/
+├── absenzflow.php       # Haupt-Plugin-Datei
+├── includes/            # PHP-Klassen
+│   ├── class-admin.php
+│   ├── class-api-proxy.php
+│   └── class-shortcode.php
+└── build/               # Gebaute React-Assets (von Vite)
+    └── assets/
+        ├── index.js
+        └── index.css
 ```
 
 #### In WordPress aktivieren
