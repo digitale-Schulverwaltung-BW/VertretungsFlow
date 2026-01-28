@@ -8,9 +8,19 @@ export default defineConfig({
     outDir: 'build',
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]'
+        // Dateien direkt in build/ (nicht build/assets/)
+        entryFileNames: 'index.js',
+        chunkFileNames: '[name].js',
+        assetFileNames: (assetInfo) => {
+          // CSS-Dateien als index.css
+          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+            return 'index.css';
+          }
+          // Andere Assets (Fonts, Bilder, etc.)
+          return '[name].[ext]';
+        },
+        // Kein Code-Splitting für WordPress-Plugin
+        manualChunks: undefined,
       }
     }
   },
