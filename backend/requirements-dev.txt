@@ -1,0 +1,17 @@
+# Development tools
+-r requirements.txt
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+httpx==0.26.0  # For testing async clients
+
+# Code Quality
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0
+isort==5.13.2
+
+# Development utilities
+ipython==8.20.0

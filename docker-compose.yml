@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Datenbank
+  postgres:
+    image: postgres:15-alpine
+    container_name: absenzflow-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-absenzflow}
+      POSTGRES_USER: ${POSTGRES_USER:-absenzflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-absenzflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - absenzflow-network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: absenzflow-backend
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-absenzflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-absenzflow}
+      
+      # LDAP Configuration
+      LDAP_SERVER: ${LDAP_SERVER}
+      LDAP_PORT: ${LDAP_PORT:-389}
+      LDAP_BASE_DN: ${LDAP_BASE_DN}
+      LDAP_BIND_DN: ${LDAP_BIND_DN}
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD}
+      
+      # WebUntis API
+      WEBUNTIS_SCHOOL: ${WEBUNTIS_SCHOOL}
+      WEBUNTIS_USERNAME: ${WEBUNTIS_USERNAME}
+      WEBUNTIS_PASSWORD: ${WEBUNTIS_PASSWORD}
+      WEBUNTIS_SERVER: ${WEBUNTIS_SERVER:-neilo.webuntis.com}
+      
+      # SMTP Configuration
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-absenzflow@schule.de}
+      
+      # Application Settings
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080}
+      DEBUG: ${DEBUG:-false}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - absenzflow-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Optional: pgAdmin für Datenbank-Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: absenzflow-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@absenzflow.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - absenzflow-network
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+
+networks:
+  absenzflow-network:
+    driver: bridge
