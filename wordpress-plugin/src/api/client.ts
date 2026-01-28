@@ -16,7 +16,6 @@ interface AbsenzFlowConfig {
   apiUrl: string;
   useProxy?: boolean;
   proxyUrl?: string;
-  nonce?: string;
   user?: {
     id: number;
     username: string;
@@ -125,17 +124,8 @@ class APIClient {
         token: this.token,
       };
 
-      // Get WordPress REST API nonce
-      const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
-
-      const headers: Record<string, string> = {};
-      if (nonce) {
-        headers['X-WP-Nonce'] = nonce;
-      }
-
       const response = await axios.post(this.proxyURL, proxyData, {
-        headers,
-        withCredentials: true, // Include cookies for WordPress authentication
+        withCredentials: true, // WordPress session cookies for authentication
       });
       return response.data;
     } else {
