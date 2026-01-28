@@ -125,7 +125,16 @@ class APIClient {
         token: this.token,
       };
 
+      // Get WordPress REST API nonce
+      const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
+
+      const headers: Record<string, string> = {};
+      if (nonce) {
+        headers['X-WP-Nonce'] = nonce;
+      }
+
       const response = await axios.post(this.proxyURL, proxyData, {
+        headers,
         withCredentials: true, // Include cookies for WordPress authentication
       });
       return response.data;

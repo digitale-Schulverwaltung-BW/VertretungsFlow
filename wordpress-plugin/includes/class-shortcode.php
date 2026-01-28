@@ -70,7 +70,7 @@ class AbsenzFlow_Shortcode {
             'apiUrl' => isset($options['api_url']) ? $options['api_url'] : '',
             'useProxy' => true, // Use WordPress proxy to avoid HTTPS/HTTP mixed content
             'proxyUrl' => rest_url('absenzflow/v1/proxy'),
-            'nonce' => wp_create_nonce('absenzflow_api'),
+            'nonce' => wp_create_nonce('wp_rest'), // WordPress REST API nonce
             'user' => array(
                 'id' => $current_user->ID,
                 'username' => $current_user->user_login,
