@@ -98,7 +98,10 @@ class AbsenzFlow_API_Proxy {
             'headers' => array(
                 'Content-Type' => 'application/json',
                 'X-WordPress-Secret' => $api_secret,
-                'X-WordPress-User' => $current_user->user_login
+                'X-WordPress-User' => $current_user->user_login,
+                'X-WordPress-Email' => $current_user->user_email,
+                'X-WordPress-Name' => $current_user->display_name,
+                'X-WordPress-Role' => $this->map_wp_role_to_absenzflow($current_user)
             ),
             'timeout' => 30,
             'sslverify' => false // Allow self-signed certs in development
@@ -129,5 +132,26 @@ class AbsenzFlow_API_Proxy {
             json_decode($response_body, true),
             $status_code
         );
+    }
+
+    /**
+     * Mapped WordPress-Rolle zu AbsenzFlow-Rolle
+     *
+     * @param WP_User $user WordPress User Objekt
+     * @return string AbsenzFlow Rolle (admin/teacher/student)
+     */
+    private function map_wp_role_to_absenzflow($user) {
+        // Administrator -> admin
+        if (user_can($user, 'manage_options')) {
+            return 'admin';
+        }
+
+        // Editor/Author (kann Beiträge bearbeiten) -> teacher
+        if (user_can($user, 'edit_posts')) {
+            return 'teacher';
+        }
+
+        // Subscriber/andere -> student
+        return 'student';
     }
 }

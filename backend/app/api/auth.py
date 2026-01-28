@@ -13,12 +13,35 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models.models import User, UserRole
 from app.schemas.schemas import Token, TokenData, UserResponse, LoginRequest
-from app.services.ldap_service import ldap_service
+
+# Conditional LDAP import
+if settings.AUTH_MODE == "standalone":
+    from app.services.ldap_service import ldap_service
+else:
+    ldap_service = None
 
 router = APIRouter()
 
 # OAuth2 Schema für Token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+
+def map_wordpress_role(wp_role: str) -> UserRole:
+    """
+    Mapped WordPress-Rolle zu AbsenzFlow UserRole
+
+    Args:
+        wp_role: WordPress-Rolle (admin/teacher/student)
+
+    Returns:
+        Entsprechende UserRole
+    """
+    role_mapping = {
+        "admin": UserRole.ADMIN,
+        "teacher": UserRole.TEACHER,
+        "student": UserRole.STUDENT,
+    }
+    return role_mapping.get(wp_role.lower(), UserRole.TEACHER)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -131,6 +154,9 @@ def require_role(allowed_roles: list[UserRole]):
 async def get_wordpress_proxy_user(
     x_wordpress_secret: Optional[str] = Header(None),
     x_wordpress_user: Optional[str] = Header(None),
+    x_wordpress_email: Optional[str] = Header(None),
+    x_wordpress_name: Optional[str] = Header(None),
+    x_wordpress_role: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> User:
     """
@@ -139,9 +165,15 @@ async def get_wordpress_proxy_user(
     Authentifiziert Requests vom WordPress-Plugin über Shared Secret.
     Verwendet für Server-to-Server Kommunikation ohne JWT Token.
 
+    Im WordPress-Modus: Benutzerdaten kommen aus WordPress-Headers
+    Im Standalone-Modus: Benutzerdaten kommen aus LDAP
+
     Args:
         x_wordpress_secret: Shared Secret aus WordPress Plugin
         x_wordpress_user: WordPress Username
+        x_wordpress_email: WordPress User Email (nur WordPress-Modus)
+        x_wordpress_name: WordPress User Display Name (nur WordPress-Modus)
+        x_wordpress_role: WordPress User Role (nur WordPress-Modus)
         db: Database Session
 
     Returns:
@@ -166,27 +198,74 @@ async def get_wordpress_proxy_user(
     # User aus DB laden
     user = db.query(User).filter(User.username == x_wordpress_user).first()
 
-    if not user:
-        # User existiert noch nicht - aus LDAP laden und anlegen
-        ldap_info = ldap_service.get_user_info(x_wordpress_user)
+    # Benutzerdaten je nach Auth-Modus holen
+    if settings.AUTH_MODE == "wordpress":
+        # WordPress-Modus: Daten aus Headers
+        user_email = x_wordpress_email
+        user_name = x_wordpress_name or x_wordpress_user
+        user_role = map_wordpress_role(x_wordpress_role) if x_wordpress_role else UserRole.TEACHER
 
-        if not ldap_info:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found in LDAP"
+        if not user:
+            # Neuer User - aus WordPress-Headers anlegen
+            user = User(
+                username=x_wordpress_user,
+                email=user_email,
+                full_name=user_name,
+                role=user_role,
+                is_active=True
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        else:
+            # Smart Update: Nur aktualisieren wenn sich Daten geändert haben
+            needs_update = False
+
+            if user.email != user_email:
+                user.email = user_email
+                needs_update = True
+
+            if user.full_name != user_name:
+                user.full_name = user_name
+                needs_update = True
+
+            if user.role != user_role:
+                user.role = user_role
+                needs_update = True
+
+            if needs_update:
+                db.commit()
+                db.refresh(user)
+
+    else:
+        # Standalone-Modus: Daten aus LDAP
+        if not user:
+            # User existiert noch nicht - aus LDAP laden und anlegen
+            if ldap_service is None:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="LDAP service not available"
+                )
+
+            ldap_info = ldap_service.get_user_info(x_wordpress_user)
+
+            if not ldap_info:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found in LDAP"
+                )
+
+            user = User(
+                username=x_wordpress_user,
+                email=ldap_info.get("email"),
+                full_name=ldap_info.get("full_name", x_wordpress_user),
+                role=UserRole.TEACHER,
+                is_active=True
             )
 
-        user = User(
-            username=x_wordpress_user,
-            email=ldap_info.get("email"),
-            full_name=ldap_info.get("full_name", x_wordpress_user),
-            role=UserRole.TEACHER,
-            is_active=True
-        )
-
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+            db.add(user)
+            db.commit()
+            db.refresh(user)
 
     if not user.is_active:
         raise HTTPException(
@@ -197,61 +276,72 @@ async def get_wordpress_proxy_user(
     return user
 
 
-@router.post("/login", response_model=Token)
-async def login(
-    login_data: LoginRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    Login Endpoint - Authentifiziert User gegen LDAP
-    
-    Args:
-        login_data: Username und Password
-        db: Database Session
-        
-    Returns:
-        JWT Access Token
-        
-    Raises:
-        HTTPException: Bei fehlerhaften Credentials
-    """
-    # LDAP Authentifizierung
-    is_authenticated = ldap_service.authenticate(login_data.username, login_data.password)
-    
-    if not is_authenticated:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+# Login-Endpoint nur im Standalone-Modus verfügbar
+if settings.AUTH_MODE == "standalone":
+    @router.post("/login", response_model=Token)
+    async def login(
+        login_data: LoginRequest,
+        db: Session = Depends(get_db)
+    ):
+        """
+        Login Endpoint - Authentifiziert User gegen LDAP
+
+        Nur verfügbar im Standalone-Modus.
+        Im WordPress-Modus erfolgt Authentifizierung über WordPress.
+
+        Args:
+            login_data: Username und Password
+            db: Database Session
+
+        Returns:
+            JWT Access Token
+
+        Raises:
+            HTTPException: Bei fehlerhaften Credentials
+        """
+        if ldap_service is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="LDAP service not available"
+            )
+
+        # LDAP Authentifizierung
+        is_authenticated = ldap_service.authenticate(login_data.username, login_data.password)
+
+        if not is_authenticated:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # User in DB suchen oder anlegen
+        user = db.query(User).filter(User.username == login_data.username).first()
+
+        if not user:
+            # Neuer User - Info aus LDAP holen
+            ldap_info = ldap_service.get_user_info(login_data.username)
+
+            user = User(
+                username=login_data.username,
+                email=ldap_info.get("email") if ldap_info else None,
+                full_name=ldap_info.get("full_name") if ldap_info else login_data.username,
+                role=UserRole.TEACHER,  # Standard-Rolle
+                is_active=True
+            )
+
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        # JWT Token erstellen
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username},
+            expires_delta=access_token_expires
         )
-    
-    # User in DB suchen oder anlegen
-    user = db.query(User).filter(User.username == login_data.username).first()
-    
-    if not user:
-        # Neuer User - Info aus LDAP holen
-        ldap_info = ldap_service.get_user_info(login_data.username)
-        
-        user = User(
-            username=login_data.username,
-            email=ldap_info.get("email") if ldap_info else None,
-            full_name=ldap_info.get("full_name") if ldap_info else login_data.username,
-            role=UserRole.TEACHER,  # Standard-Rolle
-            is_active=True
-        )
-        
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    
-    # JWT Token erstellen
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username},
-        expires_delta=access_token_expires
-    )
-    
-    return {"access_token": access_token, "token_type": "bearer"}
+
+        return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.get("/me", response_model=UserResponse)

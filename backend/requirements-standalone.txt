@@ -1,0 +1,7 @@
+# AbsenzFlow Standalone-Modus Dependencies
+# Für Standalone-Installation mit LDAP-Integration
+
+-r requirements-base.txt
+
+# LDAP Authentication (nur für Standalone-Modus)
+python-ldap==3.4.4

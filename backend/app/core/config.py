@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 Stunden
     ALGORITHM: str = "HS256"
 
+    # Authentication Mode
+    AUTH_MODE: str = "wordpress"  # "wordpress" oder "standalone"
+
     # WordPress Proxy Authentication
     WORDPRESS_PROXY_SECRET: str = "change-this-shared-secret-in-production"
 
