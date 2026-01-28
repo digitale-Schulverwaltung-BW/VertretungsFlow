@@ -17,6 +17,30 @@ class AbsenzFlow_API_Proxy {
     
     private function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'));
+        add_filter('rest_authentication_errors', array($this, 'allow_cookie_auth'));
+    }
+
+    /**
+     * Allow cookie authentication for our endpoint
+     */
+    public function allow_cookie_auth($result) {
+        // If already authenticated, return early
+        if ($result === true || is_wp_error($result)) {
+            return $result;
+        }
+
+        // Check if this is our endpoint
+        if (strpos($_SERVER['REQUEST_URI'], '/absenzflow/v1/proxy') !== false) {
+            // Check if user is logged in via WordPress session
+            if (is_user_logged_in()) {
+                // Allow cookie authentication for this endpoint
+                return true;
+            }
+            // Debug: log why auth failed
+            error_log('AbsenzFlow: Cookie auth failed - user not logged in. User ID: ' . get_current_user_id());
+        }
+
+        return $result;
     }
     
     /**

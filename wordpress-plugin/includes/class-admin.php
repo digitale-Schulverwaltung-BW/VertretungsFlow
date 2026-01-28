@@ -108,7 +108,7 @@ class AbsenzFlow_Admin {
         $api_url = isset($options['api_url']) ? $options['api_url'] : '';
         
         echo '<input type="text" name="absenzflow_options[api_url]" value="' . esc_attr($api_url) . '" class="regular-text" />';
-        echo '<p class="description">z.B. http://localhost:8000 oder https://absenzflow.schule.de</p>';
+        echo '<p class="description">Backend API URL <strong>mit /api Suffix</strong>, z.B. http://localhost:8000/api oder https://absenzflow.schule.de/api</p>';
     }
     
     /**
