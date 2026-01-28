@@ -3,23 +3,32 @@ Konfiguration für AbsenzFlow
 Lädt Umgebungsvariablen aus .env
 """
 from pydantic_settings import BaseSettings
-from typing import List
+from pydantic import field_validator
+from typing import List, Union
 
 
 class Settings(BaseSettings):
     """Application Settings"""
-    
+
     # Application
     APP_NAME: str = "AbsenzFlow"
     API_URL: str = "http://localhost:8000"
     DEBUG: bool = False
     SECRET_KEY: str = "your-secret-key-change-in-production"
-    
+
     # CORS
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:3000",
         "http://localhost:8080"
     ]
+
+    @field_validator('CORS_ORIGINS', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS_ORIGINS from comma-separated string or list"""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(',')]
+        return v
     
     # Database
     DATABASE_URL: str = "postgresql://absenzflow:changeme@localhost:5432/absenzflow"
@@ -49,17 +58,11 @@ class Settings(BaseSettings):
     # JWT Token
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 Stunden
     ALGORITHM: str = "HS256"
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        
-        @classmethod
-        def parse_env_var(cls, field_name: str, raw_val: str):
-            """Parse CORS_ORIGINS as comma-separated list"""
-            if field_name == "CORS_ORIGINS":
-                return [origin.strip() for origin in raw_val.split(",")]
-            return raw_val
+
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True,
+    }
 
 
 # Globale Settings-Instanz
