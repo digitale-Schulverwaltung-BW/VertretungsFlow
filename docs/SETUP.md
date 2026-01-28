@@ -8,7 +8,35 @@ Vollständige Anleitung zur Installation und Konfiguration von AbsenzFlow.
 - Docker & Docker Compose (für Backend)
 - PostgreSQL 15+ (oder via Docker)
 - Python 3.11+ (für lokale Entwicklung)
-- Node.js 18+ & npm (für Frontend-Entwicklung)
+- **Node.js 18+ & npm** (für WordPress-Plugin Build)
+
+#### Node.js Installation
+
+**Ubuntu/Debian:**
+```bash
+# Node.js 20 LTS (empfohlen)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Version prüfen
+node --version  # sollte v20.x.x zeigen
+npm --version
+```
+
+**macOS:**
+```bash
+# Mit Homebrew
+brew install node@20
+
+# Oder mit nvm (Node Version Manager)
+brew install nvm
+nvm install 20
+nvm use 20
+```
+
+**Windows:**
+- Download von https://nodejs.org/ (LTS Version 20.x)
+- Oder mit Chocolatey: `choco install nodejs-lts`
 
 ### Externe Dienste
 - **LDAP/Active Directory Server**

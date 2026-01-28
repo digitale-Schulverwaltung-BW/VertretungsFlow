@@ -18,6 +18,27 @@ AbsenzFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abwesenh
 
 ## 🏗️ Architektur
 
+**Deployment-Modell:**
+```
+┌─────────────────────────────────────┐
+│  WordPress + AbsenzFlow Plugin      │  ← Frontend (React-App)
+│  - PHP Plugin lädt React-Bundle     │
+│  - Shortcode: [absenzflow]          │
+└──────────────┬──────────────────────┘
+               │ REST API (HTTPS)
+┌──────────────▼──────────────────────┐
+│  FastAPI Backend (Docker)           │  ← Business Logic
+│  - LDAP/AD Auth                     │
+│  - WebUntis Integration             │
+│  - Email Service                    │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│  PostgreSQL (Docker)                │  ← Datenbank
+└─────────────────────────────────────┘
+```
+
+**Projektstruktur:**
 ```
 absenzflow/
 ├── backend/              # FastAPI Backend (Python)
@@ -28,13 +49,15 @@ absenzflow/
 │       ├── schemas/      # Pydantic Schemas
 │       └── services/     # LDAP, WebUntis, Email
 ├── wordpress-plugin/     # WordPress Plugin (React + TypeScript)
-│   ├── src/
+│   ├── src/              # React-Frontend-Code
 │   │   ├── pages/        # React Pages (CreateAbsence)
 │   │   ├── components/   # UI Components
 │   │   ├── api/          # API Client
 │   │   └── types/        # TypeScript Types
 │   ├── includes/         # PHP Classes
-│   └── absenzflow.php    # Plugin Main File
+│   ├── absenzflow.php    # Plugin Main File
+│   ├── package.json      # Node.js Dependencies
+│   └── vite.config.ts    # Vite Build Config
 ├── docs/                 # Dokumentation
 │   ├── SETUP.md          # Installationsanleitung
 │   ├── API.md            # API Dokumentation
