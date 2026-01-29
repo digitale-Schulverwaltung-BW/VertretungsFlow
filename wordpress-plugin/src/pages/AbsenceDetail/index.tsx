@@ -221,8 +221,7 @@ const AbsenceDetail: React.FC = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stunde</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fach</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Klasse</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Raum</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hinweise</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hinweise Lehrkraft</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -240,11 +239,14 @@ const AbsenceDetail: React.FC = () => {
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                       {lesson.class_name || '-'}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {lesson.room || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {lesson.notes || '-'}
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      {lesson.notes ? (
+                        <div className="max-w-md">
+                          {lesson.notes}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Keine Angaben</span>
+                      )}
                     </td>
                   </tr>
                 ))}

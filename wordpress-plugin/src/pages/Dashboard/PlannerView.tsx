@@ -167,7 +167,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
 
         {absencesExpanded && (
           <div className="mt-4">
-            <AbsenceTable absences={absences} />
+            <AbsenceTable absences={absences} onAbsenceClick={handleAbsenceClick} />
           </div>
         )}
       </div>
