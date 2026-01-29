@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import api from './api/client';
 import Dashboard from './pages/Dashboard';
 import CreateAbsence from './pages/CreateAbsence';
+import AbsenceDetail from './pages/AbsenceDetail';
 import type { User } from './types';
 
 const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
@@ -101,6 +102,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/create-absence" element={<CreateAbsence />} />
+          <Route path="/absence/:id" element={<AbsenceDetail />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

@@ -5,6 +5,7 @@ import StatCard from '../../components/dashboard/StatCard';
 import ToDoList from '../../components/dashboard/ToDoList';
 import Calendar from '../../components/dashboard/Calendar';
 import AbsenceTable from '../../components/dashboard/AbsenceTable';
+import DayAbsencesModal from '../../components/dashboard/DayAbsencesModal';
 
 interface PlannerViewProps {
   user: User;
@@ -16,6 +17,9 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
   const [error, setError] = useState<string | null>(null);
   const [calendarExpanded, setCalendarExpanded] = useState(false);
   const [absencesExpanded, setAbsencesExpanded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDayAbsences, setSelectedDayAbsences] = useState<Absence[]>([]);
 
   useEffect(() => {
     const loadAbsences = async () => {
@@ -52,13 +56,17 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
   });
 
   const handleAbsenceAction = (absence: Absence) => {
-    console.log('Aktion für Absenz:', absence.id);
-    // TODO: Navigation zur Genehmigung/Eintragung
+    window.location.hash = `/absence/${absence.id}`;
   };
 
   const handleDayClick = (date: Date, dayAbsences: Absence[]) => {
-    console.log('Tag angeklickt:', date, dayAbsences);
-    // TODO: Modal mit Tagesdetails
+    setSelectedDate(date);
+    setSelectedDayAbsences(dayAbsences);
+    setModalOpen(true);
+  };
+
+  const handleAbsenceClick = (absence: Absence) => {
+    window.location.hash = `/absence/${absence.id}`;
   };
 
   if (loading) {
@@ -163,6 +171,16 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
           </div>
         )}
       </div>
+
+      {/* Day Absences Modal */}
+      {modalOpen && selectedDate && (
+        <DayAbsencesModal
+          date={selectedDate}
+          absences={selectedDayAbsences}
+          onClose={() => setModalOpen(false)}
+          onAbsenceClick={handleAbsenceClick}
+        />
+      )}
     </div>
   );
 };

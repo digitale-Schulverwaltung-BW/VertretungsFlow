@@ -30,8 +30,7 @@ const TeacherView: React.FC<TeacherViewProps> = ({ user }) => {
   }, []);
 
   const handleAbsenceClick = (absence: Absence) => {
-    // Navigation zur Detail-Ansicht (wenn vorhanden)
-    console.log('Absenz angeklickt:', absence.id);
+    navigate(`/absence/${absence.id}`);
   };
 
   const handleNewAbsence = () => {

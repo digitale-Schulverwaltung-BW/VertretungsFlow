@@ -30,14 +30,13 @@ const Calendar: React.FC<CalendarProps> = ({ absences, onDayClick }) => {
   // Finde Absenzen für einen bestimmten Tag
   const getAbsencesForDay = (day: Date): Absence[] => {
     const dayStart = startOfDay(day);
-    const dayEnd = endOfDay(day);
 
     return absences.filter((absence) => {
-      const absenceStart = parseISO(absence.start_date);
-      const absenceEnd = parseISO(absence.end_date);
+      const absenceStart = startOfDay(parseISO(absence.start_date));
+      const absenceEnd = endOfDay(parseISO(absence.end_date));
 
-      return isWithinInterval(dayStart, { start: absenceStart, end: absenceEnd }) ||
-             isWithinInterval(dayEnd, { start: dayStart, end: dayEnd });
+      // Prüfe ob der Tag innerhalb des Abwesenheits-Zeitraums liegt
+      return isWithinInterval(dayStart, { start: absenceStart, end: absenceEnd });
     });
   };
 
