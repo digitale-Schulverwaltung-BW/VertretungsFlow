@@ -6,6 +6,7 @@ interface StatCardProps {
   icon?: React.ReactNode;
   bgColor?: string;
   textColor?: string;
+  onClick?: () => void;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -13,10 +14,14 @@ const StatCard: React.FC<StatCardProps> = ({
   value,
   icon,
   bgColor = 'bg-blue-50',
-  textColor = 'text-blue-900'
+  textColor = 'text-blue-900',
+  onClick
 }) => {
   return (
-    <div className={`${bgColor} rounded-lg p-6 shadow-sm`}>
+    <div
+      onClick={onClick}
+      className={`${bgColor} rounded-lg p-6 shadow-sm ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>

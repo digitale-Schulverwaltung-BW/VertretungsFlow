@@ -242,9 +242,9 @@ async def list_absences(
     # Filter nach Status
     if status:
         query = query.filter(Absence.status == status)
-    
-    # Sortierung nach Erstellungsdatum (neueste zuerst)
-    query = query.order_by(Absence.created_at.desc())
+
+    # Sortierung nach Startdatum (früheste/dringendste zuerst)
+    query = query.order_by(Absence.start_date.asc())
     
     absences = query.offset(skip).limit(limit).all()
     

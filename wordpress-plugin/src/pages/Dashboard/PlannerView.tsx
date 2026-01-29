@@ -6,6 +6,7 @@ import ToDoList from '../../components/dashboard/ToDoList';
 import Calendar from '../../components/dashboard/Calendar';
 import AbsenceTable from '../../components/dashboard/AbsenceTable';
 import DayAbsencesModal from '../../components/dashboard/DayAbsencesModal';
+import AbsencesListModal from '../../components/dashboard/AbsencesListModal';
 
 interface PlannerViewProps {
   user: User;
@@ -20,6 +21,9 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDayAbsences, setSelectedDayAbsences] = useState<Absence[]>([]);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [statusModalTitle, setStatusModalTitle] = useState('');
+  const [statusModalAbsences, setStatusModalAbsences] = useState<Absence[]>([]);
 
   useEffect(() => {
     const loadAbsences = async () => {
@@ -69,6 +73,13 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
     window.location.hash = `/absence/${absence.id}`;
   };
 
+  const handleStatCardClick = (status: string, title: string) => {
+    const filtered = absences.filter(a => a.status === status);
+    setStatusModalTitle(title);
+    setStatusModalAbsences(filtered);
+    setStatusModalOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -95,18 +106,21 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
           value={stats.pending}
           bgColor="bg-yellow-50"
           textColor="text-yellow-900"
+          onClick={() => handleStatCardClick('submitted', 'Eingereichte Abwesenheiten')}
         />
         <StatCard
           title="Genehmigt"
           value={stats.approved}
           bgColor="bg-green-50"
           textColor="text-green-900"
+          onClick={() => handleStatCardClick('approved', 'Genehmigte Abwesenheiten')}
         />
         <StatCard
           title="Erledigt"
           value={stats.completed}
           bgColor="bg-blue-50"
           textColor="text-blue-900"
+          onClick={() => handleStatCardClick('completed', 'Erledigte Abwesenheiten')}
         />
         <StatCard
           title="Betroffene Stunden"
@@ -178,6 +192,16 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
           date={selectedDate}
           absences={selectedDayAbsences}
           onClose={() => setModalOpen(false)}
+          onAbsenceClick={handleAbsenceClick}
+        />
+      )}
+
+      {/* Status Filter Modal */}
+      {statusModalOpen && (
+        <AbsencesListModal
+          title={statusModalTitle}
+          absences={statusModalAbsences}
+          onClose={() => setStatusModalOpen(false)}
           onAbsenceClick={handleAbsenceClick}
         />
       )}
