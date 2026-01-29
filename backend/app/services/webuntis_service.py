@@ -185,7 +185,7 @@ class WebUntisService:
 
                 if response.status_code == 200:
                     data = response.json()
-                    logger.debug(f"GetTimetable Response: {data}")
+                    logger.info(f"📦 GetTimetable Response: {data}")
 
                     if "result" in data:
                         raw_lessons = data["result"]
@@ -291,7 +291,7 @@ class WebUntisService:
 
         for i, entry in enumerate(timetable_data):
             try:
-                logger.debug(f"Parse Entry {i+1}/{len(timetable_data)}: {entry}")
+                logger.info(f"📝 Parse Entry {i+1}/{len(timetable_data)}: {entry}")
 
                 # Datum parsen (Format: YYYYMMDD)
                 date_str = str(entry.get("date", ""))
