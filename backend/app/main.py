@@ -1,10 +1,21 @@
 """
 AbsenzFlow - Hauptanwendung
 """
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api import auth, absences, admin
+
+# Logging konfigurieren
+log_level = logging.DEBUG if settings.DEBUG else logging.INFO
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+logger = logging.getLogger(__name__)
 
 # FastAPI App initialisieren
 app = FastAPI(
@@ -53,11 +64,12 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     """Wird beim Start der Anwendung ausgeführt"""
-    print("🚀 AbsenzFlow Backend gestartet")
-    print(f"📝 API Dokumentation: {settings.API_URL}/docs")
+    logger.info("🚀 AbsenzFlow Backend gestartet")
+    logger.info(f"📝 API Dokumentation: {settings.API_URL}/docs")
+    logger.info(f"🔍 Debug Mode: {settings.DEBUG}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Wird beim Herunterfahren ausgeführt"""
-    print("👋 AbsenzFlow Backend gestoppt")
+    logger.info("👋 AbsenzFlow Backend gestoppt")
