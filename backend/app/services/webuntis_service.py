@@ -454,17 +454,28 @@ class WebUntisService:
                     logger.info(f"📦 Timegrid Response: {data}")
 
                     if "result" in data:
-                        timegrid_units = data["result"]
-                        logger.info(f"📋 Timegrid hat {len(timegrid_units)} Units")
+                        timegrid_days = data["result"]
+                        logger.info(f"📋 Timegrid hat {len(timegrid_days)} Tage")
 
-                        # Erstelle Mapping: startTime -> timeUnit (Stundennummer)
+                        # Erstelle Mapping: startTime -> period (Stundennummer)
+                        # Structure: [{day: 2, timeUnits: [{name: "1", startTime: 730, ...}]}]
                         self._timegrid_cache = {}
-                        for unit in timegrid_units:
-                            start_time = unit.get("startTime")
-                            time_unit = unit.get("timeUnit")
-                            logger.debug(f"Timegrid Unit: {unit} -> startTime={start_time}, timeUnit={time_unit}")
-                            if start_time and time_unit:
-                                self._timegrid_cache[start_time] = time_unit
+                        for day_entry in timegrid_days:
+                            day = day_entry.get("day")
+                            time_units = day_entry.get("timeUnits", [])
+                            logger.debug(f"Tag {day}: {len(time_units)} Zeiteinheiten")
+
+                            for unit in time_units:
+                                start_time = unit.get("startTime")
+                                period_name = unit.get("name")  # "1", "2", "3" als String
+
+                                if start_time and period_name:
+                                    try:
+                                        period = int(period_name)
+                                        self._timegrid_cache[start_time] = period
+                                        logger.debug(f"  {start_time} -> Stunde {period}")
+                                    except ValueError:
+                                        logger.warning(f"Ungültiger Period-Name: {period_name}")
 
                         logger.info(f"✅ Stundenraster mit {len(self._timegrid_cache)} Einträgen geladen")
                         return self._timegrid_cache
