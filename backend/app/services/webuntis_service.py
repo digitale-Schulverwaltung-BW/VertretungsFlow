@@ -193,6 +193,24 @@ class WebUntisService:
                     data = response.json()
                     logger.info(f"📦 GetTimetable Response: {data}")
 
+                    # Check for authentication error
+                    if "error" in data and data["error"].get("code") == -8520:
+                        logger.warning(f"⚠️ WebUntis Session abgelaufen, authentifiziere neu...")
+                        self.session_id = None
+                        # Clear caches (they were fetched with old session)
+                        self._subjects_cache = None
+                        self._classes_cache = None
+                        self._rooms_cache = None
+                        self._timegrid_cache = None
+                        # Re-authenticate and retry
+                        if await self.authenticate():
+                            return await self.get_timetable_for_teacher(
+                                teacher_username, start_date, end_date, webuntis_code
+                            )
+                        else:
+                            logger.error("❌ Re-Authentifizierung fehlgeschlagen")
+                            return []
+
                     if "result" in data:
                         raw_lessons = data["result"]
                         logger.info(f"📚 {len(raw_lessons)} Stundeneinträge von WebUntis erhalten")
@@ -249,6 +267,22 @@ class WebUntisService:
 
                 if response.status_code == 200:
                     data = response.json()
+
+                    # Check for authentication error
+                    if "error" in data and data["error"].get("code") == -8520:
+                        logger.warning(f"⚠️ WebUntis Session abgelaufen, authentifiziere neu...")
+                        self.session_id = None
+                        # Clear caches (they were fetched with old session)
+                        self._subjects_cache = None
+                        self._classes_cache = None
+                        self._rooms_cache = None
+                        self._timegrid_cache = None
+                        # Re-authenticate and retry
+                        if await self.authenticate():
+                            return await self._get_teacher_id(username)
+                        else:
+                            logger.error("❌ Re-Authentifizierung fehlgeschlagen")
+                            return None
 
                     if "result" in data:
                         teachers = data["result"]
