@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      maxWidth: {
+        '4xl': '100%',  // Full width statt Standard 56rem
+      },
       colors: {
         primary: {
           50: '#f0f9ff',

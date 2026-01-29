@@ -63,6 +63,12 @@ class AbsenzFlow_API_Proxy {
      * Proxy Request zum Backend
      */
     public function proxy_request($request) {
+        // Debug logging
+        error_log('AbsenzFlow Proxy: Request received');
+        error_log('User logged in: ' . (is_user_logged_in() ? 'yes' : 'no'));
+        error_log('User ID: ' . get_current_user_id());
+        error_log('Current user: ' . (is_user_logged_in() ? wp_get_current_user()->user_login : 'none'));
+
         $options = get_option('absenzflow_options');
         $api_url = $options['api_url'];
         $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
