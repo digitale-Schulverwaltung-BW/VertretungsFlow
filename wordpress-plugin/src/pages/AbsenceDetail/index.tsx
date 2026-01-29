@@ -136,6 +136,24 @@ const AbsenceDetail: React.FC = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!absence || !id) return;
+
+    if (!confirm('Möchten Sie diese Abwesenheit wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await api.deleteAbsence(parseInt(id));
+      // Navigate back to dashboard after successful deletion
+      navigate('/');
+    } catch (err: any) {
+      alert(err.message || 'Fehler beim Löschen der Abwesenheit');
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -365,16 +383,11 @@ const AbsenceDetail: React.FC = () => {
 
             {canDelete && (
               <button
-                onClick={() => {
-                  if (confirm('Möchten Sie diese Abwesenheit wirklich löschen?')) {
-                    // TODO: Implement delete
-                    alert('Löschen wird noch implementiert');
-                  }
-                }}
+                onClick={handleDelete}
                 disabled={actionLoading}
-                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
-                🗑 Löschen
+                {actionLoading ? 'Lädt...' : '🗑 Löschen'}
               </button>
             )}
           </div>

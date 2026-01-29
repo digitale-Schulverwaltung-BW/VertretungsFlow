@@ -252,6 +252,16 @@ class APIClient {
   }
 
   /**
+   * Delete absence (admin/planner)
+   */
+  async deleteAbsence(absenceId: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>({
+      method: 'DELETE',
+      url: `/absences/${absenceId}`,
+    });
+  }
+
+  /**
    * Get users (admin only)
    */
   async getUsers(params?: Record<string, unknown>): Promise<User[]> {
