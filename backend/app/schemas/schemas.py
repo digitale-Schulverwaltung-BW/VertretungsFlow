@@ -59,8 +59,8 @@ class AbsenceBase(BaseModel):
     reason: str = Field(..., min_length=1, max_length=100)
     start_date: datetime
     end_date: datetime
-    start_period: int = Field(..., ge=1, le=10)
-    end_period: int = Field(..., ge=1, le=10)
+    start_period: int = Field(..., ge=1, le=16)  # Max 16 Stunden pro Tag
+    end_period: int = Field(..., ge=1, le=16)  # Max 16 Stunden pro Tag
 
     @field_validator('start_date', 'end_date', mode='before')
     @classmethod
@@ -137,8 +137,8 @@ class AbsenceUpdate(BaseModel):
     reason: Optional[str] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
-    start_period: Optional[int] = Field(None, ge=1, le=10)
-    end_period: Optional[int] = Field(None, ge=1, le=10)
+    start_period: Optional[int] = Field(None, ge=1, le=16)  # Max 16 Stunden pro Tag
+    end_period: Optional[int] = Field(None, ge=1, le=16)  # Max 16 Stunden pro Tag
 
     @field_validator('start_date', 'end_date', mode='before')
     @classmethod
