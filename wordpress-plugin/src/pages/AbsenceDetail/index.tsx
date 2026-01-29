@@ -385,7 +385,7 @@ const AbsenceDetail: React.FC = () => {
               <button
                 onClick={handleDelete}
                 disabled={actionLoading}
-                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {actionLoading ? 'Lädt...' : '🗑 Löschen'}
               </button>
