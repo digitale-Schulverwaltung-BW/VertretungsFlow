@@ -105,6 +105,7 @@ async def create_absence(
                     absence_id=db_absence.id,
                     date=lesson.date,
                     period=lesson.period,
+                    end_period=lesson.end_period,  # Für Doppelstunden
                     subject=lesson.subject,
                     class_name=lesson.class_name,
                     room=lesson.room

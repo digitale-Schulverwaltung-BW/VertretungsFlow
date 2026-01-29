@@ -28,6 +28,7 @@ class WebUntisService:
         self._subjects_cache: Optional[dict] = None
         self._classes_cache: Optional[dict] = None
         self._rooms_cache: Optional[dict] = None
+        self._timegrid_cache: Optional[dict] = None  # startTime -> period mapping
     
     async def authenticate(self) -> bool:
         """
@@ -313,8 +314,9 @@ class WebUntisService:
 
                     if "result" in data:
                         subjects = data["result"]
+                        # Verwende Kurzname (name) statt Langname (longName) wegen sehr langer Fachnamen
                         self._subjects_cache = {
-                            subj["id"]: subj.get("longName", subj.get("name", "Unbekannt"))
+                            subj["id"]: subj.get("name", subj.get("longName", "Unbekannt"))
                             for subj in subjects
                         }
                         logger.info(f"✅ {len(self._subjects_cache)} Fächer geladen")
@@ -419,6 +421,56 @@ class WebUntisService:
             logger.error(f"❌ Exception beim Laden der Räume: {e}", exc_info=True)
             return {}
 
+    async def _load_timegrid(self) -> dict:
+        """
+        Lädt Stundenraster und erstellt startTime -> period Mapping
+
+        Returns:
+            Dictionary mit startTime -> period_number
+        """
+        if self._timegrid_cache is not None:
+            return self._timegrid_cache
+
+        logger.info("⏰ Lade Stundenraster...")
+
+        try:
+            async with httpx.AsyncClient() as client:
+                payload = {
+                    "id": "getTimegridUnits",
+                    "method": "getTimegridUnits",
+                    "params": {},
+                    "jsonrpc": "2.0"
+                }
+
+                response = await client.post(
+                    f"{self.base_url}",
+                    json=payload,
+                    cookies={"JSESSIONID": self.session_id}
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+
+                    if "result" in data:
+                        timegrid_units = data["result"]
+                        # Erstelle Mapping: startTime -> timeUnit (Stundennummer)
+                        self._timegrid_cache = {}
+                        for unit in timegrid_units:
+                            start_time = unit.get("startTime")
+                            time_unit = unit.get("timeUnit")
+                            if start_time and time_unit:
+                                self._timegrid_cache[start_time] = time_unit
+
+                        logger.info(f"✅ Stundenraster mit {len(self._timegrid_cache)} Einträgen geladen")
+                        return self._timegrid_cache
+
+                logger.error(f"❌ Stundenraster laden fehlgeschlagen (Status: {response.status_code})")
+                return {}
+
+        except Exception as e:
+            logger.error(f"❌ Exception beim Laden des Stundenrasters: {e}", exc_info=True)
+            return {}
+
     async def _parse_timetable(self, timetable_data: List[dict], teacher_id: int) -> List[WebUntisLesson]:
         """
         Parsed Stundenplan-Daten von WebUntis
@@ -436,6 +488,7 @@ class WebUntisService:
         subjects = await self._load_subjects()
         classes = await self._load_classes()
         rooms = await self._load_rooms()
+        timegrid = await self._load_timegrid()
 
         lessons = []
 
@@ -463,7 +516,9 @@ class WebUntisService:
                 room_ids = [r.get("id") for r in entry.get("ro", [])]
                 room = rooms.get(room_ids[0]) if room_ids else None
 
-                period = entry.get("startTime", 0) // 100
+                # Stundennummer aus Timegrid ermitteln
+                start_time = entry.get("startTime", 0)
+                period = timegrid.get(start_time, start_time // 100)  # Fallback auf alte Methode
 
                 lesson = WebUntisLesson(
                     date=date,
@@ -482,7 +537,87 @@ class WebUntisService:
                 continue
 
         logger.info(f"Parsing abgeschlossen: {len(lessons)}/{len(timetable_data)} Stunden erfolgreich geparst")
-        return lessons
+
+        # Doppelstunden zusammenfassen
+        merged_lessons = self._merge_consecutive_lessons(lessons)
+        logger.info(f"🔗 Nach Zusammenfassung: {len(merged_lessons)} Stundenblöcke")
+
+        return merged_lessons
+
+    def _merge_consecutive_lessons(self, lessons: List[WebUntisLesson]) -> List[WebUntisLesson]:
+        """
+        Fasst aufeinanderfolgende Stunden mit gleicher Klasse und gleichem Fach zusammen
+
+        Args:
+            lessons: Liste von einzelnen Stunden
+
+        Returns:
+            Liste mit zusammengefassten Stundenblöcken
+        """
+        if not lessons:
+            return lessons
+
+        # Sortieren nach Datum und Periode
+        sorted_lessons = sorted(lessons, key=lambda l: (l.date, l.period))
+
+        merged = []
+        current_block = None
+
+        for lesson in sorted_lessons:
+            if current_block is None:
+                # Erster Block
+                current_block = {
+                    "lesson": lesson,
+                    "start_period": lesson.period,
+                    "end_period": lesson.period
+                }
+            elif (
+                lesson.date == current_block["lesson"].date
+                and lesson.class_name == current_block["lesson"].class_name
+                and lesson.subject == current_block["lesson"].subject
+                and lesson.room == current_block["lesson"].room
+                and lesson.period == current_block["end_period"] + 1
+            ):
+                # Aufeinanderfolgende Stunde mit gleicher Klasse/Fach -> erweitern
+                current_block["end_period"] = lesson.period
+                logger.debug(f"🔗 Erweitere Block: {lesson.class_name} {lesson.subject} "
+                           f"({current_block['start_period']}-{current_block['end_period']})")
+            else:
+                # Neuer Block beginnt
+                merged.append(current_block)
+                current_block = {
+                    "lesson": lesson,
+                    "start_period": lesson.period,
+                    "end_period": lesson.period
+                }
+
+        # Letzten Block hinzufügen
+        if current_block:
+            merged.append(current_block)
+
+        # Konvertiere Blöcke zurück zu WebUntisLesson mit end_period
+        result = []
+        for block in merged:
+            lesson = block["lesson"]
+            # Setze end_period für Doppelstunden
+            if block["start_period"] != block["end_period"]:
+                # Erstelle neue WebUntisLesson mit end_period
+                merged_lesson = WebUntisLesson(
+                    date=lesson.date,
+                    period=block["start_period"],
+                    end_period=block["end_period"],
+                    subject=lesson.subject,
+                    class_name=lesson.class_name,
+                    room=lesson.room
+                )
+                logger.info(f"📚 Stundenblock: {block['start_period']}.{block['end_period']}. Stunde - "
+                          f"{lesson.subject} ({lesson.class_name})")
+                result.append(merged_lesson)
+            else:
+                # Einzelstunde
+                result.append(lesson)
+
+        return result
 
 
 # Singleton Instance

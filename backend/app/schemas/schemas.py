@@ -79,9 +79,10 @@ class AbsenceCreate(AbsenceBase):
 
 
 class AffectedLessonBase(BaseModel):
-    """Basis für betroffene Stunden"""
+    """Basis für betroffene Stunden (kann auch Doppelstunden-Block sein)"""
     date: datetime
-    period: int
+    period: int  # Start-Stunde
+    end_period: Optional[int] = None  # End-Stunde (für Doppelstunden)
     subject: Optional[str] = None
     class_name: Optional[str] = None
     room: Optional[str] = None
@@ -179,9 +180,10 @@ class FetchLessonsRequest(BaseModel):
 
 
 class WebUntisLesson(BaseModel):
-    """WebUntis Stunde"""
+    """WebUntis Stunde (kann auch Doppelstunden-Block sein)"""
     date: datetime
-    period: int
+    period: int  # Start-Stunde
+    end_period: Optional[int] = None  # End-Stunde (für Doppelstunden, None = Einzelstunde)
     subject: str
     class_name: str
     room: Optional[str] = None
