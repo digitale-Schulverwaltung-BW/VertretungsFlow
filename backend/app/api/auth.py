@@ -354,13 +354,15 @@ if settings.AUTH_MODE == "standalone":
 
 
 @router.get("/me", response_model=UserResponse)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
+async def read_users_me(current_user: User = Depends(get_wordpress_proxy_user)):
     """
     Gibt Informationen über aktuellen User zurück
-    
+
+    Unterstützt sowohl JWT-Auth als auch WordPress Proxy Auth
+
     Args:
         current_user: Current User
-        
+
     Returns:
         User Information
     """
