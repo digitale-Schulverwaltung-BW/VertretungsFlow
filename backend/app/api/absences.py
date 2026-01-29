@@ -28,7 +28,7 @@ router = APIRouter()
 @router.post("/", response_model=AbsenceResponse, status_code=status.HTTP_201_CREATED)
 async def create_absence(
     absence: AbsenceCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -191,7 +191,7 @@ async def list_absences(
     skip: int = 0,
     limit: int = 100,
     status: AbsenceStatus = None,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -231,7 +231,7 @@ async def list_absences(
 @router.get("/{absence_id}", response_model=AbsenceResponse)
 async def get_absence(
     absence_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -271,7 +271,7 @@ async def update_lesson_notes(
     absence_id: int,
     lesson_id: int,
     lesson_update: AffectedLessonUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -439,7 +439,7 @@ async def complete_absence(
 @router.delete("/{absence_id}")
 async def delete_absence(
     absence_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
     """
