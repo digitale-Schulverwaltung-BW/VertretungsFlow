@@ -14,6 +14,7 @@ class UserBase(BaseModel):
     username: str
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
+    webuntis_teacher_code: Optional[str] = None
 
 
 class UserCreate(UserBase):

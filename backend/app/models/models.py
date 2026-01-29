@@ -37,6 +37,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True)
     full_name = Column(String(255))
     role = Column(Enum(UserRole), default=UserRole.TEACHER)
+    webuntis_teacher_code = Column(String(20), nullable=True, index=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

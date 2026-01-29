@@ -46,7 +46,7 @@ class WebUntisService:
                     "jsonrpc": "2.0"
                 }
 
-                logger.debug(f"Auth Request URL: {self.base_url}?school={self.school}")
+                logger.debug(f"Auth Request URL: {self.base_url}")
                 logger.debug(f"Auth Request Payload (ohne Passwort): {payload}")
 
                 # Payload mit richtigem Passwort für den Request
@@ -55,7 +55,7 @@ class WebUntisService:
                 actual_payload["params"]["password"] = self.password
 
                 response = await client.post(
-                    f"{self.base_url}?school={self.school}",
+                    f"{self.base_url}", 
                     json=actual_payload
                 )
 
@@ -101,7 +101,7 @@ class WebUntisService:
                 }
 
                 response = await client.post(
-                    f"{self.base_url}?school={self.school}",
+                    f"{self.base_url}",
                     json=payload,
                     cookies={"JSESSIONID": self.session_id}
                 )
@@ -124,7 +124,8 @@ class WebUntisService:
         self,
         teacher_username: str,
         start_date: datetime,
-        end_date: datetime
+        end_date: datetime,
+        webuntis_code: Optional[str] = None
     ) -> List[WebUntisLesson]:
         """
         Holt Stundenplan für Lehrkraft im angegebenen Zeitraum
@@ -133,11 +134,15 @@ class WebUntisService:
             teacher_username: Username der Lehrkraft
             start_date: Startdatum
             end_date: Enddatum
+            webuntis_code: WebUntis Lehrerkürzel (optional, Fallback auf teacher_username)
 
         Returns:
             Liste von Stunden
         """
-        logger.info(f"📅 Stundenplan abrufen für {teacher_username} ({start_date.date()} - {end_date.date()})")
+        # Verwende WebUntis-Code wenn vorhanden, sonst Username
+        teacher_lookup = webuntis_code if webuntis_code else teacher_username
+
+        logger.info(f"📅 Stundenplan abrufen für {teacher_username} (WebUntis-Lookup: {teacher_lookup}) ({start_date.date()} - {end_date.date()})")
 
         # Authentifizieren wenn noch keine Session
         if not self.session_id:
@@ -148,10 +153,10 @@ class WebUntisService:
                 return []
 
         try:
-            # Zuerst: Teacher ID finden
-            teacher_id = await self._get_teacher_id(teacher_username)
+            # Zuerst: Teacher ID finden (mit WebUntis Code oder Username)
+            teacher_id = await self._get_teacher_id(teacher_lookup)
             if not teacher_id:
-                logger.warning(f"⚠️ Keine Teacher ID gefunden für {teacher_username}, gebe leere Liste zurück")
+                logger.warning(f"⚠️ Keine Teacher ID gefunden für {teacher_lookup}, gebe leere Liste zurück")
                 return []
 
             # Dann: Stundenplan abrufen
@@ -171,7 +176,7 @@ class WebUntisService:
                 logger.debug(f"GetTimetable Request: {payload}")
 
                 response = await client.post(
-                    f"{self.base_url}?school={self.school}",
+                    f"{self.base_url}",
                     json=payload,
                     cookies={"JSESSIONID": self.session_id}
                 )
@@ -229,7 +234,7 @@ class WebUntisService:
                 logger.debug(f"GetTeachers Request: {payload}")
 
                 response = await client.post(
-                    f"{self.base_url}?school={self.school}",
+                    f"{self.base_url}",
                     json=payload,
                     cookies={"JSESSIONID": self.session_id}
                 )

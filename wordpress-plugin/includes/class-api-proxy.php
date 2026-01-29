@@ -101,7 +101,8 @@ class AbsenzFlow_API_Proxy {
                 'X-WordPress-User' => $current_user->user_login,
                 'X-WordPress-Email' => $current_user->user_email,
                 'X-WordPress-Name' => $current_user->display_name,
-                'X-WordPress-Role' => $this->map_wp_role_to_absenzflow($current_user)
+                'X-WordPress-Role' => $this->map_wp_role_to_absenzflow($current_user),
+                'X-WordPress-WebUntis-Code' => get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)
             ),
             'timeout' => 30,
             'sslverify' => false // Allow self-signed certs in development

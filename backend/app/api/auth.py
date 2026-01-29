@@ -158,6 +158,7 @@ async def get_wordpress_proxy_user(
     x_wordpress_email: Optional[str] = Header(None),
     x_wordpress_name: Optional[str] = Header(None),
     x_wordpress_role: Optional[str] = Header(None),
+    x_wordpress_webuntis_code: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> User:
     """
@@ -205,6 +206,7 @@ async def get_wordpress_proxy_user(
         user_email = x_wordpress_email
         user_name = x_wordpress_name or x_wordpress_user
         user_role = map_wordpress_role(x_wordpress_role) if x_wordpress_role else UserRole.TEACHER
+        webuntis_code = x_wordpress_webuntis_code.strip() if x_wordpress_webuntis_code else None
 
         if not user:
             # Neuer User - aus WordPress-Headers anlegen
@@ -213,6 +215,7 @@ async def get_wordpress_proxy_user(
                 email=user_email,
                 full_name=user_name,
                 role=user_role,
+                webuntis_teacher_code=webuntis_code,
                 is_active=True
             )
             db.add(user)
@@ -234,7 +237,12 @@ async def get_wordpress_proxy_user(
                 user.role = user_role
                 needs_update = True
 
+            if user.webuntis_teacher_code != webuntis_code:
+                user.webuntis_teacher_code = webuntis_code
+                needs_update = True
+
             if needs_update:
+                user.updated_at = datetime.utcnow()
                 db.commit()
                 db.refresh(user)
 

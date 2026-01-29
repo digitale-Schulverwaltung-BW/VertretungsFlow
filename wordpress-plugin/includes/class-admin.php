@@ -191,8 +191,20 @@ class AbsenzFlow_Admin {
         if (isset($_POST['absenzflow_update_role']) && check_admin_referer('absenzflow_role_update')) {
             $user_id = intval($_POST['user_id']);
             $role = sanitize_text_field($_POST['absenzflow_role']);
-            
+
             update_user_meta($user_id, 'absenzflow_role', $role);
+
+            // WebUntis-Kürzel speichern
+            if (isset($_POST['webuntis_code'])) {
+                $code = sanitize_text_field(trim($_POST['webuntis_code']));
+
+                if (!empty($code)) {
+                    update_user_meta($user_id, 'absenzflow_webuntis_code', $code);
+                } else {
+                    delete_user_meta($user_id, 'absenzflow_webuntis_code');
+                }
+            }
+
             echo '<div class="notice notice-success"><p>Rolle erfolgreich aktualisiert.</p></div>';
         }
         
@@ -211,15 +223,17 @@ class AbsenzFlow_Admin {
                         <th>E-Mail</th>
                         <th>WordPress-Rolle</th>
                         <th>AbsenzFlow-Rolle</th>
+                        <th>WebUntis-Kürzel</th>
                         <th>Aktion</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($users as $user): 
+                    <?php foreach ($users as $user):
                         $current_role = get_user_meta($user->ID, 'absenzflow_role', true);
                         if (!$current_role) {
                             $current_role = 'teacher'; // Default
                         }
+                        $webuntis_code = get_user_meta($user->ID, 'absenzflow_webuntis_code', true);
                     ?>
                     <tr>
                         <td><?php echo esc_html($user->display_name); ?></td>
@@ -235,6 +249,14 @@ class AbsenzFlow_Admin {
                                     <option value="planner" <?php selected($current_role, 'planner'); ?>>Vertretungsplaner</option>
                                     <option value="admin" <?php selected($current_role, 'admin'); ?>>Administrator</option>
                                 </select>
+                        </td>
+                        <td>
+                                <input type="text"
+                                       name="webuntis_code"
+                                       value="<?php echo esc_attr($webuntis_code); ?>"
+                                       placeholder="z.B. SEY"
+                                       maxlength="20"
+                                       style="width: 100px;">
                         </td>
                         <td>
                                 <button type="submit" name="absenzflow_update_role" class="button button-small">Speichern</button>

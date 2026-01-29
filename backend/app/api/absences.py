@@ -76,7 +76,8 @@ async def create_absence(
     lessons = await webuntis_service.get_timetable_for_teacher(
         current_user.username,
         absence.start_date,
-        absence.end_date
+        absence.end_date,
+        webuntis_code=current_user.webuntis_teacher_code
     )
     
     # Betroffene Stunden in DB speichern
@@ -155,7 +156,8 @@ async def fetch_lessons_from_webuntis(
     lessons = await webuntis_service.get_timetable_for_teacher(
         current_user.username,
         request.start_date,
-        request.end_date
+        request.end_date,
+        webuntis_code=current_user.webuntis_teacher_code
     )
 
     # Filtern nach Perioden
