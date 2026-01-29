@@ -359,23 +359,31 @@ async def update_lesson_notes(
 async def approve_absence(
     absence_id: int,
     approval: AbsenceApproval,
-    current_user: User = Depends(require_role([UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])),
+    current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
     """
     Genehmigt oder lehnt Abwesenheit ab
-    
-    Nur für Abteilungsleiter
-    
+
+    Erlaubt für: Dept_Head, Admin, Planner
+
     Args:
         absence_id: ID der Abwesenheit
         approval: Genehmigungs-Daten
-        current_user: Aktueller User (muss Abteilungsleiter sein)
+        current_user: Aktueller User
         db: Database Session
-        
+
     Returns:
         Success Message
     """
+    # Berechtigungsprüfung
+    allowed_roles = [UserRole.DEPARTMENT_HEAD, UserRole.ADMIN, UserRole.PLANNER]
+    if current_user.role not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to approve absences"
+        )
+
     absence = db.query(Absence).filter(Absence.id == absence_id).first()
 
     if not absence:
