@@ -361,8 +361,9 @@ class WebUntisService:
 
                     if "result" in data:
                         classes = data["result"]
+                        # Verwende Kurzname (name) statt Langname (longName)
                         self._classes_cache = {
-                            kl["id"]: kl.get("longName", kl.get("name", "Unbekannt"))
+                            kl["id"]: kl.get("name", kl.get("longName", "Unbekannt"))
                             for kl in classes
                         }
                         logger.info(f"✅ {len(self._classes_cache)} Klassen geladen")
@@ -450,21 +451,29 @@ class WebUntisService:
 
                 if response.status_code == 200:
                     data = response.json()
+                    logger.info(f"📦 Timegrid Response: {data}")
 
                     if "result" in data:
                         timegrid_units = data["result"]
+                        logger.info(f"📋 Timegrid hat {len(timegrid_units)} Units")
+
                         # Erstelle Mapping: startTime -> timeUnit (Stundennummer)
                         self._timegrid_cache = {}
                         for unit in timegrid_units:
                             start_time = unit.get("startTime")
                             time_unit = unit.get("timeUnit")
+                            logger.debug(f"Timegrid Unit: {unit} -> startTime={start_time}, timeUnit={time_unit}")
                             if start_time and time_unit:
                                 self._timegrid_cache[start_time] = time_unit
 
                         logger.info(f"✅ Stundenraster mit {len(self._timegrid_cache)} Einträgen geladen")
                         return self._timegrid_cache
+                    elif "error" in data:
+                        logger.error(f"❌ WebUntis API Error beim Timegrid-Abruf: {data['error']}")
+                        return {}
 
                 logger.error(f"❌ Stundenraster laden fehlgeschlagen (Status: {response.status_code})")
+                logger.error(f"Response: {response.text}")
                 return {}
 
         except Exception as e:
