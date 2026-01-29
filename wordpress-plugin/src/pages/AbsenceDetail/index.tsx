@@ -102,8 +102,16 @@ const AbsenceDetail: React.FC = () => {
     return `${period}`;
   };
 
-  const canApprove = user?.role === 'dept_head' && absence?.status === 'submitted';
-  const canComplete = user?.role === 'planner' && absence?.status === 'approved';
+  // Check WordPress config for dept_heads_can_complete setting
+  const config = window.absenzflowConfig;
+  const deptHeadsCanComplete = config?.deptHeadsCanComplete || false;
+
+  // Admin und Planner sehen immer alle Buttons, unabhängig vom Status
+  const isAdminOrPlanner = user?.role === 'admin' || user?.role === 'planner';
+
+  const canApprove = isAdminOrPlanner || user?.role === 'dept_head';
+  const canComplete = isAdminOrPlanner || (user?.role === 'dept_head' && deptHeadsCanComplete);
+  const canDelete = isAdminOrPlanner;
 
   if (loading) {
     return (
@@ -271,11 +279,11 @@ const AbsenceDetail: React.FC = () => {
       </div>
 
       {/* Action Buttons */}
-      {(canApprove || canComplete) && (
+      {(canApprove || canComplete || canDelete) && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Aktionen</h2>
 
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-4">
             {canApprove && (
               <>
                 <button
@@ -302,6 +310,21 @@ const AbsenceDetail: React.FC = () => {
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {actionLoading ? 'Lädt...' : '✓ Als erledigt markieren'}
+              </button>
+            )}
+
+            {canDelete && (
+              <button
+                onClick={() => {
+                  if (confirm('Möchten Sie diese Abwesenheit wirklich löschen?')) {
+                    // TODO: Implement delete
+                    alert('Löschen wird noch implementiert');
+                  }
+                }}
+                disabled={actionLoading}
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                🗑 Löschen
               </button>
             )}
           </div>

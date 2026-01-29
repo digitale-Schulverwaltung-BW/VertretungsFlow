@@ -16,6 +16,7 @@ interface AbsenzFlowConfig {
   apiUrl: string;
   useProxy?: boolean;
   proxyUrl?: string;
+  deptHeadsCanComplete?: boolean;
   user?: {
     id: number;
     username: string;

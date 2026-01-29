@@ -73,6 +73,7 @@ class AbsenzFlow_Shortcode {
             'apiUrl' => isset($options['api_url']) ? $options['api_url'] : '',
             'useProxy' => true, // Use WordPress proxy to avoid HTTPS/HTTP mixed content
             'proxyUrl' => rest_url('absenzflow/v1/proxy'),
+            'deptHeadsCanComplete' => isset($options['dept_heads_can_complete']) && $options['dept_heads_can_complete'] ? true : false,
             'user' => array(
                 'id' => $current_user->ID,
                 'username' => $current_user->user_login,

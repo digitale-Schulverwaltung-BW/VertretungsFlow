@@ -99,6 +99,9 @@ class AbsenzFlow_API_Proxy {
         // Current WordPress user
         $current_user = wp_get_current_user();
 
+        // Read settings
+        $dept_heads_can_complete = isset($options['dept_heads_can_complete']) && $options['dept_heads_can_complete'] ? '1' : '0';
+
         $args = array(
             'method' => strtoupper($method),
             'headers' => array(
@@ -108,7 +111,8 @@ class AbsenzFlow_API_Proxy {
                 'X-WordPress-Email' => $current_user->user_email,
                 'X-WordPress-Name' => $current_user->display_name,
                 'X-WordPress-Role' => $this->map_wp_role_to_absenzflow($current_user),
-                'X-WordPress-WebUntis-Code' => get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)
+                'X-WordPress-WebUntis-Code' => get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
+                'X-WordPress-Dept-Heads-Can-Complete' => $dept_heads_can_complete
             ),
             'timeout' => 30,
             'sslverify' => false // Allow self-signed certs in development

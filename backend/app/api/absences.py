@@ -4,7 +4,7 @@ CRUD Operations für Abwesenheitsmeldungen
 """
 import logging
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -377,19 +377,20 @@ async def approve_absence(
         Success Message
     """
     absence = db.query(Absence).filter(Absence.id == absence_id).first()
-    
+
     if not absence:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Absence not found"
         )
-    
-    # Status prüfen
-    if absence.status != AbsenceStatus.SUBMITTED:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Can only approve submitted absences"
-        )
+
+    # Status prüfen - Admin/Planner können immer approve, andere nur bei SUBMITTED
+    if current_user.role not in [UserRole.ADMIN, UserRole.PLANNER]:
+        if absence.status != AbsenceStatus.SUBMITTED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Can only approve submitted absences"
+            )
     
     # Status aktualisieren
     from datetime import datetime
@@ -415,36 +416,46 @@ async def approve_absence(
 @router.post("/{absence_id}/complete")
 async def complete_absence(
     absence_id: int,
-    current_user: User = Depends(require_role([UserRole.PLANNER, UserRole.ADMIN])),
+    request: Request,
+    current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
     """
     Markiert Abwesenheit als erledigt/eingetragen
-    
-    Nur für Vertretungsplaner
-    
+
+    Erlaubt für: Planner, Admin, und optional Dept_Head (wenn Setting aktiv)
+
     Args:
         absence_id: ID der Abwesenheit
-        current_user: Aktueller User (muss Vertretungsplaner sein)
+        request: HTTP Request (für Header)
+        current_user: Aktueller User
         db: Database Session
-        
+
     Returns:
         Success Message
     """
+    # Berechtigungsprüfung
+    dept_heads_can_complete = request.headers.get("X-WordPress-Dept-Heads-Can-Complete", "0") == "1"
+
+    allowed_roles = [UserRole.PLANNER, UserRole.ADMIN]
+    if dept_heads_can_complete:
+        allowed_roles.append(UserRole.DEPARTMENT_HEAD)
+
+    if current_user.role not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to complete absences"
+        )
+
     absence = db.query(Absence).filter(Absence.id == absence_id).first()
-    
+
     if not absence:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Absence not found"
         )
-    
-    # Status prüfen
-    if absence.status != AbsenceStatus.APPROVED:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Can only complete approved absences"
-        )
+
+    # Kein Status-Check mehr - Admin/Planner können immer complete
     
     # Status aktualisieren
     from datetime import datetime
@@ -487,18 +498,19 @@ async def delete_absence(
         )
     
     # Berechtigung prüfen
-    if absence.teacher_id != current_user.id and current_user.role not in [UserRole.ADMIN]:
+    if absence.teacher_id != current_user.id and current_user.role not in [UserRole.ADMIN, UserRole.PLANNER]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this absence"
         )
-    
-    # Status prüfen
-    if absence.status not in [AbsenceStatus.DRAFT, AbsenceStatus.SUBMITTED]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete approved or completed absences"
-        )
+
+    # Status prüfen - Admin/Planner können immer löschen, andere nur bei DRAFT/SUBMITTED
+    if current_user.role not in [UserRole.ADMIN, UserRole.PLANNER]:
+        if absence.status not in [AbsenceStatus.DRAFT, AbsenceStatus.SUBMITTED]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete approved or completed absences"
+            )
     
     db.delete(absence)
     db.commit()

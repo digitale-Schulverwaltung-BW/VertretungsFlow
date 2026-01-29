@@ -87,6 +87,23 @@ class AbsenzFlow_Admin {
             'absenzflow-settings',
             'absenzflow_main_section'
         );
+
+        // Permissions Section
+        add_settings_section(
+            'absenzflow_permissions_section',
+            'Berechtigungen',
+            array($this, 'permissions_section_callback'),
+            'absenzflow-settings'
+        );
+
+        // Dept Heads Can Complete Field
+        add_settings_field(
+            'dept_heads_can_complete',
+            'Abteilungsleitungen können erledigen',
+            array($this, 'dept_heads_can_complete_field_callback'),
+            'absenzflow-settings',
+            'absenzflow_permissions_section'
+        );
     }
     
     /**
@@ -102,6 +119,9 @@ class AbsenzFlow_Admin {
         if (isset($input['api_secret'])) {
             $sanitized['api_secret'] = sanitize_text_field($input['api_secret']);
         }
+
+        // Checkbox: dept_heads_can_complete
+        $sanitized['dept_heads_can_complete'] = isset($input['dept_heads_can_complete']) ? 1 : 0;
 
         return $sanitized;
     }
@@ -134,7 +154,28 @@ class AbsenzFlow_Admin {
         echo '<input type="password" name="absenzflow_options[api_secret]" value="' . esc_attr($api_secret) . '" class="regular-text" />';
         echo '<p class="description">Shared Secret für sichere Kommunikation mit dem Backend. Muss identisch mit WORDPRESS_PROXY_SECRET im Backend sein.</p>';
     }
-    
+
+    /**
+     * Permissions Section Callback
+     */
+    public function permissions_section_callback() {
+        echo '<p>Konfigurieren Sie die Berechtigungen für verschiedene Rollen.</p>';
+    }
+
+    /**
+     * Dept Heads Can Complete Field
+     */
+    public function dept_heads_can_complete_field_callback() {
+        $options = get_option('absenzflow_options');
+        $checked = isset($options['dept_heads_can_complete']) && $options['dept_heads_can_complete'] ? 'checked' : '';
+
+        echo '<label>';
+        echo '<input type="checkbox" name="absenzflow_options[dept_heads_can_complete]" value="1" ' . $checked . ' />';
+        echo ' Abteilungsleitungen können Abwesenheiten als erledigt markieren';
+        echo '</label>';
+        echo '<p class="description">Wenn aktiviert, können Abteilungsleitungen Abwesenheiten direkt als erledigt markieren, ohne dass ein Vertretungsplaner sie erst eintragen muss.</p>';
+    }
+
     /**
      * Render Admin Page (Dashboard)
      */
@@ -254,7 +295,7 @@ class AbsenzFlow_Admin {
                                 <input type="text"
                                        name="webuntis_code"
                                        value="<?php echo esc_attr($webuntis_code); ?>"
-                                       placeholder="z.B. SEY"
+                                       placeholder="Kürzel"
                                        maxlength="20"
                                        style="width: 100px;">
                         </td>
