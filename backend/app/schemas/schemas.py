@@ -54,29 +54,7 @@ class LoginRequest(BaseModel):
 
 # ============ Absence Schemas ============
 
-class AbsenceBase(BaseModel):
-    """Basis Absence Schema"""
-    reason: str = Field(..., min_length=1, max_length=100)
-    start_date: datetime
-    end_date: datetime
-    start_period: int = Field(..., ge=1, le=16)  # Max 16 Stunden pro Tag
-    end_period: int = Field(..., ge=1, le=16)  # Max 16 Stunden pro Tag
-
-    @field_validator('start_date', 'end_date', mode='before')
-    @classmethod
-    def parse_date(cls, v):
-        """Akzeptiert sowohl date als auch datetime Strings"""
-        if isinstance(v, str):
-            # Wenn nur Datum (ohne Zeit), füge Mitternacht hinzu
-            if 'T' not in v and ' ' not in v:
-                v = f"{v}T00:00:00"
-        return v
-
-
-class AbsenceCreate(AbsenceBase):
-    """Absence Creation Schema"""
-    affected_lessons: Optional[List['AffectedLessonBase']] = None  # Optional: Frontend kann Stunden mit Hinweisen senden
-
+# Affected Lessons müssen VOR Absence definiert werden wegen Forward Reference
 
 class AffectedLessonBase(BaseModel):
     """Basis für betroffene Stunden (kann auch Doppelstunden-Block sein)"""
@@ -98,6 +76,30 @@ class AffectedLessonBase(BaseModel):
             if 'T' not in v and ' ' not in v:
                 v = f"{v}T00:00:00"
         return v
+
+
+class AbsenceBase(BaseModel):
+    """Basis Absence Schema"""
+    reason: str = Field(..., min_length=1, max_length=100)
+    start_date: datetime
+    end_date: datetime
+    start_period: int = Field(..., ge=1, le=16)  # Max 16 Stunden pro Tag
+    end_period: int = Field(..., ge=1, le=16)  # Max 16 Stunden pro Tag
+
+    @field_validator('start_date', 'end_date', mode='before')
+    @classmethod
+    def parse_date(cls, v):
+        """Akzeptiert sowohl date als auch datetime Strings"""
+        if isinstance(v, str):
+            # Wenn nur Datum (ohne Zeit), füge Mitternacht hinzu
+            if 'T' not in v and ' ' not in v:
+                v = f"{v}T00:00:00"
+        return v
+
+
+class AbsenceCreate(AbsenceBase):
+    """Absence Creation Schema"""
+    affected_lessons: Optional[List[AffectedLessonBase]] = None
 
 
 class AffectedLessonResponse(AffectedLessonBase):
