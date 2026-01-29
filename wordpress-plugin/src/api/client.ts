@@ -162,7 +162,7 @@ class APIClient {
   async createAbsence(data: CreateAbsenceRequest): Promise<Absence> {
     return this.request<Absence>({
       method: 'POST',
-      url: '/absences',
+      url: '/absences/',  // Trailing slash to avoid 307 redirect
       data,
     });
   }
@@ -173,7 +173,7 @@ class APIClient {
   async getAbsences(params?: Record<string, unknown>): Promise<Absence[]> {
     return this.request<Absence[]>({
       method: 'GET',
-      url: '/absences',
+      url: '/absences/',  // Trailing slash to avoid 307 redirect
       params,
     });
   }
