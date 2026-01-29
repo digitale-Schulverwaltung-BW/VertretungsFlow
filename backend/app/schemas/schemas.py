@@ -1,9 +1,9 @@
 """
 Pydantic Schemas für Request/Response Validierung
 """
-from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, EmailStr, Field
+from datetime import datetime, date
+from typing import Optional, List, Union
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from app.models.models import UserRole, AbsenceStatus
 
 
@@ -61,6 +61,16 @@ class AbsenceBase(BaseModel):
     start_period: int = Field(..., ge=1, le=10)
     end_period: int = Field(..., ge=1, le=10)
 
+    @field_validator('start_date', 'end_date', mode='before')
+    @classmethod
+    def parse_date(cls, v):
+        """Akzeptiert sowohl date als auch datetime Strings"""
+        if isinstance(v, str):
+            # Wenn nur Datum (ohne Zeit), füge Mitternacht hinzu
+            if 'T' not in v and ' ' not in v:
+                v = f"{v}T00:00:00"
+        return v
+
 
 class AbsenceCreate(AbsenceBase):
     """Absence Creation Schema"""
@@ -75,6 +85,16 @@ class AffectedLessonBase(BaseModel):
     class_name: Optional[str] = None
     room: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator('date', mode='before')
+    @classmethod
+    def parse_date(cls, v):
+        """Akzeptiert sowohl date als auch datetime Strings"""
+        if isinstance(v, str):
+            # Wenn nur Datum (ohne Zeit), füge Mitternacht hinzu
+            if 'T' not in v and ' ' not in v:
+                v = f"{v}T00:00:00"
+        return v
 
 
 class AffectedLessonResponse(AffectedLessonBase):
@@ -118,6 +138,18 @@ class AbsenceUpdate(BaseModel):
     start_period: Optional[int] = Field(None, ge=1, le=10)
     end_period: Optional[int] = Field(None, ge=1, le=10)
 
+    @field_validator('start_date', 'end_date', mode='before')
+    @classmethod
+    def parse_date(cls, v):
+        """Akzeptiert sowohl date als auch datetime Strings"""
+        if v is None:
+            return v
+        if isinstance(v, str):
+            # Wenn nur Datum (ohne Zeit), füge Mitternacht hinzu
+            if 'T' not in v and ' ' not in v:
+                v = f"{v}T00:00:00"
+        return v
+
 
 class AbsenceApproval(BaseModel):
     """Absence Approval/Rejection Schema"""
@@ -134,6 +166,16 @@ class FetchLessonsRequest(BaseModel):
     start_period: int = Field(..., ge=1, le=16)
     end_period: int = Field(..., ge=1, le=16)
 
+    @field_validator('start_date', 'end_date', mode='before')
+    @classmethod
+    def parse_date(cls, v):
+        """Akzeptiert sowohl date als auch datetime Strings"""
+        if isinstance(v, str):
+            # Wenn nur Datum (ohne Zeit), füge Mitternacht hinzu
+            if 'T' not in v and ' ' not in v:
+                v = f"{v}T00:00:00"
+        return v
+
 
 class WebUntisLesson(BaseModel):
     """WebUntis Stunde"""
@@ -142,6 +184,16 @@ class WebUntisLesson(BaseModel):
     subject: str
     class_name: str
     room: Optional[str] = None
+
+    @field_validator('date', mode='before')
+    @classmethod
+    def parse_date(cls, v):
+        """Akzeptiert sowohl date als auch datetime Strings"""
+        if isinstance(v, str):
+            # Wenn nur Datum (ohne Zeit), füge Mitternacht hinzu
+            if 'T' not in v and ' ' not in v:
+                v = f"{v}T00:00:00"
+        return v
 
 
 class WebUntisTimetableResponse(BaseModel):
