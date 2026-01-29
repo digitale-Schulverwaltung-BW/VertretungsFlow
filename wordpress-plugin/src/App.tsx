@@ -1,65 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import api from './api/client';
+import Dashboard from './pages/Dashboard';
 import CreateAbsence from './pages/CreateAbsence';
 import type { User } from './types';
-
-const Dashboard: React.FC<{ user: User }> = ({ user }) => {
-  return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Dashboard</h1>
-
-        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-blue-500"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-blue-700">
-                <strong>Willkommen, {user.full_name}!</strong>
-              </p>
-              <p className="text-sm text-blue-600 mt-1">Rolle: {user.role}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="bg-gray-50 p-6 rounded-md border-2 border-dashed border-gray-300">
-            <h2 className="text-lg font-semibold mb-2">Abwesenheit melden</h2>
-            <p className="text-gray-600 mb-4">
-              Melden Sie eine geplante Abwesenheit und geben Sie Hinweise für den
-              Vertretungsplaner.
-            </p>
-            <Link
-              to="/create"
-              className="inline-block px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800"
-            >
-              Neue Abwesenheit erstellen
-            </Link>
-          </div>
-
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h2 className="text-lg font-semibold mb-2">Meine Abwesenheiten</h2>
-            <p className="text-gray-600 text-sm">
-              Hier werden Ihre Abwesenheiten angezeigt (noch nicht implementiert).
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
   return (
@@ -79,7 +23,7 @@ const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
                   Dashboard
                 </Link>
                 <Link
-                  to="/create"
+                  to="/create-absence"
                   className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
                   Neue Abwesenheit
@@ -155,8 +99,8 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <Navigation user={displayUser} />
         <Routes>
-          <Route path="/" element={<Dashboard user={displayUser} />} />
-          <Route path="/create" element={<CreateAbsence />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/create-absence" element={<CreateAbsence />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
