@@ -31,3 +31,8 @@
   width: 1rem;
   height: 1rem;
 }
+
+ /* eigene CSS-Anpassungen hier */                                                                                                                            
+  .max-w-4xl {                                                                                                                                                       
+    max-width: auto !important;                                                                                                                                     
+  }    
