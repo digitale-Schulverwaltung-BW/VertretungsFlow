@@ -85,10 +85,10 @@ const Calendar: React.FC<CalendarProps> = ({ absences, onDayClick }) => {
       </div>
 
       {/* Tage */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1">
         {/* Padding Tage */}
         {Array.from({ length: paddingDays }).map((_, idx) => (
-          <div key={`padding-${idx}`} className="aspect-square" />
+          <div key={`padding-${idx}`} className="h-12" />
         ))}
 
         {/* Tatsächliche Tage */}
@@ -102,16 +102,16 @@ const Calendar: React.FC<CalendarProps> = ({ absences, onDayClick }) => {
               key={day.toISOString()}
               onClick={() => hasAbsences && onDayClick?.(day, dayAbsences)}
               className={`
-                aspect-square p-2 rounded-lg text-center text-sm
+                h-12 px-1 py-1 rounded text-center text-xs flex flex-col items-center justify-center
                 ${!isSameMonth(day, currentMonth) ? 'text-gray-300' : 'text-gray-900'}
                 ${today ? 'bg-blue-100 font-bold' : ''}
                 ${hasAbsences ? 'bg-yellow-50 cursor-pointer hover:bg-yellow-100' : ''}
                 ${hasAbsences && today ? 'bg-blue-200' : ''}
               `}
             >
-              <div>{format(day, 'd')}</div>
+              <div className="leading-none">{format(day, 'd')}</div>
               {hasAbsences && (
-                <div className="text-xs text-blue-600 mt-1">
+                <div className="text-[10px] text-blue-600 leading-none mt-0.5">
                   {dayAbsences.length}
                 </div>
               )}

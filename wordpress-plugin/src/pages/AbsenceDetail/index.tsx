@@ -13,6 +13,8 @@ const AbsenceDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [allAbsenceIds, setAllAbsenceIds] = useState<number[]>([]);
+  const [currentIndex, setCurrentIndex] = useState<number>(-1);
 
   useEffect(() => {
     const loadData = async () => {
@@ -23,12 +25,18 @@ const AbsenceDetail: React.FC = () => {
       }
 
       try {
-        const [absenceData, userData] = await Promise.all([
+        const [absenceData, userData, allAbsences] = await Promise.all([
           api.getAbsence(parseInt(id)),
-          api.getCurrentUser()
+          api.getCurrentUser(),
+          api.getAbsences() // Load all absences for navigation
         ]);
         setAbsence(absenceData);
         setUser(userData);
+
+        // Extract IDs and find current index
+        const ids = allAbsences.map(a => a.id!);
+        setAllAbsenceIds(ids);
+        setCurrentIndex(ids.indexOf(parseInt(id)));
       } catch (err: any) {
         setError(err.message || 'Fehler beim Laden der Abwesenheit');
       } finally {
@@ -113,6 +121,21 @@ const AbsenceDetail: React.FC = () => {
   const canComplete = isAdminOrPlanner || (user?.role === 'dept_head' && deptHeadsCanComplete);
   const canDelete = isAdminOrPlanner;
 
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < allAbsenceIds.length - 1;
+
+  const handlePrevious = () => {
+    if (hasPrevious) {
+      navigate(`/absence/${allAbsenceIds[currentIndex - 1]}`);
+    }
+  };
+
+  const handleNext = () => {
+    if (hasNext) {
+      navigate(`/absence/${allAbsenceIds[currentIndex + 1]}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -151,8 +174,35 @@ const AbsenceDetail: React.FC = () => {
           ← Zurück zum Dashboard
         </button>
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Abwesenheit Details</h1>
-          {getStatusBadge(absence.status)}
+          <div className="flex items-center space-x-4">
+            <h1 className="text-3xl font-bold text-gray-900">Abwesenheit Details</h1>
+            {getStatusBadge(absence.status)}
+          </div>
+
+          {/* Navigation Buttons */}
+          {allAbsenceIds.length > 1 && (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handlePrevious}
+                disabled={!hasPrevious}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center"
+                title="Vorherige Abwesenheit"
+              >
+                ← Zurück
+              </button>
+              <span className="text-sm text-gray-500">
+                {currentIndex + 1} / {allAbsenceIds.length}
+              </span>
+              <button
+                onClick={handleNext}
+                disabled={!hasNext}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center"
+                title="Nächste Abwesenheit"
+              >
+                Weiter →
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
