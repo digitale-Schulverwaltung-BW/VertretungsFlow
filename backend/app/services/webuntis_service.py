@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class WebUntisService:
     """Service für WebUntis API Integration"""
-    
+
     def __init__(self):
         self.school = settings.WEBUNTIS_SCHOOL
         self.username = settings.WEBUNTIS_USERNAME
@@ -23,6 +23,11 @@ class WebUntisService:
         self.base_url = f"https://{self.server}/WebUntis/jsonrpc.do"
         self.session_id: Optional[str] = None
         self.person_id: Optional[int] = None
+
+        # Caches für Stammdaten (ID -> Name Mapping)
+        self._subjects_cache: Optional[dict] = None
+        self._classes_cache: Optional[dict] = None
+        self._rooms_cache: Optional[dict] = None
     
     async def authenticate(self) -> bool:
         """
@@ -194,7 +199,7 @@ class WebUntisService:
                         if len(raw_lessons) == 0:
                             logger.warning(f"⚠️ WebUntis lieferte keine Stunden für den Zeitraum {start_date.date()} - {end_date.date()}")
 
-                        parsed_lessons = self._parse_timetable(raw_lessons)
+                        parsed_lessons = await self._parse_timetable(raw_lessons, teacher_id)
                         logger.info(f"✅ {len(parsed_lessons)} Stunden erfolgreich geparst")
                         return parsed_lessons
 
@@ -275,32 +280,189 @@ class WebUntisService:
         except Exception as e:
             logger.error(f"❌ WebUntis Get Teacher ID Exception: {e}", exc_info=True)
             return None
-    
-    def _parse_timetable(self, timetable_data: List[dict]) -> List[WebUntisLesson]:
+
+    async def _load_subjects(self) -> dict:
+        """
+        Lädt Fächer-Stammdaten und erstellt ID->Name Mapping
+
+        Returns:
+            Dictionary mit subject_id -> subject_name
+        """
+        if self._subjects_cache is not None:
+            return self._subjects_cache
+
+        logger.info("📚 Lade Fächer-Stammdaten...")
+
+        try:
+            async with httpx.AsyncClient() as client:
+                payload = {
+                    "id": "getSubjects",
+                    "method": "getSubjects",
+                    "params": {},
+                    "jsonrpc": "2.0"
+                }
+
+                response = await client.post(
+                    f"{self.base_url}",
+                    json=payload,
+                    cookies={"JSESSIONID": self.session_id}
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+
+                    if "result" in data:
+                        subjects = data["result"]
+                        self._subjects_cache = {
+                            subj["id"]: subj.get("longName", subj.get("name", "Unbekannt"))
+                            for subj in subjects
+                        }
+                        logger.info(f"✅ {len(self._subjects_cache)} Fächer geladen")
+                        return self._subjects_cache
+
+                logger.error(f"❌ Fächer laden fehlgeschlagen (Status: {response.status_code})")
+                return {}
+
+        except Exception as e:
+            logger.error(f"❌ Exception beim Laden der Fächer: {e}", exc_info=True)
+            return {}
+
+    async def _load_classes(self) -> dict:
+        """
+        Lädt Klassen-Stammdaten und erstellt ID->Name Mapping
+
+        Returns:
+            Dictionary mit class_id -> class_name
+        """
+        if self._classes_cache is not None:
+            return self._classes_cache
+
+        logger.info("🎓 Lade Klassen-Stammdaten...")
+
+        try:
+            async with httpx.AsyncClient() as client:
+                payload = {
+                    "id": "getKlassen",
+                    "method": "getKlassen",
+                    "params": {},
+                    "jsonrpc": "2.0"
+                }
+
+                response = await client.post(
+                    f"{self.base_url}",
+                    json=payload,
+                    cookies={"JSESSIONID": self.session_id}
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+
+                    if "result" in data:
+                        classes = data["result"]
+                        self._classes_cache = {
+                            kl["id"]: kl.get("longName", kl.get("name", "Unbekannt"))
+                            for kl in classes
+                        }
+                        logger.info(f"✅ {len(self._classes_cache)} Klassen geladen")
+                        return self._classes_cache
+
+                logger.error(f"❌ Klassen laden fehlgeschlagen (Status: {response.status_code})")
+                return {}
+
+        except Exception as e:
+            logger.error(f"❌ Exception beim Laden der Klassen: {e}", exc_info=True)
+            return {}
+
+    async def _load_rooms(self) -> dict:
+        """
+        Lädt Raum-Stammdaten und erstellt ID->Name Mapping
+
+        Returns:
+            Dictionary mit room_id -> room_name
+        """
+        if self._rooms_cache is not None:
+            return self._rooms_cache
+
+        logger.info("🏫 Lade Raum-Stammdaten...")
+
+        try:
+            async with httpx.AsyncClient() as client:
+                payload = {
+                    "id": "getRooms",
+                    "method": "getRooms",
+                    "params": {},
+                    "jsonrpc": "2.0"
+                }
+
+                response = await client.post(
+                    f"{self.base_url}",
+                    json=payload,
+                    cookies={"JSESSIONID": self.session_id}
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+
+                    if "result" in data:
+                        rooms = data["result"]
+                        self._rooms_cache = {
+                            room["id"]: room.get("longName", room.get("name", "Unbekannt"))
+                            for room in rooms
+                        }
+                        logger.info(f"✅ {len(self._rooms_cache)} Räume geladen")
+                        return self._rooms_cache
+
+                logger.error(f"❌ Räume laden fehlgeschlagen (Status: {response.status_code})")
+                return {}
+
+        except Exception as e:
+            logger.error(f"❌ Exception beim Laden der Räume: {e}", exc_info=True)
+            return {}
+
+    async def _parse_timetable(self, timetable_data: List[dict], teacher_id: int) -> List[WebUntisLesson]:
         """
         Parsed Stundenplan-Daten von WebUntis
 
         Args:
             timetable_data: Rohdaten von WebUntis
+            teacher_id: ID des Lehrers (zum Filtern bei Team-Teaching)
 
         Returns:
             Liste von WebUntisLesson Objekten
         """
         logger.debug(f"Parse Timetable: {len(timetable_data)} Einträge")
+
+        # Stammdaten laden (werden gecached)
+        subjects = await self._load_subjects()
+        classes = await self._load_classes()
+        rooms = await self._load_rooms()
+
         lessons = []
 
         for i, entry in enumerate(timetable_data):
             try:
                 logger.info(f"📝 Parse Entry {i+1}/{len(timetable_data)}: {entry}")
 
+                # Filter: Nur Stunden wo der Lehrer tatsächlich dabei ist
+                teacher_ids = [t.get("id") for t in entry.get("te", [])]
+                if teacher_id not in teacher_ids:
+                    logger.info(f"⏭️ Überspringe Entry {i+1}: Lehrer {teacher_id} nicht in {teacher_ids}")
+                    continue
+
                 # Datum parsen (Format: YYYYMMDD)
                 date_str = str(entry.get("date", ""))
                 date = datetime.strptime(date_str, "%Y%m%d")
 
-                # Informationen extrahieren
-                subject = self._get_subject_name(entry)
-                class_name = self._get_class_name(entry)
-                room = self._get_room_name(entry)
+                # IDs auflösen
+                subject_ids = [s.get("id") for s in entry.get("su", [])]
+                subject = subjects.get(subject_ids[0], "Unbekannt") if subject_ids else "Unbekannt"
+
+                class_ids = [c.get("id") for c in entry.get("kl", [])]
+                class_name = classes.get(class_ids[0], "Unbekannt") if class_ids else "Unbekannt"
+
+                room_ids = [r.get("id") for r in entry.get("ro", [])]
+                room = rooms.get(room_ids[0]) if room_ids else None
+
                 period = entry.get("startTime", 0) // 100
 
                 lesson = WebUntisLesson(
@@ -311,7 +473,7 @@ class WebUntisService:
                     room=room
                 )
 
-                logger.debug(f"✅ Stunde geparst: {date.date()} #{period} - {subject} ({class_name})")
+                logger.info(f"✅ Stunde geparst: {date.date()} #{period} - {subject} ({class_name}) in {room}")
                 lessons.append(lesson)
 
             except Exception as e:
@@ -321,27 +483,6 @@ class WebUntisService:
 
         logger.info(f"Parsing abgeschlossen: {len(lessons)}/{len(timetable_data)} Stunden erfolgreich geparst")
         return lessons
-    
-    def _get_subject_name(self, entry: dict) -> str:
-        """Extrahiert Fachname aus Entry"""
-        subjects = entry.get("su", [])
-        if subjects and len(subjects) > 0:
-            return subjects[0].get("longname", "Unbekannt")
-        return "Unbekannt"
-    
-    def _get_class_name(self, entry: dict) -> str:
-        """Extrahiert Klassenname aus Entry"""
-        classes = entry.get("kl", [])
-        if classes and len(classes) > 0:
-            return classes[0].get("name", "Unbekannt")
-        return "Unbekannt"
-    
-    def _get_room_name(self, entry: dict) -> Optional[str]:
-        """Extrahiert Raumname aus Entry"""
-        rooms = entry.get("ro", [])
-        if rooms and len(rooms) > 0:
-            return rooms[0].get("name")
-        return None
 
 
 # Singleton Instance
