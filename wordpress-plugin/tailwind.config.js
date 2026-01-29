@@ -6,9 +6,6 @@ export default {
   ],
   theme: {
     extend: {
-      maxWidth: {                                                                                                                                                                                                                                                                                                      
-          '4xl': auto,  // Standard ist 56rem, hier überschrieben
-        },    
       colors: {
         primary: {
           50: '#f0f9ff',

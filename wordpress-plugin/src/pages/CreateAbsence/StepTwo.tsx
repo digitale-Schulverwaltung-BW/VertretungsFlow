@@ -21,6 +21,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [allCanceled, setAllCanceled] = useState(false);
 
   useEffect(() => {
     fetchLessons();
@@ -66,6 +67,31 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
     setLessons(newLessons);
   };
 
+  const handleSelectAllCanceled = (checked: boolean) => {
+    setAllCanceled(checked);
+    const newLessons = lessons.map(lesson => ({
+      ...lesson,
+      can_be_canceled: checked
+    }));
+    setLessons(newLessons);
+  };
+
+  const handleCopyToAll = (sourceIndex: number) => {
+    const sourceNotes = lessons[sourceIndex].notes;
+    const newLessons = lessons.map(lesson => ({
+      ...lesson,
+      notes: sourceNotes
+    }));
+    setLessons(newLessons);
+  };
+
+  const formatPeriod = (lesson: LessonWithMeta): string => {
+    if (lesson.end_period && lesson.end_period !== lesson.period) {
+      return `${lesson.period}-${lesson.end_period}`;
+    }
+    return `${lesson.period}`;
+  };
+
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
@@ -80,6 +106,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         affected_lessons: lessons.map((lesson) => ({
           date: lesson.date,
           period: lesson.period,
+          end_period: lesson.end_period,
           subject: lesson.subject,
           class_name: lesson.class_name,
           room: lesson.room,
@@ -167,7 +194,16 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
                       Fach
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Kann entfallen
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={allCanceled}
+                          onChange={(e) => handleSelectAllCanceled(e.target.checked)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          title="Alle auswählen/abwählen"
+                        />
+                        <span>Kann entfallen</span>
+                      </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Vertretungsvorschlag
@@ -181,7 +217,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
                         {format(new Date(lesson.date), 'dd.MM.yyyy', { locale: de })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {lesson.period}
+                        {formatPeriod(lesson)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {lesson.class_name}
@@ -198,13 +234,36 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <input
-                          type="text"
-                          value={lesson.notes}
-                          onChange={(e) => handleNotesChange(index, e.target.value)}
-                          placeholder="z.B. Projektbearbeitung"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={lesson.notes}
+                            onChange={(e) => handleNotesChange(index, e.target.value)}
+                            placeholder="z.B. Projektbearbeitung"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          {index === 0 && lessons.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleCopyToAll(0)}
+                              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                              title="Für alle übernehmen"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

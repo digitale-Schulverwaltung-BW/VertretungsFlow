@@ -29,6 +29,7 @@ export interface Lesson {
   id?: number;
   date: string;
   period: number;
+  end_period?: number;  // Für Doppelstunden-Blöcke
   subject: string;
   class_name: string;
   room?: string;
@@ -74,6 +75,7 @@ export interface CreateAbsenceRequest {
   affected_lessons: Array<{
     date: string;
     period: number;
+    end_period?: number;
     subject: string;
     class_name: string;
     room?: string;
