@@ -100,7 +100,8 @@ class AffectedLesson(Base):
     
     # Vertretungshinweise
     notes = Column(Text)  # Hinweise für Vertretungsplaner
-    
+    can_be_canceled = Column(Boolean, default=False)  # Kann die Stunde entfallen?
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

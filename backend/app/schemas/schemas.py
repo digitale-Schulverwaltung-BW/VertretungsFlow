@@ -75,7 +75,7 @@ class AbsenceBase(BaseModel):
 
 class AbsenceCreate(AbsenceBase):
     """Absence Creation Schema"""
-    pass
+    affected_lessons: Optional[List['AffectedLessonBase']] = None  # Optional: Frontend kann Stunden mit Hinweisen senden
 
 
 class AffectedLessonBase(BaseModel):
@@ -87,6 +87,7 @@ class AffectedLessonBase(BaseModel):
     class_name: Optional[str] = None
     room: Optional[str] = None
     notes: Optional[str] = None
+    can_be_canceled: Optional[bool] = False  # Kann die Stunde entfallen?
 
     @field_validator('date', mode='before')
     @classmethod

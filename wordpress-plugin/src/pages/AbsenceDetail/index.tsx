@@ -221,6 +221,7 @@ const AbsenceDetail: React.FC = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stunde</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fach</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Klasse</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kann entfallen</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hinweise Lehrkraft</th>
                 </tr>
               </thead>
@@ -238,6 +239,17 @@ const AbsenceDetail: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                       {lesson.class_name || '-'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      {lesson.can_be_canceled ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          ✓ Ja
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          - Nein
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {lesson.notes ? (

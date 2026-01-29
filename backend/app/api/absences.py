@@ -85,14 +85,25 @@ async def create_absence(
         absence.end_date,
         webuntis_code=current_user.webuntis_teacher_code
     )
-    
+
+    # Erstelle Lookup-Dictionary für Lehrkraft-Inputs (notes, can_be_canceled)
+    lesson_inputs = {}
+    if absence.affected_lessons:
+        for input_lesson in absence.affected_lessons:
+            # Key: (date, period) für eindeutige Identifikation
+            key = (input_lesson.date.date(), input_lesson.period)
+            lesson_inputs[key] = {
+                'notes': input_lesson.notes,
+                'can_be_canceled': input_lesson.can_be_canceled or False
+            }
+
     # Betroffene Stunden in DB speichern
     for lesson in lessons:
         # Filter: Nur Stunden im angegebenen Zeitraum
         if absence.start_date.date() <= lesson.date.date() <= absence.end_date.date():
             # Filter nach Periode
             is_in_period = False
-            
+
             if absence.start_date.date() == absence.end_date.date():
                 # Eintägige Abwesenheit
                 is_in_period = absence.start_period <= lesson.period <= absence.end_period
@@ -105,8 +116,12 @@ async def create_absence(
             else:
                 # Tage dazwischen
                 is_in_period = True
-            
+
             if is_in_period:
+                # Suche nach Lehrkraft-Inputs für diese Stunde
+                key = (lesson.date.date(), lesson.period)
+                inputs = lesson_inputs.get(key, {})
+
                 affected_lesson = AffectedLesson(
                     absence_id=db_absence.id,
                     date=lesson.date,
@@ -114,7 +129,9 @@ async def create_absence(
                     end_period=lesson.end_period,  # Für Doppelstunden
                     subject=lesson.subject,
                     class_name=lesson.class_name,
-                    room=lesson.room
+                    room=lesson.room,
+                    notes=inputs.get('notes'),
+                    can_be_canceled=inputs.get('can_be_canceled', False)
                 )
                 db.add(affected_lesson)
     
