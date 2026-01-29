@@ -2,9 +2,12 @@
 Absences API Routes
 CRUD Operations für Abwesenheitsmeldungen
 """
+import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.database import get_db
 from app.models.models import User, Absence, AffectedLesson, UserRole, AbsenceStatus
@@ -33,15 +36,18 @@ async def create_absence(
 ):
     """
     Erstellt neue Abwesenheitsmeldung
-    
+
     Args:
         absence: Abwesenheitsdaten
         current_user: Aktueller User
         db: Database Session
-        
+
     Returns:
         Erstellte Abwesenheit mit betroffenen Stunden
     """
+    logger.info(f"📝 Create absence request from user {current_user.username}")
+    logger.info(f"Absence data: {absence}")
+
     # Validierung: end_date >= start_date
     if absence.end_date < absence.start_date:
         raise HTTPException(
