@@ -8,7 +8,7 @@ import type { User } from './types';
 
 const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
   const config = window.absenzflowConfig;
-  const logoUrl = config?.pluginUrl ? `${config.pluginUrl}src/assets/logo.png` : '';
+  const logoUrl = config?.pluginUrl ? `${config.pluginUrl}assets/logo.png` : '';
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
