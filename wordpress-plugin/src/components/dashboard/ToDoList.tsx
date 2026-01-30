@@ -2,6 +2,7 @@ import React from 'react';
 import type { Absence } from '../../types';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { getAbsenceReasonLabel } from '../../constants';
 
 interface ToDoListProps {
   absences: Absence[];
@@ -43,7 +44,7 @@ const ToDoList: React.FC<ToDoListProps> = ({ absences, userRole, onActionClick }
               {format(new Date(absence.start_date), 'dd.MM.yyyy', { locale: de })} - {' '}
               {format(new Date(absence.end_date), 'dd.MM.yyyy', { locale: de })}
             </p>
-            <p className="text-sm text-gray-500 mt-1">{absence.reason}</p>
+            <p className="text-sm text-gray-500 mt-1">{getAbsenceReasonLabel(absence.reason)}</p>
           </div>
           <button
             onClick={() => onActionClick?.(absence)}

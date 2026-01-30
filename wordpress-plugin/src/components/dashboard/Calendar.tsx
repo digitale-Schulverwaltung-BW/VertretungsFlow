@@ -40,6 +40,36 @@ const Calendar: React.FC<CalendarProps> = ({ absences, onDayClick }) => {
     });
   };
 
+  // Bestimme die Farbe basierend auf den Status der Abwesenheiten
+  const getDayColor = (dayAbsences: Absence[]) => {
+    if (dayAbsences.length === 0) return null;
+
+    // Sammle alle einzigartigen Stati
+    const uniqueStatuses = [...new Set(dayAbsences.map(a => a.status))];
+
+    // Wenn nur ein Status → passende Farbe
+    if (uniqueStatuses.length === 1) {
+      const status = uniqueStatuses[0];
+      switch (status) {
+        case 'submitted':
+          return { bg: 'bg-yellow-50', hover: 'hover:bg-yellow-100' };
+        case 'approved':
+          return { bg: 'bg-green-50', hover: 'hover:bg-green-100' };
+        case 'completed':
+          return { bg: 'bg-blue-50', hover: 'hover:bg-blue-100' };
+        case 'rejected':
+          return { bg: 'bg-red-50', hover: 'hover:bg-red-100' };
+        case 'draft':
+          return { bg: 'bg-gray-50', hover: 'hover:bg-gray-100' };
+        default:
+          return { bg: 'bg-gray-50', hover: 'hover:bg-gray-100' };
+      }
+    }
+
+    // Gemischte Stati → hellviolett
+    return { bg: 'bg-purple-50', hover: 'hover:bg-purple-100' };
+  };
+
   const previousMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   };
@@ -96,6 +126,7 @@ const Calendar: React.FC<CalendarProps> = ({ absences, onDayClick }) => {
           const dayAbsences = getAbsencesForDay(day);
           const hasAbsences = dayAbsences.length > 0;
           const today = isToday(day);
+          const dayColor = getDayColor(dayAbsences);
 
           return (
             <div
@@ -105,7 +136,7 @@ const Calendar: React.FC<CalendarProps> = ({ absences, onDayClick }) => {
                 h-12 px-1 py-1 rounded text-center text-xs flex flex-col items-center justify-center
                 ${!isSameMonth(day, currentMonth) ? 'text-gray-300' : 'text-gray-900'}
                 ${today ? 'bg-blue-100 font-bold' : ''}
-                ${hasAbsences ? 'bg-yellow-50 cursor-pointer hover:bg-yellow-100' : ''}
+                ${hasAbsences && dayColor ? `${dayColor.bg} cursor-pointer ${dayColor.hover}` : ''}
                 ${hasAbsences && today ? 'bg-blue-200' : ''}
               `}
             >
