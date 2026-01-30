@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import api from '../../api/client';
 import type { Absence, User } from '../../types';
+import { getAbsenceReasonLabel } from '../../constants';
 
 const AbsenceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -250,7 +251,7 @@ const AbsenceDetail: React.FC = () => {
           {/* Grund */}
           <div className="md:col-span-2">
             <h3 className="text-sm font-bold text-blue-600 mb-1">Grund</h3>
-            <p className="text-lg text-gray-900">{absence.reason}</p>
+            <p className="text-lg text-gray-900">{getAbsenceReasonLabel(absence.reason)}</p>
           </div>
 
           {/* Erstellt am */}

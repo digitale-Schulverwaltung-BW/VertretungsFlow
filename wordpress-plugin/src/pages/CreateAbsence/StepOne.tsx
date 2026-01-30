@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import 'react-day-picker/dist/style.css';
 import type { AbsenceReason } from '../../types';
+import { ABSENCE_REASONS } from '../../constants';
 
 interface StepOneProps {
   onNext: (data: StepOneData) => void;
@@ -16,16 +17,6 @@ export interface StepOneData {
   startLesson: number;
   endLesson: number;
 }
-
-const reasons: Array<{ value: AbsenceReason; label: string }> = [
-  { value: 'training', label: 'Fortbildung' },
-  { value: 'exam', label: 'Prüfung' },
-  { value: 'excursion', label: 'Exkursion' },
-  { value: 'sick', label: 'Krank' },
-  { value: 'personal', label: 'Privat' },
-  { value: 'official', label: 'Dienstlich' },
-  { value: 'other', label: 'Sonstiges' },
-];
 
 const lessonNumbers = Array.from({ length: 16 }, (_, i) => i + 1);
 
@@ -115,7 +106,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
               onChange={(e) => setReason(e.target.value as AbsenceReason)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              {reasons.map((r) => (
+              {ABSENCE_REASONS.map((r) => (
                 <option key={r.value} value={r.value}>
                   {r.label}
                 </option>

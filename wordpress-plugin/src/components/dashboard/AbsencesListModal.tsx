@@ -2,6 +2,7 @@ import React from 'react';
 import type { Absence } from '../../types';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { getAbsenceReasonLabel } from '../../constants';
 
 interface AbsencesListModalProps {
   title: string;
@@ -99,7 +100,7 @@ const AbsencesListModal: React.FC<AbsencesListModalProps> = ({
                         <p className="text-sm text-gray-600 mb-1">
                           <span className="font-medium">Stunden:</span> {absence.start_period} - {absence.end_period}
                         </p>
-                        <p className="text-sm text-gray-500">{absence.reason}</p>
+                        <p className="text-sm text-gray-500">{getAbsenceReasonLabel(absence.reason)}</p>
                         {absence.affected_lessons && absence.affected_lessons.length > 0 && (
                           <p className="text-xs text-gray-400 mt-1">
                             {absence.affected_lessons.length} betroffene Stunden

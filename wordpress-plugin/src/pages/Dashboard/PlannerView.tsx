@@ -148,7 +148,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <button
           onClick={() => setCalendarExpanded(!calendarExpanded)}
-          className="group w-full flex items-center justify-between text-left hover:bg-gray-700 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors"
+          className="group w-full flex items-center justify-between text-left hover:bg-gray-700 rounded-lg px-2 -mx-2 -my-1 transition-colors"
         >
           <h2 className="text-lg font-semibold text-gray-900 group-hover:text-white">
             Kalender
@@ -169,7 +169,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <button
           onClick={() => setAbsencesExpanded(!absencesExpanded)}
-          className="group w-full flex items-center justify-between text-left hover:bg-gray-700 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors"
+          className="group w-full flex items-center justify-between text-left hover:bg-gray-700 rounded-lg px-2 -mx-2 -my-1 transition-colors"
         >
           <h2 className="text-lg font-semibold text-gray-900 group-hover:text-white">
             Alle Abwesenheiten ({absences.length})
