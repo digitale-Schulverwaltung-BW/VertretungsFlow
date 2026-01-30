@@ -27,6 +27,52 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   const [endLesson, setEndLesson] = useState<number>(16);
   const [errors, setErrors] = useState<string[]>([]);
 
+  const handleStartDateSelect = (range: DateRange | undefined) => {
+    if (!range) {
+      setDateRange(undefined);
+      return;
+    }
+
+    // Einzelklick: nur Start-Datum setzen
+    if (!range.to || range.from?.getTime() === range.to?.getTime()) {
+      const newStartDate = range.from;
+
+      // Auto-Korrektur: Start > Ende → Ende = Start
+      if (dateRange?.to && newStartDate && newStartDate > dateRange.to) {
+        setDateRange({ from: newStartDate, to: newStartDate });
+      } else {
+        setDateRange({ from: newStartDate, to: dateRange?.to });
+      }
+    }
+    // Range-Drag: beide Daten setzen
+    else {
+      setDateRange(range);
+    }
+  };
+
+  const handleEndDateSelect = (range: DateRange | undefined) => {
+    if (!range) {
+      setDateRange(undefined);
+      return;
+    }
+
+    // Einzelklick: nur End-Datum setzen
+    if (!range.to || range.from?.getTime() === range.to?.getTime()) {
+      const newEndDate = range.from;
+
+      // Auto-Korrektur: Ende < Start → Start = Ende
+      if (dateRange?.from && newEndDate && newEndDate < dateRange.from) {
+        setDateRange({ from: newEndDate, to: newEndDate });
+      } else {
+        setDateRange({ from: dateRange?.from, to: newEndDate });
+      }
+    }
+    // Range-Drag: beide Daten setzen
+    else {
+      setDateRange(range);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -56,6 +102,21 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
       startLesson,
       endLesson,
     });
+  };
+
+  const startPickerModifiers = {
+    primary: dateRange?.from ? [dateRange.from] : [],
+    secondary: dateRange?.to ? [dateRange.to] : [],
+  };
+
+  const endPickerModifiers = {
+    primary: dateRange?.to ? [dateRange.to] : [],
+    secondary: dateRange?.from ? [dateRange.from] : [],
+  };
+
+  const modifiersClassNames = {
+    primary: 'bg-black text-white font-bold rounded-full',
+    secondary: 'bg-gray-300 text-gray-600 rounded-full',
   };
 
   return (
@@ -125,10 +186,12 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                 <DayPicker
                   mode="range"
                   selected={dateRange}
-                  onSelect={setDateRange}
+                  onSelect={handleStartDateSelect}
                   locale={de}
                   className="border border-gray-300 rounded-md p-3"
                   disabled={{ before: new Date() }}
+                  modifiers={startPickerModifiers}
+                  modifiersClassNames={modifiersClassNames}
                 />
               </div>
               <div>
@@ -136,10 +199,12 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                 <DayPicker
                   mode="range"
                   selected={dateRange}
-                  onSelect={setDateRange}
+                  onSelect={handleEndDateSelect}
                   locale={de}
                   className="border border-gray-300 rounded-md p-3"
                   disabled={{ before: new Date() }}
+                  modifiers={endPickerModifiers}
+                  modifiersClassNames={modifiersClassNames}
                 />
               </div>
             </div>
