@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import CreateAbsence from './pages/CreateAbsence';
 import AbsenceDetail from './pages/AbsenceDetail';
 import type { User } from './types';
+import logo from './assets/logo.png';
 
 const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
   return (
@@ -13,7 +14,7 @@ const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link to="/" className="flex items-center px-2 py-2 text-gray-900">
-              <span className="text-xl font-bold">AbsenzFlow</span>
+              <img src={logo} alt="AbsenzFlow" className="h-8" />
             </Link>
             {user && (
               <>
