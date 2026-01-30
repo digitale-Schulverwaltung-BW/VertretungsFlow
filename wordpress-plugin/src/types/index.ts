@@ -86,8 +86,14 @@ export interface CreateAbsenceRequest {
 
 export interface WordPressConfig {
   apiUrl: string;
+  pluginUrl?: string;
+  useProxy?: boolean;
+  proxyUrl?: string;
+  deptHeadsCanComplete?: boolean;
   user: {
+    id: number;
     username: string;
+    email: string;
     displayName: string;
     role: UserRole;
   };

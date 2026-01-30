@@ -54,6 +54,7 @@ absenzflow/
 │   │   ├── components/   # UI Components
 │   │   ├── api/          # API Client
 │   │   └── types/        # TypeScript Types
+│   ├── assets/           # Statische Assets (Logo, etc.)
 │   ├── includes/         # PHP Classes
 │   ├── absenzflow.php    # Plugin Main File
 │   ├── package.json      # Node.js Dependencies
@@ -115,8 +116,22 @@ npm run build
 
 2. Plugin nach WordPress kopieren:
 ```bash
+# Methode 1: Kopieren (für einfache Installation)
 cp -r wordpress-plugin/ /path/to/wordpress/wp-content/plugins/absenzflow/
+
+# Methode 2: Softlink (empfohlen für Entwicklung/Updates)
+ln -s /absolute/path/to/absenzflow/wordpress-plugin /path/to/wordpress/wp-content/plugins/absenzflow
 ```
+
+**Wichtig:** Das `assets/` Verzeichnis muss ebenfalls ins WordPress-Plugin kopiert/verlinkt werden:
+```bash
+# Falls nicht automatisch mitkopiert:
+cp -r wordpress-plugin/assets/ /path/to/wordpress/wp-content/plugins/absenzflow/assets/
+
+# Oder bei Softlink-Verwendung bereits enthalten
+```
+
+**Vorteil Softlink:** Updates werden direkt synchronisiert - einfach `npm run build` ausführen, ohne erneut zu kopieren.
 
 3. In WordPress aktivieren: **Plugins → AbsenzFlow → Aktivieren**
 
