@@ -173,7 +173,7 @@ const AbsenceDetail: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 text-blue-600 hover:text-blue-800"
+          className="mt-4 px-4 py-2 text-white-600 hover:text-white-800"
         >
           ← Zurück zum Dashboard
         </button>
@@ -187,7 +187,7 @@ const AbsenceDetail: React.FC = () => {
       <div className="mb-6">
         <button
           onClick={() => navigate('/')}
-          className="text-blue-600 hover:text-blue-800 mb-4 flex items-center"
+          className="text-white-600 hover:text-white-800 mb-4 flex items-center"
         >
           ← Zurück zum Dashboard
         </button>

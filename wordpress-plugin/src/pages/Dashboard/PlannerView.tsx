@@ -148,12 +148,12 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <button
           onClick={() => setCalendarExpanded(!calendarExpanded)}
-          className="w-full flex items-center justify-between text-left"
+          className="group w-full flex items-center justify-between text-left hover:bg-gray-700 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors"
         >
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-gray-900 group-hover:text-white">
             Kalender
           </h2>
-          <span className="text-gray-500">
+          <span className="text-gray-500 group-hover:text-white">
             {calendarExpanded ? '▼' : '▶'}
           </span>
         </button>
@@ -169,12 +169,12 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <button
           onClick={() => setAbsencesExpanded(!absencesExpanded)}
-          className="w-full flex items-center justify-between text-left"
+          className="group w-full flex items-center justify-between text-left hover:bg-gray-700 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors"
         >
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-gray-900 group-hover:text-white">
             Alle Abwesenheiten ({absences.length})
           </h2>
-          <span className="text-gray-500">
+          <span className="text-gray-500 group-hover:text-white">
             {absencesExpanded ? '▼' : '▶'}
           </span>
         </button>
