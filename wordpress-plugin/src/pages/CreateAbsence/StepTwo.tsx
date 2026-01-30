@@ -117,6 +117,19 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
       setSubmitting(true);
       setError(null);
 
+      // Validierung: Jede Stunde muss entweder "kann entfallen" oder Hinweise haben
+      const invalidLessons = lessons.filter(
+        lesson => !lesson.can_be_canceled && (!lesson.notes || lesson.notes.trim() === '')
+      );
+
+      if (invalidLessons.length > 0) {
+        setError(
+          `Bitte geben Sie für jede Stunde entweder "kann entfallen" an oder fügen Sie einen Vertretungs-Hinweis hinzu. ${invalidLessons.length} Stunde(n) ${invalidLessons.length === 1 ? 'fehlt' : 'fehlen'} noch.`
+        );
+        setSubmitting(false);
+        return;
+      }
+
       await api.createAbsence({
         reason: stepOneData.reason,
         start_date: format(stepOneData.startDate, 'yyyy-MM-dd'),
