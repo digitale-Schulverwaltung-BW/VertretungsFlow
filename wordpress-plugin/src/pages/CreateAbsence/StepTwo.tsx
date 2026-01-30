@@ -187,13 +187,25 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
           </div>
         ) : lessons.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">Keine Stunden gefunden für den gewählten Zeitraum.</p>
-            <button
-              onClick={onBack}
-              className="mt-4 px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Zurück
-            </button>
+            <p className="text-gray-600 mb-2">Keine Stunden gefunden für den gewählten Zeitraum.</p>
+            <p className="text-sm text-gray-500 mb-6">
+              Sie können die Abwesenheit trotzdem speichern, um für Vertretungen nicht eingeteilt zu werden.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={onBack}
+                className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Zurück
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {submitting ? 'Wird gespeichert...' : 'Trotzdem speichern'}
+              </button>
+            </div>
           </div>
         ) : (
           <>
