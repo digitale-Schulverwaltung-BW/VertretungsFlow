@@ -5,16 +5,22 @@ import Dashboard from './pages/Dashboard';
 import CreateAbsence from './pages/CreateAbsence';
 import AbsenceDetail from './pages/AbsenceDetail';
 import type { User } from './types';
-import logo from './assets/logo.png';
 
 const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
+  const config = window.absenzflowConfig;
+  const logoUrl = config?.pluginUrl ? `${config.pluginUrl}src/assets/logo.png` : '';
+
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link to="/" className="flex items-center px-2 py-2 text-gray-900">
-              <img src={logo} alt="AbsenzFlow" className="h-8" />
+              {logoUrl ? (
+                <img src={logoUrl} alt="AbsenzFlow" className="h-8" />
+              ) : (
+                <span className="text-xl font-bold">AbsenzFlow</span>
+              )}
             </Link>
             {user && (
               <>

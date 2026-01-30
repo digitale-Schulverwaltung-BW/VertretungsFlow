@@ -14,6 +14,7 @@ import type {
 // WordPress config interface
 interface AbsenzFlowConfig {
   apiUrl: string;
+  pluginUrl?: string;
   useProxy?: boolean;
   proxyUrl?: string;
   deptHeadsCanComplete?: boolean;
