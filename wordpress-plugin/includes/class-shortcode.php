@@ -93,7 +93,16 @@ class AbsenzFlow_Shortcode {
     public function render_shortcode($atts) {
         // User muss eingeloggt sein
         if (!is_user_logged_in()) {
-            return '<div class="absenzflow-error">Bitte melden Sie sich an, um AbsenzFlow zu nutzen.</div>';
+            // Redirect zur WordPress-Login-Seite mit Rücksprung zur aktuellen Seite
+            $login_url = wp_login_url(get_permalink());
+
+            return '<div class="absenzflow-login-redirect">
+                <p>Sie werden zum Login weitergeleitet...</p>
+                <script>window.location.href = ' . json_encode($login_url) . ';</script>
+                <noscript>
+                    <p><a href="' . esc_url($login_url) . '">Bitte hier klicken, um sich anzumelden</a></p>
+                </noscript>
+            </div>';
         }
         
         // API URL muss konfiguriert sein
