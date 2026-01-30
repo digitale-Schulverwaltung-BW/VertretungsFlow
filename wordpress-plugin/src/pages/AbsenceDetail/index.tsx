@@ -229,7 +229,7 @@ const AbsenceDetail: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Lehrkraft */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Lehrkraft</h3>
+            <h3 className="text-sm font-bold text-blue-600 mb-1">Lehrkraft</h3>
             <p className="text-lg text-gray-900">
               {absence.teacher.full_name || absence.teacher.username}
             </p>
@@ -237,7 +237,7 @@ const AbsenceDetail: React.FC = () => {
 
           {/* Zeitraum */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Zeitraum</h3>
+            <h3 className="text-sm font-bold text-blue-600 mb-1">Zeitraum</h3>
             <p className="text-lg text-gray-900">
               {format(new Date(absence.start_date), 'dd.MM.yyyy', { locale: de })} -{' '}
               {format(new Date(absence.end_date), 'dd.MM.yyyy', { locale: de })}
@@ -249,13 +249,13 @@ const AbsenceDetail: React.FC = () => {
 
           {/* Grund */}
           <div className="md:col-span-2">
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Grund</h3>
+            <h3 className="text-sm font-bold text-blue-600 mb-1">Grund</h3>
             <p className="text-lg text-gray-900">{absence.reason}</p>
           </div>
 
           {/* Erstellt am */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Erstellt am</h3>
+            <h3 className="text-sm font-bold text-blue-600 mb-1">Erstellt am</h3>
             <p className="text-gray-900">
               {format(new Date(absence.created_at), 'dd.MM.yyyy HH:mm', { locale: de })}
             </p>
@@ -264,7 +264,7 @@ const AbsenceDetail: React.FC = () => {
           {/* Genehmigt/Erledigt */}
           {absence.approved_at && (
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Genehmigt am</h3>
+              <h3 className="text-sm font-bold text-blue-600 mb-1">Genehmigt am</h3>
               <p className="text-gray-900">
                 {format(new Date(absence.approved_at), 'dd.MM.yyyy HH:mm', { locale: de })}
               </p>
@@ -273,7 +273,7 @@ const AbsenceDetail: React.FC = () => {
 
           {absence.completed_at && (
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Erledigt am</h3>
+              <h3 className="text-sm font-bold text-blue-600 mb-1">Erledigt am</h3>
               <p className="text-gray-900">
                 {format(new Date(absence.completed_at), 'dd.MM.yyyy HH:mm', { locale: de })}
               </p>

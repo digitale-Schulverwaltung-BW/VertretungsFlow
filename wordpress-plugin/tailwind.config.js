@@ -9,6 +9,11 @@ export default {
       maxWidth: {
         '4xl': '100%',  // Full width statt Standard 56rem
       },
+      fontSize: {
+        'xs': '11px',
+        'sm': '14px',
+        'xl': '17px',
+      },
       colors: {
         primary: {
           50: '#f0f9ff',
