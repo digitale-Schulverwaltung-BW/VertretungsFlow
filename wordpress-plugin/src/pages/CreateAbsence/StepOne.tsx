@@ -27,6 +27,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   const [endLesson, setEndLesson] = useState<number>(16);
   const [errors, setErrors] = useState<string[]>([]);
   const [leftMonth, setLeftMonth] = useState<Date>(new Date());
+  const [rightMonth, setRightMonth] = useState<Date>(new Date());
 
   const handleStartDayClick = (day: Date) => {
     // Einzelklick im linken Picker: immer nur Start-Datum setzen
@@ -126,8 +127,21 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     secondary: 'bg-gray-300 text-gray-600 rounded-full',
   };
 
-  // Rechter Kalender zeigt immer den Folgemonat
-  const rightMonth = new Date(leftMonth.getFullYear(), leftMonth.getMonth() + 1);
+  const handleLeftMonthChange = (month: Date) => {
+    setLeftMonth(month);
+    // Nur synchronisieren wenn noch keine Auswahl
+    if (!dateRange?.from) {
+      setRightMonth(month);
+    }
+  };
+
+  const handleRightMonthChange = (month: Date) => {
+    setRightMonth(month);
+    // Nur synchronisieren wenn noch keine Auswahl
+    if (!dateRange?.from) {
+      setLeftMonth(month);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -199,7 +213,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   onSelect={handleStartDateSelect}
                   onDayClick={handleStartDayClick}
                   month={leftMonth}
-                  onMonthChange={setLeftMonth}
+                  onMonthChange={handleLeftMonthChange}
                   locale={de}
                   className="border border-gray-300 rounded-md p-3"
                   disabled={{ before: new Date() }}
@@ -215,11 +229,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   onSelect={handleEndDateSelect}
                   onDayClick={handleEndDayClick}
                   month={rightMonth}
-                  onMonthChange={(month) => {
-                    // Wenn User im rechten Kalender navigiert, passe linken an
-                    const newLeftMonth = new Date(month.getFullYear(), month.getMonth() - 1);
-                    setLeftMonth(newLeftMonth);
-                  }}
+                  onMonthChange={handleRightMonthChange}
                   locale={de}
                   className="border border-gray-300 rounded-md p-3"
                   disabled={{ before: new Date() }}
