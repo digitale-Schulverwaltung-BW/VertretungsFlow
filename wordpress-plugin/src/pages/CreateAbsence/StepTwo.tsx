@@ -19,6 +19,7 @@ interface LessonWithMeta extends Lesson {
 const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
   const [lessons, setLessons] = useState<LessonWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState<string>('Verbinde mit WebUntis...');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [allCanceled, setAllCanceled] = useState(false);
@@ -32,12 +33,31 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
       setLoading(true);
       setError(null);
 
+      // Calculate estimated items to process
+      const daysDiff = Math.ceil(
+        (stepOneData.endDate.getTime() - stepOneData.startDate.getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1;
+      const periodsPerDay = stepOneData.endLesson - stepOneData.startLesson + 1;
+      const estimatedItems = daysDiff * periodsPerDay;
+
+      // Progress phases
+      setLoadingProgress('Verbinde mit WebUntis...');
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      setLoadingProgress(`Lade Stundenplan für ${daysDiff} Tag${daysDiff > 1 ? 'e' : ''}...`);
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      setLoadingProgress(`Verarbeite ca. ${estimatedItems} Stunden...`);
+
       const response = await api.fetchLessons({
         start_date: format(stepOneData.startDate, 'yyyy-MM-dd'),
         end_date: format(stepOneData.endDate, 'yyyy-MM-dd'),
         start_period: stepOneData.startLesson,
         end_period: stepOneData.endLesson,
       });
+
+      setLoadingProgress(`${response.length} Stunden gefunden, bereite Anzeige vor...`);
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Add metadata for cancellation and notes
       const lessonsWithMeta: LessonWithMeta[] = response.map((lesson) => ({
@@ -139,7 +159,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
 
         {error && (
           <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
-            <div className="flex">
+            <div className="flex items-center">
               <div className="flex-shrink-0">
                 <svg
                   className="h-5 w-5 text-red-400"
@@ -163,7 +183,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-            <span className="ml-3 text-gray-700">Lade Stunden...</span>
+            <span className="ml-3 text-gray-700">{loadingProgress}</span>
           </div>
         ) : lessons.length === 0 ? (
           <div className="text-center py-12">

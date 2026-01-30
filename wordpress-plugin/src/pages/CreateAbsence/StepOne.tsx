@@ -26,6 +26,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   const [startLesson, setStartLesson] = useState<number>(1);
   const [endLesson, setEndLesson] = useState<number>(16);
   const [errors, setErrors] = useState<string[]>([]);
+  const [leftMonth, setLeftMonth] = useState<Date>(new Date());
 
   const handleStartDayClick = (day: Date) => {
     // Einzelklick im linken Picker: immer nur Start-Datum setzen
@@ -35,7 +36,8 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     if (dateRange?.to && newStartDate > dateRange.to) {
       setDateRange({ from: newStartDate, to: newStartDate });
     } else {
-      setDateRange({ from: newStartDate, to: dateRange?.to });
+      // Wenn kein End-Datum existiert, setze es auf Start-Datum (eintägige Absenz)
+      setDateRange({ from: newStartDate, to: dateRange?.to || newStartDate });
     }
   };
 
@@ -60,7 +62,8 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     if (dateRange?.from && newEndDate < dateRange.from) {
       setDateRange({ from: newEndDate, to: newEndDate });
     } else {
-      setDateRange({ from: dateRange?.from, to: newEndDate });
+      // Wenn kein Start-Datum existiert, setze es auf End-Datum (eintägige Absenz)
+      setDateRange({ from: dateRange?.from || newEndDate, to: newEndDate });
     }
   };
 
@@ -123,6 +126,9 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     secondary: 'bg-gray-300 text-gray-600 rounded-full',
   };
 
+  // Rechter Kalender zeigt immer den Folgemonat
+  const rightMonth = new Date(leftMonth.getFullYear(), leftMonth.getMonth() + 1);
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-lg p-8">
@@ -131,7 +137,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
 
         {errors.length > 0 && (
           <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
-            <div className="flex">
+            <div className="flex items-center">
               <div className="flex-shrink-0">
                 <svg
                   className="h-5 w-5 text-red-400"
@@ -192,6 +198,8 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   selected={dateRange}
                   onSelect={handleStartDateSelect}
                   onDayClick={handleStartDayClick}
+                  month={leftMonth}
+                  onMonthChange={setLeftMonth}
                   locale={de}
                   className="border border-gray-300 rounded-md p-3"
                   disabled={{ before: new Date() }}
@@ -206,6 +214,12 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   selected={dateRange}
                   onSelect={handleEndDateSelect}
                   onDayClick={handleEndDayClick}
+                  month={rightMonth}
+                  onMonthChange={(month) => {
+                    // Wenn User im rechten Kalender navigiert, passe linken an
+                    const newLeftMonth = new Date(month.getFullYear(), month.getMonth() - 1);
+                    setLeftMonth(newLeftMonth);
+                  }}
                   locale={de}
                   className="border border-gray-300 rounded-md p-3"
                   disabled={{ before: new Date() }}
