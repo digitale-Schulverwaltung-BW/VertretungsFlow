@@ -2,6 +2,7 @@ import React from 'react';
 import type { Absence } from '../../types';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { getAbsenceReasonLabel } from '../../constants';
 
 interface AbsenceTableProps {
   absences: Absence[];
@@ -81,7 +82,7 @@ const AbsenceTable: React.FC<AbsenceTableProps> = ({ absences, onAbsenceClick })
                 {formatDate(absence.start_date)} - {formatDate(absence.end_date)}
               </td>
               <td className="px-6 py-4 text-sm text-gray-600">
-                {absence.reason}
+                {getAbsenceReasonLabel(absence.reason)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 {getStatusBadge(absence.status)}
