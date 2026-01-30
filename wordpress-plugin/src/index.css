@@ -31,3 +31,8 @@
   width: 1rem;
   height: 1rem;
 }
+
+/* Prevent calendar wobble by keeping consistent font-size */
+#absenzflow-root .rdp-selected {
+  font-size: inherit !important;
+}
