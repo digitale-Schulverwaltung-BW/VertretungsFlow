@@ -45,3 +45,6 @@ build/
 *.sqlite
 *.sqlite3
 wordpress-plugin/package-lock.json
+
+# Uploads (user-generated files)
+backend/uploads/

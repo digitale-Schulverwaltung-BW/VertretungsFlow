@@ -254,6 +254,30 @@ const AbsenceDetail: React.FC = () => {
             <p className="text-lg text-gray-900">{getAbsenceReasonLabel(absence.reason)}</p>
           </div>
 
+          {/* Exkursion: Klassen */}
+          {absence.excursion_classes && (
+            <div>
+              <h3 className="text-sm font-bold text-blue-600 mb-1">Klasse(n)</h3>
+              <p className="text-lg text-gray-900">{absence.excursion_classes}</p>
+            </div>
+          )}
+
+          {/* Privat/Sonstiges: Begründung */}
+          {absence.personal_reason && (
+            <div>
+              <h3 className="text-sm font-bold text-blue-600 mb-1">Begründung</h3>
+              <p className="text-lg text-gray-900">{absence.personal_reason}</p>
+            </div>
+          )}
+
+          {/* Bemerkungen */}
+          {absence.admin_notes && (
+            <div className="md:col-span-2">
+              <h3 className="text-sm font-bold text-blue-600 mb-1">Bemerkungen</h3>
+              <p className="text-gray-900 whitespace-pre-wrap">{absence.admin_notes}</p>
+            </div>
+          )}
+
           {/* Erstellt am */}
           <div>
             <h3 className="text-sm font-bold text-blue-600 mb-1">Erstellt am</h3>
@@ -298,7 +322,9 @@ const AbsenceDetail: React.FC = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stunde</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fach</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Klasse</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kann entfallen</th>
+                  {absence.reason !== 'personal' && (
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kann entfallen</th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hinweise Lehrkraft</th>
                 </tr>
               </thead>
@@ -317,17 +343,19 @@ const AbsenceDetail: React.FC = () => {
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                       {lesson.class_name || '-'}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-center">
-                      {lesson.can_be_canceled ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          ✓ Ja
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          - Nein
-                        </span>
-                      )}
-                    </td>
+                    {absence.reason !== 'personal' && (
+                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                        {lesson.can_be_canceled ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            ✓ Ja
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            - Nein
+                          </span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {lesson.notes ? (
                         <div className="max-w-md">
@@ -346,6 +374,39 @@ const AbsenceDetail: React.FC = () => {
           <p className="text-gray-500 text-center py-4">Keine betroffenen Stunden</p>
         )}
       </div>
+
+      {/* Anhänge */}
+      {absence.attachments && absence.attachments.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Anhänge ({absence.attachments.length})
+          </h2>
+          <ul className="space-y-2">
+            {absence.attachments.map((attachment) => (
+              <li key={attachment.id} className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-md">
+                <div className="flex items-center space-x-3">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{attachment.filename}</p>
+                    <p className="text-xs text-gray-500">
+                      {(attachment.file_size / 1024).toFixed(1)} KB • {format(new Date(attachment.uploaded_at), 'dd.MM.yyyy HH:mm', { locale: de })}
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={api.getAttachmentDownloadUrl(absence.id!, attachment.id)}
+                  download={attachment.filename}
+                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Download
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Action Buttons */}
       {(canApprove || canComplete || canDelete) && (

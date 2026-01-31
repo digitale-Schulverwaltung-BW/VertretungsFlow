@@ -23,6 +23,9 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [allCanceled, setAllCanceled] = useState(false);
+  const [adminNotes, setAdminNotes] = useState<string>('');
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLessons();
@@ -105,6 +108,42 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
     setLessons(newLessons);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
+
+    if (!e.target.files) return;
+
+    const files = Array.from(e.target.files);
+
+    if (files.length + attachments.length > 5) {
+      setUploadError('Maximal 5 Dateien erlaubt');
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024;
+    const oversized = files.filter(f => f.size > maxSize);
+    if (oversized.length > 0) {
+      setUploadError(`Datei(en) zu groß (max 10 MB): ${oversized.map(f => f.name).join(', ')}`);
+      return;
+    }
+
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif',
+                          'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                          'text/plain'];
+
+    const invalidTypes = files.filter(f => !allowedTypes.includes(f.type));
+    if (invalidTypes.length > 0) {
+      setUploadError(`Ungültige Dateitypen: ${invalidTypes.map(f => f.name).join(', ')}`);
+      return;
+    }
+
+    setAttachments([...attachments, ...files]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
   const formatPeriod = (lesson: LessonWithMeta): string => {
     if (lesson.end_period && lesson.end_period !== lesson.period) {
       return `${lesson.period}-${lesson.end_period}`;
@@ -159,12 +198,15 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         return;
       }
 
-      await api.createAbsence({
+      const createdAbsence = await api.createAbsence({
         reason: stepOneData.reason,
         start_date: format(stepOneData.startDate, 'yyyy-MM-dd'),
         end_date: format(stepOneData.endDate, 'yyyy-MM-dd'),
         start_period: stepOneData.startLesson,
         end_period: stepOneData.endLesson,
+        excursion_classes: stepOneData.excursionClasses,
+        personal_reason: stepOneData.personalReason,
+        admin_notes: adminNotes || undefined,
         affected_lessons: lessons.map((lesson) => ({
           date: lesson.date,
           period: lesson.period,
@@ -176,6 +218,18 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
           notes: lesson.notes || undefined,
         })),
       });
+
+      // Attachments hochladen
+      if (attachments.length > 0 && createdAbsence.id) {
+        for (const file of attachments) {
+          try {
+            await api.uploadAttachment(createdAbsence.id, file);
+          } catch (uploadErr) {
+            console.error('Upload error:', uploadErr);
+            setError('Abwesenheit erstellt, aber Upload-Fehler bei: ' + file.name);
+          }
+        }
+      }
 
       onSubmit();
     } catch (err) {
@@ -191,6 +245,8 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
     'd.M.yyyy',
     { locale: de }
   )}`;
+
+  const showCanBeCanceledColumn = stepOneData.reason !== 'personal';
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -251,6 +307,71 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
           </div>
         ) : (
           <>
+            {/* Bemerkungen */}
+            <div className="mb-6">
+              <label
+                htmlFor="adminNotes"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Bemerkungen für Schulleitung/Vertretungsplaner (optional)
+              </label>
+              <textarea
+                id="adminNotes"
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                rows={3}
+                placeholder="z.B. Hinweise zur Vertretungsplanung..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* File Upload */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Anhänge (optional, max 5 Dateien, je max 10 MB)
+              </label>
+
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+                id="fileUpload"
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.txt"
+              />
+
+              <label
+                htmlFor="fileUpload"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Dateien hinzufügen
+              </label>
+
+              {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
+
+              {attachments.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {attachments.map((file, index) => (
+                    <li key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
+                      <span className="text-sm text-gray-700">
+                        {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(index)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -267,18 +388,20 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Fach
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={allCanceled}
-                          onChange={(e) => handleSelectAllCanceled(e.target.checked)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          title="Alle auswählen/abwählen"
-                        />
-                        <span>Kann entfallen</span>
-                      </div>
-                    </th>
+                    {showCanBeCanceledColumn && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={allCanceled}
+                            onChange={(e) => handleSelectAllCanceled(e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            title="Alle auswählen/abwählen"
+                          />
+                          <span>Kann entfallen</span>
+                        </div>
+                      </th>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Vertretungsvorschlag
                     </th>
@@ -299,14 +422,16 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {lesson.subject}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={lesson.can_be_canceled}
-                          onChange={(e) => handleCheckboxChange(index, e.target.checked)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                      </td>
+                      {showCanBeCanceledColumn && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={lesson.can_be_canceled}
+                            onChange={(e) => handleCheckboxChange(index, e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                        </td>
+                      )}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <input

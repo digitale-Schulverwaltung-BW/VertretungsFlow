@@ -5,6 +5,8 @@ Lädt Umgebungsvariablen aus .env
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from typing import List, Union
+import os
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -54,7 +56,12 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "absenzflow@schule.de"
     SMTP_USE_TLS: bool = True
-    
+
+    # File Upload Configuration
+    # Default: backend/uploads (außerhalb webroot, im Projekt-Tree)
+    UPLOAD_DIR: str = str(Path(__file__).resolve().parent.parent.parent / "uploads")
+    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10 MB
+
     # JWT Token
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 Stunden
     ALGORITHM: str = "HS256"

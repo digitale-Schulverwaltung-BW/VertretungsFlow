@@ -16,6 +16,8 @@ export interface StepOneData {
   endDate: Date;
   startLesson: number;
   endLesson: number;
+  excursionClasses?: string;
+  personalReason?: string;
 }
 
 const lessonNumbers = Array.from({ length: 16 }, (_, i) => i + 1);
@@ -28,6 +30,8 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   const [errors, setErrors] = useState<string[]>([]);
   const [leftMonth, setLeftMonth] = useState<Date>(new Date());
   const [rightMonth, setRightMonth] = useState<Date>(new Date());
+  const [excursionClasses, setExcursionClasses] = useState<string>('');
+  const [personalReason, setPersonalReason] = useState<string>('');
 
   const handleStartDayClick = (day: Date) => {
     // Einzelklick im linken Picker: immer nur Start-Datum setzen
@@ -98,6 +102,14 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
       newErrors.push('Das Startdatum muss in der Zukunft liegen.');
     }
 
+    if (reason === 'excursion' && !excursionClasses.trim()) {
+      newErrors.push('Bitte geben Sie die betroffenen Klassen an.');
+    }
+
+    if ((reason === 'personal' || reason === 'other') && !personalReason.trim()) {
+      newErrors.push('Bitte geben Sie eine Begründung an.');
+    }
+
     if (newErrors.length > 0) {
       setErrors(newErrors);
       return;
@@ -109,6 +121,8 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
       endDate: dateRange!.to!,
       startLesson,
       endLesson,
+      excursionClasses: reason === 'excursion' ? excursionClasses : undefined,
+      personalReason: reason === 'personal' || reason === 'other' ? personalReason : undefined,
     });
   };
 
@@ -198,6 +212,48 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
               ))}
             </select>
           </div>
+
+          {/* Exkursion: Klassen-Input */}
+          {reason === 'excursion' && (
+            <div>
+              <label
+                htmlFor="excursionClasses"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Klasse(n) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="excursionClasses"
+                value={excursionClasses}
+                onChange={(e) => setExcursionClasses(e.target.value)}
+                placeholder="z.B. 10a, 10b"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+          )}
+
+          {/* Privat/Sonstiges: Begründung */}
+          {(reason === 'personal' || reason === 'other') && (
+            <div>
+              <label
+                htmlFor="personalReason"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Begründung <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="personalReason"
+                value={personalReason}
+                onChange={(e) => setPersonalReason(e.target.value)}
+                placeholder="z.B. Arzttermin"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+          )}
 
           {/* Datum-Range */}
           <div>

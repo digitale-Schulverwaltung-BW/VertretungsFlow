@@ -69,15 +69,21 @@ class Absence(Base):
     approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
-    
+
+    # Conditional fields
+    excursion_classes = Column(Text, nullable=True)  # Klassen bei Exkursion (Pflichtfeld wenn reason='excursion')
+    personal_reason = Column(Text, nullable=True)    # Begründung bei Privat/Sonstiges (Pflichtfeld wenn reason='personal'/'other')
+    admin_notes = Column(Text, nullable=True)        # Bemerkungen für Schulleitung/Vertretungsplaner (optional)
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     teacher = relationship("User", back_populates="absences", foreign_keys=[teacher_id])
     approved_by_user = relationship("User", back_populates="approvals", foreign_keys=[approved_by])
     affected_lessons = relationship("AffectedLesson", back_populates="absence", cascade="all, delete-orphan")
+    attachments = relationship("AbsenceAttachment", back_populates="absence", cascade="all, delete-orphan")
 
 
 class AffectedLesson(Base):
@@ -108,6 +114,30 @@ class AffectedLesson(Base):
     
     # Relationships
     absence = relationship("Absence", back_populates="affected_lessons")
+
+
+class AbsenceAttachment(Base):
+    """
+    Datei-Anhänge zu Abwesenheiten
+    Speichert Metadaten, Datei liegt außerhalb webroot
+    """
+    __tablename__ = "absence_attachments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    absence_id = Column(Integer, ForeignKey("absences.id"), nullable=False)
+
+    # File metadata
+    filename = Column(String(255), nullable=False)             # Original filename
+    stored_filename = Column(String(255), nullable=False)      # UUID-based filename
+    file_path = Column(String(512), nullable=False)            # Full path in storage
+    mime_type = Column(String(100), nullable=False)            # e.g. 'application/pdf'
+    file_size = Column(Integer, nullable=False)                # in bytes
+
+    # Timestamp
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    absence = relationship("Absence", back_populates="attachments")
 
 
 class Notification(Base):

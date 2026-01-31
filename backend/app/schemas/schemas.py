@@ -86,6 +86,11 @@ class AbsenceBase(BaseModel):
     start_period: int = Field(..., ge=1, le=16)  # Max 16 Stunden pro Tag
     end_period: int = Field(..., ge=1, le=16)  # Max 16 Stunden pro Tag
 
+    # Conditional fields
+    excursion_classes: Optional[str] = None
+    personal_reason: Optional[str] = None
+    admin_notes: Optional[str] = None
+
     @field_validator('start_date', 'end_date', mode='before')
     @classmethod
     def parse_date(cls, v):
@@ -94,6 +99,24 @@ class AbsenceBase(BaseModel):
             # Wenn nur Datum (ohne Zeit), füge Mitternacht hinzu
             if 'T' not in v and ' ' not in v:
                 v = f"{v}T00:00:00"
+        return v
+
+    @field_validator('excursion_classes')
+    @classmethod
+    def validate_excursion_classes(cls, v, info):
+        """Validierung: Pflicht bei Exkursion"""
+        reason = info.data.get('reason')
+        if reason == 'excursion' and (not v or not v.strip()):
+            raise ValueError('Klasse(n) sind bei Exkursionen Pflichtfeld')
+        return v
+
+    @field_validator('personal_reason')
+    @classmethod
+    def validate_personal_reason(cls, v, info):
+        """Validierung: Pflicht bei Privat/Sonstiges"""
+        reason = info.data.get('reason')
+        if reason in ['personal', 'other'] and (not v or not v.strip()):
+            raise ValueError('Begründung ist bei Privat/Sonstiges Pflichtfeld')
         return v
 
 
@@ -116,6 +139,26 @@ class AffectedLessonUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+# ============ Attachment Schemas ============
+
+class AttachmentBase(BaseModel):
+    """Basis für Anhänge"""
+    filename: str
+    mime_type: str
+    file_size: int
+
+
+class AttachmentResponse(AttachmentBase):
+    """Response für Anhänge"""
+    id: int
+    absence_id: int
+    stored_filename: str
+    uploaded_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class AbsenceResponse(AbsenceBase):
     """Absence Response Schema"""
     id: int
@@ -126,11 +169,12 @@ class AbsenceResponse(AbsenceBase):
     completed_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
-    
+
     # Relationships
     teacher: UserResponse
     affected_lessons: List[AffectedLessonResponse] = []
-    
+    attachments: List[AttachmentResponse] = []
+
     class Config:
         from_attributes = True
 

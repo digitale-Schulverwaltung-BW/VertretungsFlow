@@ -3,14 +3,19 @@ Absences API Routes
 CRUD Operations für Abwesenheitsmeldungen
 """
 import logging
+import os
+import uuid
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from pathlib import Path
+from fastapi import APIRouter, Depends, HTTPException, status, Request, File, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+import aiofiles
 
 logger = logging.getLogger(__name__)
 
 from app.core.database import get_db
-from app.models.models import User, Absence, AffectedLesson, UserRole, AbsenceStatus
+from app.models.models import User, Absence, AffectedLesson, UserRole, AbsenceStatus, AbsenceAttachment
 from app.schemas.schemas import (
     AbsenceCreate,
     AbsenceResponse,
@@ -19,13 +24,27 @@ from app.schemas.schemas import (
     AffectedLessonUpdate,
     AffectedLessonResponse,
     FetchLessonsRequest,
-    WebUntisLesson
+    WebUntisLesson,
+    AttachmentResponse
 )
 from app.api.auth import get_current_active_user, require_role, get_wordpress_proxy_user
 from app.services.webuntis_service import webuntis_service
 from app.services.email_service import email_service
 
 router = APIRouter()
+
+# File upload configuration
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "/var/absenzflow-uploads"))
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+ALLOWED_MIME_TYPES = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain'
+]
 
 
 @router.post("/", response_model=AbsenceResponse, status_code=status.HTTP_201_CREATED)
@@ -71,7 +90,10 @@ async def create_absence(
         end_date=absence.end_date,
         start_period=absence.start_period,
         end_period=absence.end_period,
-        status=AbsenceStatus.SUBMITTED
+        status=AbsenceStatus.SUBMITTED,
+        excursion_classes=absence.excursion_classes,
+        personal_reason=absence.personal_reason,
+        admin_notes=absence.admin_notes
     )
     
     db.add(db_absence)
@@ -469,13 +491,26 @@ async def complete_absence(
     from datetime import datetime
     absence.status = AbsenceStatus.COMPLETED
     absence.completed_at = datetime.utcnow()
-    
+
+    # Attachments automatisch löschen
+    if absence.attachments:
+        logger.info(f"Deleting {len(absence.attachments)} attachments for completed absence {absence_id}")
+
+        for attachment in absence.attachments:
+            # Datei von Disk löschen
+            file_path = Path(attachment.file_path)
+            if file_path.exists():
+                file_path.unlink()
+                logger.info(f"Deleted file: {file_path}")
+
+        # DB-Einträge werden durch CASCADE automatisch gelöscht
+
     db.commit()
-    
+
     # TODO: E-Mail-Benachrichtigung an Lehrkraft
     # await email_service.send_absence_completed_notification(...)
-    
-    return {"message": "Absence marked as completed"}
+
+    return {"message": "Absence marked as completed, attachments deleted"}
 
 
 @router.delete("/{absence_id}")
@@ -522,5 +557,180 @@ async def delete_absence(
     
     db.delete(absence)
     db.commit()
-    
+
     return {"message": "Absence deleted"}
+
+
+# ============ Attachment Endpoints ============
+
+@router.post("/{absence_id}/attachments", response_model=AttachmentResponse)
+async def upload_attachment(
+    absence_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_wordpress_proxy_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lädt Datei-Anhang zu Abwesenheit hoch
+
+    Security:
+    - Authentifizierung erforderlich
+    - Nur eigene Absenzen (oder Admin/Planner)
+    - Dateivalidierung (Typ, Größe)
+    - Storage außerhalb webroot
+    """
+    # Abwesenheit laden
+    absence = db.query(Absence).filter(Absence.id == absence_id).first()
+    if not absence:
+        raise HTTPException(status_code=404, detail="Absence not found")
+
+    # Berechtigung prüfen
+    if current_user.role not in [UserRole.ADMIN, UserRole.PLANNER]:
+        if absence.teacher_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Status-Check: Keine Uploads bei erledigten Absenzen
+    if absence.status == AbsenceStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Cannot upload to completed absence")
+
+    # Dateivalidierung: MIME-Type
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type {file.content_type} not allowed"
+        )
+
+    # Dateivalidierung: Größe (Read in chunks)
+    file_size = 0
+    temp_content = []
+
+    while chunk := await file.read(8192):  # 8KB chunks
+        file_size += len(chunk)
+        if file_size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File too large (max {MAX_FILE_SIZE / 1024 / 1024} MB)"
+            )
+        temp_content.append(chunk)
+
+    # Generiere sicheren Dateinamen
+    file_ext = Path(file.filename).suffix
+    stored_filename = f"{uuid.uuid4()}{file_ext}"
+
+    # Erstelle Unterverzeichnis pro Abwesenheit
+    absence_dir = UPLOAD_DIR / f"absence_{absence_id}"
+    absence_dir.mkdir(parents=True, exist_ok=True)
+
+    file_path = absence_dir / stored_filename
+
+    # Speichere Datei
+    async with aiofiles.open(file_path, 'wb') as f:
+        for chunk in temp_content:
+            await f.write(chunk)
+
+    # Speichere Metadaten in DB
+    attachment = AbsenceAttachment(
+        absence_id=absence_id,
+        filename=file.filename,
+        stored_filename=stored_filename,
+        file_path=str(file_path),
+        mime_type=file.content_type,
+        file_size=file_size
+    )
+
+    db.add(attachment)
+    db.commit()
+    db.refresh(attachment)
+
+    logger.info(f"File uploaded: {file.filename} -> {stored_filename} ({file_size} bytes)")
+
+    return attachment
+
+
+@router.get("/{absence_id}/attachments/{attachment_id}")
+async def download_attachment(
+    absence_id: int,
+    attachment_id: int,
+    current_user: User = Depends(get_wordpress_proxy_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lädt Anhang herunter (auth-geschützt)
+
+    Security:
+    - Authentifizierung erforderlich
+    - Berechtigung wird geprüft
+    - Streaming für große Dateien
+    """
+    # Attachment laden
+    attachment = db.query(AbsenceAttachment).filter(
+        AbsenceAttachment.id == attachment_id,
+        AbsenceAttachment.absence_id == absence_id
+    ).first()
+
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    # Abwesenheit laden für Berechtigungsprüfung
+    absence = attachment.absence
+
+    # Berechtigung prüfen
+    if current_user.role == UserRole.TEACHER:
+        if absence.teacher_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Datei existiert?
+    file_path = Path(attachment.file_path)
+    if not file_path.exists():
+        logger.error(f"File not found on disk: {file_path}")
+        raise HTTPException(status_code=404, detail="File not found on server")
+
+    # Streaming-Response
+    return FileResponse(
+        path=file_path,
+        media_type=attachment.mime_type,
+        filename=attachment.filename
+    )
+
+
+@router.delete("/{absence_id}/attachments/{attachment_id}")
+async def delete_attachment(
+    absence_id: int,
+    attachment_id: int,
+    current_user: User = Depends(get_wordpress_proxy_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Löscht Anhang
+
+    Erlaubt: Eigentümer (wenn nicht completed), Admin, Planner
+    """
+    # Attachment laden
+    attachment = db.query(AbsenceAttachment).filter(
+        AbsenceAttachment.id == attachment_id,
+        AbsenceAttachment.absence_id == absence_id
+    ).first()
+
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    absence = attachment.absence
+
+    # Berechtigung prüfen
+    if current_user.role not in [UserRole.ADMIN, UserRole.PLANNER]:
+        if absence.teacher_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        if absence.status == AbsenceStatus.COMPLETED:
+            raise HTTPException(status_code=400, detail="Cannot delete from completed absence")
+
+    # Datei von Disk löschen
+    file_path = Path(attachment.file_path)
+    if file_path.exists():
+        file_path.unlink()
+        logger.info(f"Deleted file: {file_path}")
+
+    # DB-Eintrag löschen
+    db.delete(attachment)
+    db.commit()
+
+    return {"message": "Attachment deleted"}

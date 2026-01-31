@@ -9,6 +9,7 @@ import type {
   LoginResponse,
   FetchLessonsRequest,
   CreateAbsenceRequest,
+  Attachment,
 } from '../types';
 
 // WordPress config interface
@@ -282,6 +283,43 @@ class APIClient {
       url: `/users/${userId}`,
       data,
     });
+  }
+
+  /**
+   * Upload attachment to absence
+   */
+  async uploadAttachment(absenceId: number, file: File): Promise<Attachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await this.client.post(
+      `/absences/${absenceId}/attachments`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  }
+
+  /**
+   * Delete attachment
+   */
+  async deleteAttachment(absenceId: number, attachmentId: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>({
+      method: 'DELETE',
+      url: `/absences/${absenceId}/attachments/${attachmentId}`,
+    });
+  }
+
+  /**
+   * Get download URL for attachment
+   */
+  getAttachmentDownloadUrl(absenceId: number, attachmentId: number): string {
+    const token = this.getToken();
+    return `${this.baseURL}/absences/${absenceId}/attachments/${attachmentId}?token=${token}`;
   }
 }
 
