@@ -18,6 +18,7 @@ interface AbsenzFlowConfig {
   pluginUrl?: string;
   useProxy?: boolean;
   proxyUrl?: string;
+  nonce?: string;
   deptHeadsCanComplete?: boolean;
   user?: {
     id: number;
@@ -127,8 +128,14 @@ class APIClient {
         token: this.token,
       };
 
+      // Get WordPress nonce from config
+      const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
+
       const response = await axios.post(this.proxyURL, proxyData, {
         withCredentials: true, // WordPress session cookies for authentication
+        headers: {
+          'X-WP-Nonce': nonce || '', // WordPress REST API nonce for CSRF protection
+        },
       });
       return response.data;
     } else {
@@ -292,12 +299,16 @@ class APIClient {
     const formData = new FormData();
     formData.append('file', file);
 
+    // Get WordPress nonce
+    const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
+
     // Use dedicated file upload proxy endpoint (not the regular JSON proxy)
     const uploadUrl = `/wp-json/absenzflow/v1/proxy/upload/${absenceId}`;
 
     const response = await axios.post(uploadUrl, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
+        'X-WP-Nonce': nonce || '',
       },
       withCredentials: true, // WordPress session cookies
     });
