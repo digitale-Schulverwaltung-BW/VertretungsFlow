@@ -9,7 +9,7 @@ from typing import List
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status, Request, File, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload, joinedload
 import aiofiles
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,14 @@ async def create_absence(
     db.add(db_absence)
     db.commit()
     db.refresh(db_absence)
-    
+
+    # Eager load relationships nach refresh
+    db_absence = db.query(Absence).options(
+        selectinload(Absence.affected_lessons),
+        selectinload(Absence.attachments),
+        joinedload(Absence.teacher)
+    ).filter(Absence.id == db_absence.id).first()
+
     # Betroffene Stunden aus WebUntis abrufen
     lessons = await webuntis_service.get_timetable_for_teacher(
         current_user.username,
@@ -255,8 +262,12 @@ async def list_absences(
     Returns:
         Liste von Abwesenheiten
     """
-    query = db.query(Absence)
-    
+    query = db.query(Absence).options(
+        selectinload(Absence.affected_lessons),
+        selectinload(Absence.attachments),
+        joinedload(Absence.teacher)
+    )
+
     # Filter nach Rolle
     if current_user.role == UserRole.TEACHER:
         query = query.filter(Absence.teacher_id == current_user.id)
@@ -293,8 +304,12 @@ async def get_absence(
     Raises:
         HTTPException: Wenn nicht gefunden oder keine Berechtigung
     """
-    absence = db.query(Absence).filter(Absence.id == absence_id).first()
-    
+    absence = db.query(Absence).options(
+        selectinload(Absence.affected_lessons),
+        selectinload(Absence.attachments),
+        joinedload(Absence.teacher)
+    ).filter(Absence.id == absence_id).first()
+
     if not absence:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
