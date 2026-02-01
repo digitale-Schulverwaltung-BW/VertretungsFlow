@@ -109,6 +109,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File input changed:', e.target.files);
     setUploadError(null);
 
     if (!e.target.files) return;
@@ -137,7 +138,10 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
       return;
     }
 
-    setAttachments([...attachments, ...files]);
+    console.log('Adding files to attachments:', files);
+    const newAttachments = [...attachments, ...files];
+    console.log('New attachments array:', newAttachments);
+    setAttachments(newAttachments);
   };
 
   const removeAttachment = (index: number) => {
