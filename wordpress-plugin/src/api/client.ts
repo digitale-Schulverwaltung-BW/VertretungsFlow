@@ -292,16 +292,14 @@ class APIClient {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await this.client.post(
-      `/absences/${absenceId}/attachments`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
-    return response.data;
+    return this.request<Attachment>({
+      method: 'POST',
+      url: `/absences/${absenceId}/attachments`,
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   }
 
   /**

@@ -219,8 +219,12 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         })),
       });
 
+      console.log('Created absence:', createdAbsence);
+      console.log('Attachments to upload:', attachments);
+
       // Attachments hochladen
       if (attachments.length > 0 && createdAbsence.id) {
+        console.log('Starting upload for absence ID:', createdAbsence.id);
         for (const file of attachments) {
           try {
             await api.uploadAttachment(createdAbsence.id, file);
