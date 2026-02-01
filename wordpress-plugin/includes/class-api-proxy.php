@@ -57,6 +57,21 @@ class AbsenzFlow_API_Proxy {
                 'endpoint' => array('required' => true),
             )
         ));
+
+        // File Upload Proxy (separate endpoint for multipart/form-data)
+        register_rest_route('absenzflow/v1', '/proxy/upload/(?P<absence_id>\d+)', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'proxy_file_upload'),
+            'permission_callback' => 'is_user_logged_in',
+            'args' => array(
+                'absence_id' => array(
+                    'required' => true,
+                    'validate_callback' => function($param) {
+                        return is_numeric($param);
+                    }
+                ),
+            )
+        ));
     }
     
     /**
@@ -139,6 +154,97 @@ class AbsenzFlow_API_Proxy {
         $response_body = wp_remote_retrieve_body($response);
 
         // Response zurückgeben
+        return new WP_REST_Response(
+            json_decode($response_body, true),
+            $status_code
+        );
+    }
+
+    /**
+     * Proxy File Upload (multipart/form-data)
+     */
+    public function proxy_file_upload($request) {
+        error_log('AbsenzFlow File Upload Proxy: Request received');
+        error_log('User logged in: ' . (is_user_logged_in() ? 'yes' : 'no'));
+        error_log('User ID: ' . get_current_user_id());
+
+        $options = get_option('absenzflow_options');
+        $api_url = $options['api_url'];
+        $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
+
+        if (empty($api_url)) {
+            return new WP_Error('no_api_url', 'API URL nicht konfiguriert', array('status' => 500));
+        }
+
+        if (empty($api_secret)) {
+            return new WP_Error('no_api_secret', 'API Secret nicht konfiguriert', array('status' => 500));
+        }
+
+        // Get absence_id from URL parameter
+        $absence_id = $request->get_param('absence_id');
+
+        // Check if file was uploaded
+        if (empty($_FILES) || !isset($_FILES['file'])) {
+            return new WP_Error('no_file', 'Keine Datei hochgeladen', array('status' => 400));
+        }
+
+        $file = $_FILES['file'];
+
+        // Validate upload
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return new WP_Error('upload_error', 'Fehler beim Hochladen: ' . $file['error'], array('status' => 400));
+        }
+
+        // Current WordPress user
+        $current_user = wp_get_current_user();
+        $dept_heads_can_complete = isset($options['dept_heads_can_complete']) && $options['dept_heads_can_complete'] ? '1' : '0';
+
+        // Build backend URL
+        $url = rtrim($api_url, '/') . '/absences/' . $absence_id . '/attachments';
+
+        // Prepare multipart request using cURL (wp_remote_request doesn't handle files well)
+        $ch = curl_init($url);
+
+        // Create CURLFile for the upload
+        $curl_file = new CURLFile($file['tmp_name'], $file['type'], $file['name']);
+
+        // Multipart form data
+        $post_data = array('file' => $curl_file);
+
+        // Headers
+        $headers = array(
+            'X-WordPress-Secret: ' . $api_secret,
+            'X-WordPress-User: ' . $current_user->user_login,
+            'X-WordPress-Email: ' . $current_user->user_email,
+            'X-WordPress-Name: ' . $current_user->display_name,
+            'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
+            'X-WordPress-WebUntis-Code: ' . get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
+            'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
+        );
+
+        curl_setopt_array($ch, array(
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $post_data,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false, // Allow self-signed certs
+            CURLOPT_TIMEOUT => 30
+        ));
+
+        $response_body = curl_exec($ch);
+        $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+
+        if ($curl_error) {
+            error_log('AbsenzFlow File Upload: cURL error: ' . $curl_error);
+            return new WP_Error('curl_error', $curl_error, array('status' => 500));
+        }
+
+        error_log('AbsenzFlow File Upload: Response status: ' . $status_code);
+        error_log('AbsenzFlow File Upload: Response body: ' . substr($response_body, 0, 200));
+
+        // Return response
         return new WP_REST_Response(
             json_decode($response_body, true),
             $status_code

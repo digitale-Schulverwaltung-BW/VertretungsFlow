@@ -292,14 +292,17 @@ class APIClient {
     const formData = new FormData();
     formData.append('file', file);
 
-    return this.request<Attachment>({
-      method: 'POST',
-      url: `/absences/${absenceId}/attachments`,
-      data: formData,
+    // Use dedicated file upload proxy endpoint (not the regular JSON proxy)
+    const uploadUrl = `/wp-json/absenzflow/v1/proxy/upload/${absenceId}`;
+
+    const response = await axios.post(uploadUrl, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      withCredentials: true, // WordPress session cookies
     });
+
+    return response.data;
   }
 
   /**
