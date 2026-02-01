@@ -53,6 +53,9 @@ services:
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080}
       DEBUG: ${DEBUG:-false}
+
+      # File Upload
+      UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
     volumes:
       - ./backend:/app
     ports:
