@@ -106,6 +106,7 @@ export interface WordPressConfig {
   pluginUrl?: string;
   useProxy?: boolean;
   proxyUrl?: string;
+  nonce?: string;
   deptHeadsCanComplete?: boolean;
   user: {
     id: number;

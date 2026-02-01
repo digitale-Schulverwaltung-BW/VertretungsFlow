@@ -12,28 +12,7 @@ import type {
   Attachment,
 } from '../types';
 
-// WordPress config interface
-interface AbsenzFlowConfig {
-  apiUrl: string;
-  pluginUrl?: string;
-  useProxy?: boolean;
-  proxyUrl?: string;
-  nonce?: string;
-  deptHeadsCanComplete?: boolean;
-  user?: {
-    id: number;
-    username: string;
-    email: string;
-    displayName: string;
-    role: string;
-  };
-}
-
-declare global {
-  interface Window {
-    absenzflowConfig?: AbsenzFlowConfig;
-  }
-}
+// Note: Window.absenzflowConfig type is defined in types/index.ts
 
 class APIClient {
   private baseURL: string;
@@ -70,32 +49,6 @@ class APIClient {
       if (config.proxyUrl) {
         this.proxyURL = config.proxyUrl;
       }
-    }
-  }
-
-  /**
-   * Wait for WordPress config to be ready
-   */
-  private async waitForConfig(): Promise<void> {
-    if (typeof window === 'undefined') return;
-
-    // If already loaded, return immediately
-    if (window.absenzflowConfig?.nonce) {
-      return;
-    }
-
-    // Wait up to 5 seconds for config to load
-    const maxWait = 5000;
-    const checkInterval = 50;
-    let waited = 0;
-
-    while (!window.absenzflowConfig?.nonce && waited < maxWait) {
-      await new Promise(resolve => setTimeout(resolve, checkInterval));
-      waited += checkInterval;
-    }
-
-    if (!window.absenzflowConfig?.nonce) {
-      console.error('WordPress config with nonce not loaded after 5 seconds');
     }
   }
 
@@ -145,9 +98,6 @@ class APIClient {
    */
   private async request<T>(config: AxiosRequestConfig): Promise<T> {
     if (this.useProxy) {
-      // Wait for WordPress config (including nonce) to be ready
-      await this.waitForConfig();
-
       // Use WordPress proxy
       const proxyData = {
         method: config.method || 'GET',
@@ -160,15 +110,11 @@ class APIClient {
       // Get WordPress nonce from config
       const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
 
-      // Build headers - only add nonce if available
-      const headers: Record<string, string> = {};
-      if (nonce) {
-        headers['X-WP-Nonce'] = nonce;
-      }
-
       const response = await axios.post(this.proxyURL, proxyData, {
         withCredentials: true, // WordPress session cookies for authentication
-        headers,
+        headers: {
+          'X-WP-Nonce': nonce || '',
+        },
       });
       return response.data;
     } else {
@@ -329,9 +275,6 @@ class APIClient {
    * Upload attachment to absence
    */
   async uploadAttachment(absenceId: number, file: File): Promise<Attachment> {
-    // Wait for WordPress config to be ready
-    await this.waitForConfig();
-
     const formData = new FormData();
     formData.append('file', file);
 
