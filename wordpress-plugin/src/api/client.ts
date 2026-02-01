@@ -319,8 +319,8 @@ class APIClient {
    * Get download URL for attachment
    */
   getAttachmentDownloadUrl(absenceId: number, attachmentId: number): string {
-    const token = this.getToken();
-    return `${this.baseURL}/absences/${absenceId}/attachments/${attachmentId}?token=${token}`;
+    // Use WordPress proxy for auth-protected download
+    return `/wp-json/absenzflow/v1/proxy/download/${absenceId}/${attachmentId}`;
   }
 }
 

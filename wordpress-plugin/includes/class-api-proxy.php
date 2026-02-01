@@ -72,6 +72,27 @@ class AbsenzFlow_API_Proxy {
                 ),
             )
         ));
+
+        // File Download Proxy (auth-protected download)
+        register_rest_route('absenzflow/v1', '/proxy/download/(?P<absence_id>\d+)/(?P<attachment_id>\d+)', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'proxy_file_download'),
+            'permission_callback' => 'is_user_logged_in',
+            'args' => array(
+                'absence_id' => array(
+                    'required' => true,
+                    'validate_callback' => function($param) {
+                        return is_numeric($param);
+                    }
+                ),
+                'attachment_id' => array(
+                    'required' => true,
+                    'validate_callback' => function($param) {
+                        return is_numeric($param);
+                    }
+                ),
+            )
+        ));
     }
     
     /**
@@ -249,6 +270,92 @@ class AbsenzFlow_API_Proxy {
             json_decode($response_body, true),
             $status_code
         );
+    }
+
+    /**
+     * Proxy File Download (streaming with auth)
+     */
+    public function proxy_file_download($request) {
+        error_log('AbsenzFlow File Download Proxy: Request received');
+
+        $options = get_option('absenzflow_options');
+        $api_url = $options['api_url'];
+        $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
+
+        if (empty($api_url) || empty($api_secret)) {
+            return new WP_Error('config_error', 'API nicht konfiguriert', array('status' => 500));
+        }
+
+        // Get parameters
+        $absence_id = $request->get_param('absence_id');
+        $attachment_id = $request->get_param('attachment_id');
+
+        // Current WordPress user
+        $current_user = wp_get_current_user();
+        $dept_heads_can_complete = isset($options['dept_heads_can_complete']) && $options['dept_heads_can_complete'] ? '1' : '0';
+
+        // Build backend URL
+        $url = rtrim($api_url, '/') . '/absences/' . $absence_id . '/attachments/' . $attachment_id;
+
+        // Headers
+        $headers = array(
+            'X-WordPress-Secret: ' . $api_secret,
+            'X-WordPress-User: ' . $current_user->user_login,
+            'X-WordPress-Email: ' . $current_user->user_email,
+            'X-WordPress-Name: ' . $current_user->display_name,
+            'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
+            'X-WordPress-WebUntis-Code: ' . get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
+            'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
+        );
+
+        // Use cURL for streaming
+        $ch = curl_init($url);
+        curl_setopt_array($ch, array(
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT => 60,
+            CURLOPT_HEADER => true // Include headers in output
+        ));
+
+        $response = curl_exec($ch);
+        $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        curl_close($ch);
+
+        // Split headers and body
+        $headers_str = substr($response, 0, $header_size);
+        $body = substr($response, $header_size);
+
+        // If error, return JSON error
+        if ($status_code !== 200) {
+            return new WP_REST_Response(
+                json_decode($body, true),
+                $status_code
+            );
+        }
+
+        // Extract Content-Type and Content-Disposition from headers
+        $content_type = 'application/octet-stream';
+        $content_disposition = '';
+
+        foreach (explode("\r\n", $headers_str) as $header) {
+            if (stripos($header, 'Content-Type:') === 0) {
+                $content_type = trim(substr($header, 13));
+            }
+            if (stripos($header, 'Content-Disposition:') === 0) {
+                $content_disposition = trim(substr($header, 20));
+            }
+        }
+
+        // Stream file back to browser
+        header('Content-Type: ' . $content_type);
+        if ($content_disposition) {
+            header('Content-Disposition: ' . $content_disposition);
+        }
+        header('Content-Length: ' . strlen($body));
+        echo $body;
+        exit;
     }
 
     /**
