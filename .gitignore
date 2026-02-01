@@ -47,4 +47,5 @@ build/
 wordpress-plugin/package-lock.json
 
 # Uploads (user-generated files)
-backend/uploads/
+backend/uploads/*
+!backend/uploads/.gitkeep
