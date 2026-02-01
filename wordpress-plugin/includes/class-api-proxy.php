@@ -109,6 +109,10 @@ class AbsenzFlow_API_Proxy {
         $api_url = $options['api_url'];
         $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
 
+        // DEBUG: Log secret (first 10 chars only)
+        error_log('AbsenzFlow Proxy: API Secret (first 10 chars): ' . substr($api_secret, 0, 10) . '...');
+        error_log('AbsenzFlow Proxy: API Secret length: ' . strlen($api_secret));
+
         if (empty($api_url)) {
             return new WP_Error('no_api_url', 'API URL nicht konfiguriert', array('status' => 500));
         }
@@ -165,14 +169,22 @@ class AbsenzFlow_API_Proxy {
         }
 
         // Request ausführen
+        error_log('AbsenzFlow Proxy: Calling backend URL: ' . $url);
         $response = wp_remote_request($url, $args);
 
         if (is_wp_error($response)) {
+            error_log('AbsenzFlow Proxy: WP Error: ' . $response->get_error_message());
             return new WP_Error('proxy_error', $response->get_error_message(), array('status' => 500));
         }
 
         $status_code = wp_remote_retrieve_response_code($response);
         $response_body = wp_remote_retrieve_body($response);
+
+        // DEBUG: Log response
+        error_log('AbsenzFlow Proxy: Backend response status: ' . $status_code);
+        if ($status_code >= 400) {
+            error_log('AbsenzFlow Proxy: Backend error response: ' . substr($response_body, 0, 200));
+        }
 
         // Response zurückgeben
         return new WP_REST_Response(

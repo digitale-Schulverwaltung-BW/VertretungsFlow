@@ -54,6 +54,9 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080}
       DEBUG: ${DEBUG:-false}
 
+      # WordPress Proxy Authentication
+      WORDPRESS_PROXY_SECRET: ${WORDPRESS_PROXY_SECRET:-change-this-shared-secret-in-production}
+
       # File Upload
       UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
     volumes:
