@@ -46,6 +46,35 @@ ALLOWED_MIME_TYPES = [
     'text/plain'
 ]
 
+# Reason labels for emails (German)
+REASON_LABELS = {
+    'sick': 'Krankheit',
+    'training': 'Fortbildung',
+    'excursion': 'Exkursion',
+    'personal': 'Privat',
+    'other': 'Sonstiges'
+}
+
+
+def get_recipients_by_roles(db: Session, roles: List[UserRole]) -> List[str]:
+    """
+    Get email addresses for users with specific roles
+
+    Args:
+        db: Database session
+        roles: List of UserRole enums
+
+    Returns:
+        List of email addresses (non-null, active users only)
+    """
+    users = db.query(User).filter(
+        User.role.in_(roles),
+        User.is_active == True,
+        User.email.isnot(None)
+    ).all()
+
+    return [user.email for user in users]
+
 
 @router.post("/", response_model=AbsenceResponse, status_code=status.HTTP_201_CREATED)
 async def create_absence(
@@ -166,9 +195,32 @@ async def create_absence(
     
     db.commit()
     db.refresh(db_absence)
-    
-    # TODO: E-Mail-Benachrichtigungen an Abteilungsleiter und Vertretungsplaner
-    # await email_service.send_absence_submitted_notification(...)
+
+    # Send email notifications
+    try:
+        dept_head_emails = get_recipients_by_roles(db, [UserRole.DEPARTMENT_HEAD])
+        planner_emails = get_recipients_by_roles(db, [UserRole.PLANNER])
+
+        start_date_str = db_absence.start_date.strftime("%d.%m.%Y")
+        end_date_str = db_absence.end_date.strftime("%d.%m.%Y")
+        reason_label = REASON_LABELS.get(db_absence.reason, db_absence.reason)
+
+        success = await email_service.send_absence_submitted_notification(
+            teacher_name=current_user.full_name or current_user.username,
+            teacher_email=current_user.email,
+            dept_head_emails=dept_head_emails,
+            planner_emails=planner_emails,
+            absence_id=db_absence.id,
+            reason=reason_label,
+            start_date=start_date_str,
+            end_date=end_date_str
+        )
+
+        if not success:
+            logger.warning(f"Some email notifications failed for absence {db_absence.id}")
+    except Exception as e:
+        logger.error(f"Email notification error for absence {db_absence.id}: {e}")
+        # Continue - don't fail the request
 
     return db_absence
 
@@ -421,7 +473,9 @@ async def approve_absence(
             detail="Not authorized to approve absences"
         )
 
-    absence = db.query(Absence).filter(Absence.id == absence_id).first()
+    absence = db.query(Absence).options(
+        joinedload(Absence.teacher)
+    ).filter(Absence.id == absence_id).first()
 
     if not absence:
         raise HTTPException(
@@ -444,17 +498,34 @@ async def approve_absence(
         absence.status = AbsenceStatus.APPROVED
         absence.approved_by = current_user.id
         absence.approved_at = datetime.utcnow()
-        
-        # TODO: E-Mail-Benachrichtigungen
-        # await email_service.send_absence_approved_notification(...)
-        
+
+        db.commit()
+
+        # Send email notifications
+        try:
+            planner_emails = get_recipients_by_roles(db, [UserRole.PLANNER])
+
+            if absence.teacher and absence.teacher.email:
+                success = await email_service.send_absence_approved_notification(
+                    teacher_email=absence.teacher.email,
+                    planner_emails=planner_emails,
+                    absence_id=absence.id,
+                    approver_name=current_user.full_name or current_user.username
+                )
+
+                if not success:
+                    logger.warning(f"Email notification failed for approved absence {absence.id}")
+            else:
+                logger.warning(f"Cannot send approval email: teacher has no email address")
+        except Exception as e:
+            logger.error(f"Email notification error for approved absence {absence.id}: {e}")
+
         message = "Absence approved"
     else:
         absence.status = AbsenceStatus.REJECTED
         message = "Absence rejected"
-    
-    db.commit()
-    
+        db.commit()
+
     return {"message": message}
 
 
@@ -492,7 +563,10 @@ async def complete_absence(
             detail="Not authorized to complete absences"
         )
 
-    absence = db.query(Absence).filter(Absence.id == absence_id).first()
+    absence = db.query(Absence).options(
+        joinedload(Absence.teacher),
+        selectinload(Absence.attachments)
+    ).filter(Absence.id == absence_id).first()
 
     if not absence:
         raise HTTPException(
@@ -522,8 +596,20 @@ async def complete_absence(
 
     db.commit()
 
-    # TODO: E-Mail-Benachrichtigung an Lehrkraft
-    # await email_service.send_absence_completed_notification(...)
+    # Send email notification to teacher
+    try:
+        if absence.teacher and absence.teacher.email:
+            success = await email_service.send_absence_completed_notification(
+                teacher_email=absence.teacher.email,
+                absence_id=absence.id
+            )
+
+            if not success:
+                logger.warning(f"Email notification failed for completed absence {absence.id}")
+        else:
+            logger.warning(f"Cannot send completion email: teacher has no email address")
+    except Exception as e:
+        logger.error(f"Email notification error for completed absence {absence.id}: {e}")
 
     return {"message": "Absence marked as completed, attachments deleted"}
 
