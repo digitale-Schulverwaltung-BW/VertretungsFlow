@@ -3,6 +3,7 @@ SQLAlchemy Database Models für AbsenzFlow
 """
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text, Enum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -146,20 +147,35 @@ class Notification(Base):
     Tracking von versendeten E-Mails
     """
     __tablename__ = "notifications"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     absence_id = Column(Integer, ForeignKey("absences.id"), nullable=True)
-    
+
     # Notification Details
     notification_type = Column(String(50))  # z.B. "absence_submitted", "absence_approved"
     subject = Column(String(255))
     body = Column(Text)
-    
+
     # Status
     sent = Column(Boolean, default=False)
     sent_at = Column(DateTime, nullable=True)
     error = Column(Text, nullable=True)
-    
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class WebUntisCache(Base):
+    """
+    Cache für WebUntis Stammdaten
+    Persistiert Subjects, Classes, Rooms, Timegrid mit TTL
+    """
+    __tablename__ = "webuntis_cache"
+
+    id = Column(Integer, primary_key=True, index=True)
+    cache_key = Column(String(100), unique=True, nullable=False, index=True)
+    cache_data = Column(JSONB, nullable=False)
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

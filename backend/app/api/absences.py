@@ -141,6 +141,7 @@ async def create_absence(
         current_user.username,
         absence.start_date,
         absence.end_date,
+        db=db,
         webuntis_code=current_user.webuntis_teacher_code
     )
 
@@ -262,6 +263,7 @@ async def fetch_lessons_from_webuntis(
         current_user.username,
         request.start_date,
         request.end_date,
+        db=db,
         webuntis_code=current_user.webuntis_teacher_code
     )
 
@@ -795,6 +797,74 @@ async def download_attachment(
 
 
 @router.delete("/{absence_id}/attachments/{attachment_id}")
+@router.post("/admin/webuntis-cache/refresh")
+async def refresh_webuntis_cache(
+    current_user: User = Depends(get_wordpress_proxy_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Manuelles Refresh der WebUntis Stammdaten
+    Nur für Admin/Planner
+    """
+    if current_user.role not in [UserRole.ADMIN, UserRole.PLANNER]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    from app.models.models import WebUntisCache
+
+    # Clear in-memory cache
+    webuntis_service._subjects_cache = None
+    webuntis_service._classes_cache = None
+    webuntis_service._rooms_cache = None
+    webuntis_service._timegrid_cache = None
+
+    # Delete DB cache (force re-fetch)
+    db.query(WebUntisCache).delete()
+    db.commit()
+
+    logger.info(f"WebUntis cache cleared by {current_user.username}")
+
+    return {
+        "message": "WebUntis cache cleared. Next absence will refresh data.",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
+@router.get("/admin/webuntis-cache/status")
+async def get_cache_status(
+    current_user: User = Depends(get_wordpress_proxy_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Cache-Status anzeigen
+    Nur für Admin/Planner
+    """
+    if current_user.role not in [UserRole.ADMIN, UserRole.PLANNER]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    from app.models.models import WebUntisCache
+
+    cache_entries = db.query(WebUntisCache).all()
+
+    return {
+        "cached_keys": [
+            {
+                "key": entry.cache_key,
+                "created_at": entry.created_at.isoformat(),
+                "expires_at": entry.expires_at.isoformat() if entry.expires_at else None,
+                "is_expired": entry.expires_at < datetime.utcnow() if entry.expires_at else False,
+                "items_count": len(entry.cache_data) if isinstance(entry.cache_data, dict) else 0
+            }
+            for entry in cache_entries
+        ],
+        "in_memory_cache": {
+            "subjects": webuntis_service._subjects_cache is not None,
+            "classes": webuntis_service._classes_cache is not None,
+            "rooms": webuntis_service._rooms_cache is not None,
+            "timegrid": webuntis_service._timegrid_cache is not None
+        }
+    }
+
+
 async def delete_attachment(
     absence_id: int,
     attachment_id: int,

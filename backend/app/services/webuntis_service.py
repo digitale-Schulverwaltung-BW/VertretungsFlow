@@ -29,7 +29,82 @@ class WebUntisService:
         self._classes_cache: Optional[dict] = None
         self._rooms_cache: Optional[dict] = None
         self._timegrid_cache: Optional[dict] = None  # startTime -> period mapping
-    
+
+    async def _get_cached_data(
+        self,
+        db,
+        cache_key: str,
+        fetch_func,
+        force_refresh: bool = False
+    ) -> dict:
+        """
+        Generische Cache-Lookup-Methode mit 3-Layer-Cache
+
+        Args:
+            db: Database session
+            cache_key: Cache key (z.B. 'webuntis:subjects')
+            fetch_func: Async function to fetch from API if cache miss
+            force_refresh: Force API call even if cache exists
+
+        Returns:
+            Cached or fresh data as dict
+        """
+        from app.models.models import WebUntisCache
+
+        if not settings.WEBUNTIS_CACHE_ENABLED:
+            return await fetch_func()
+
+        # Layer 1: In-Memory Cache
+        memory_cache_key = cache_key.replace('webuntis:', '_') + '_cache'
+        if not force_refresh and getattr(self, memory_cache_key, None):
+            logger.info(f"WebUntis cache hit (memory): {cache_key}")
+            return getattr(self, memory_cache_key)
+
+        # Layer 2: DB Cache
+        if not force_refresh:
+            db_entry = db.query(WebUntisCache).filter(
+                WebUntisCache.cache_key == cache_key
+            ).first()
+
+            if db_entry:
+                # Check if expired
+                if db_entry.expires_at is None or db_entry.expires_at > datetime.utcnow():
+                    logger.info(f"WebUntis cache hit (DB): {cache_key}")
+                    setattr(self, memory_cache_key, db_entry.cache_data)
+                    return db_entry.cache_data
+                else:
+                    logger.info(f"WebUntis cache expired: {cache_key}")
+
+        # Layer 3: Fetch from API
+        logger.info(f"WebUntis cache miss, fetching from API: {cache_key}")
+        data = await fetch_func()
+
+        # Store in DB
+        expires_at = datetime.utcnow() + timedelta(hours=settings.WEBUNTIS_CACHE_TTL_HOURS)
+
+        db_entry = db.query(WebUntisCache).filter(
+            WebUntisCache.cache_key == cache_key
+        ).first()
+
+        if db_entry:
+            db_entry.cache_data = data
+            db_entry.expires_at = expires_at
+            db_entry.updated_at = datetime.utcnow()
+        else:
+            db_entry = WebUntisCache(
+                cache_key=cache_key,
+                cache_data=data,
+                expires_at=expires_at
+            )
+            db.add(db_entry)
+
+        db.commit()
+
+        # Store in memory
+        setattr(self, memory_cache_key, data)
+
+        return data
+
     async def authenticate(self) -> bool:
         """
         Authentifiziert gegen WebUntis API
@@ -131,6 +206,7 @@ class WebUntisService:
         teacher_username: str,
         start_date: datetime,
         end_date: datetime,
+        db,
         webuntis_code: Optional[str] = None
     ) -> List[WebUntisLesson]:
         """
@@ -140,6 +216,7 @@ class WebUntisService:
             teacher_username: Username der Lehrkraft
             start_date: Startdatum
             end_date: Enddatum
+            db: Database session
             webuntis_code: WebUntis Lehrerkürzel (optional, Fallback auf teacher_username)
 
         Returns:
@@ -205,7 +282,7 @@ class WebUntisService:
                         # Re-authenticate and retry
                         if await self.authenticate():
                             return await self.get_timetable_for_teacher(
-                                teacher_username, start_date, end_date, webuntis_code
+                                teacher_username, start_date, end_date, db, webuntis_code
                             )
                         else:
                             logger.error("❌ Re-Authentifizierung fehlgeschlagen")
@@ -218,7 +295,7 @@ class WebUntisService:
                         if len(raw_lessons) == 0:
                             logger.warning(f"⚠️ WebUntis lieferte keine Stunden für den Zeitraum {start_date.date()} - {end_date.date()}")
 
-                        parsed_lessons = await self._parse_timetable(raw_lessons, teacher_id)
+                        parsed_lessons = await self._parse_timetable(raw_lessons, teacher_id, db)
                         logger.info(f"✅ {len(parsed_lessons)} Stunden erfolgreich geparst")
                         return parsed_lessons
 
@@ -316,222 +393,259 @@ class WebUntisService:
             logger.error(f"❌ WebUntis Get Teacher ID Exception: {e}", exc_info=True)
             return None
 
-    async def _load_subjects(self) -> dict:
+    async def _load_subjects(self, db, force_refresh: bool = False) -> dict:
         """
         Lädt Fächer-Stammdaten und erstellt ID->Name Mapping
+
+        Args:
+            db: Database session
+            force_refresh: Force API call even if cache exists
 
         Returns:
             Dictionary mit subject_id -> subject_name
         """
-        if self._subjects_cache is not None:
-            return self._subjects_cache
+        async def fetch_from_api():
+            logger.info("📚 Lade Fächer-Stammdaten...")
 
-        logger.info("📚 Lade Fächer-Stammdaten...")
+            try:
+                async with httpx.AsyncClient() as client:
+                    payload = {
+                        "id": "getSubjects",
+                        "method": "getSubjects",
+                        "params": {},
+                        "jsonrpc": "2.0"
+                    }
 
-        try:
-            async with httpx.AsyncClient() as client:
-                payload = {
-                    "id": "getSubjects",
-                    "method": "getSubjects",
-                    "params": {},
-                    "jsonrpc": "2.0"
-                }
+                    response = await client.post(
+                        f"{self.base_url}",
+                        json=payload,
+                        cookies={"JSESSIONID": self.session_id}
+                    )
 
-                response = await client.post(
-                    f"{self.base_url}",
-                    json=payload,
-                    cookies={"JSESSIONID": self.session_id}
-                )
+                    if response.status_code == 200:
+                        data = response.json()
 
-                if response.status_code == 200:
-                    data = response.json()
+                        if "result" in data:
+                            subjects = data["result"]
+                            # Verwende Kurzname (name) statt Langname (longName) wegen sehr langer Fachnamen
+                            subjects_dict = {
+                                subj["id"]: subj.get("name", subj.get("longName", "Unbekannt"))
+                                for subj in subjects
+                            }
+                            logger.info(f"✅ {len(subjects_dict)} Fächer geladen")
+                            return subjects_dict
 
-                    if "result" in data:
-                        subjects = data["result"]
-                        # Verwende Kurzname (name) statt Langname (longName) wegen sehr langer Fachnamen
-                        self._subjects_cache = {
-                            subj["id"]: subj.get("name", subj.get("longName", "Unbekannt"))
-                            for subj in subjects
-                        }
-                        logger.info(f"✅ {len(self._subjects_cache)} Fächer geladen")
-                        return self._subjects_cache
+                    logger.error(f"❌ Fächer laden fehlgeschlagen (Status: {response.status_code})")
+                    return {}
 
-                logger.error(f"❌ Fächer laden fehlgeschlagen (Status: {response.status_code})")
+            except Exception as e:
+                logger.error(f"❌ Exception beim Laden der Fächer: {e}", exc_info=True)
                 return {}
 
-        except Exception as e:
-            logger.error(f"❌ Exception beim Laden der Fächer: {e}", exc_info=True)
-            return {}
+        return await self._get_cached_data(
+            db=db,
+            cache_key='webuntis:subjects',
+            fetch_func=fetch_from_api,
+            force_refresh=force_refresh
+        )
 
-    async def _load_classes(self) -> dict:
+    async def _load_classes(self, db, force_refresh: bool = False) -> dict:
         """
         Lädt Klassen-Stammdaten und erstellt ID->Name Mapping
+
+        Args:
+            db: Database session
+            force_refresh: Force API call even if cache exists
 
         Returns:
             Dictionary mit class_id -> class_name
         """
-        if self._classes_cache is not None:
-            return self._classes_cache
+        async def fetch_from_api():
+            logger.info("🎓 Lade Klassen-Stammdaten...")
 
-        logger.info("🎓 Lade Klassen-Stammdaten...")
+            try:
+                async with httpx.AsyncClient() as client:
+                    payload = {
+                        "id": "getKlassen",
+                        "method": "getKlassen",
+                        "params": {},
+                        "jsonrpc": "2.0"
+                    }
 
-        try:
-            async with httpx.AsyncClient() as client:
-                payload = {
-                    "id": "getKlassen",
-                    "method": "getKlassen",
-                    "params": {},
-                    "jsonrpc": "2.0"
-                }
+                    response = await client.post(
+                        f"{self.base_url}",
+                        json=payload,
+                        cookies={"JSESSIONID": self.session_id}
+                    )
 
-                response = await client.post(
-                    f"{self.base_url}",
-                    json=payload,
-                    cookies={"JSESSIONID": self.session_id}
-                )
+                    if response.status_code == 200:
+                        data = response.json()
 
-                if response.status_code == 200:
-                    data = response.json()
+                        if "result" in data:
+                            classes = data["result"]
+                            # Verwende Kurzname (name) statt Langname (longName)
+                            classes_dict = {
+                                kl["id"]: kl.get("name", kl.get("longName", "Unbekannt"))
+                                for kl in classes
+                            }
+                            logger.info(f"✅ {len(classes_dict)} Klassen geladen")
+                            return classes_dict
 
-                    if "result" in data:
-                        classes = data["result"]
-                        # Verwende Kurzname (name) statt Langname (longName)
-                        self._classes_cache = {
-                            kl["id"]: kl.get("name", kl.get("longName", "Unbekannt"))
-                            for kl in classes
-                        }
-                        logger.info(f"✅ {len(self._classes_cache)} Klassen geladen")
-                        return self._classes_cache
+                    logger.error(f"❌ Klassen laden fehlgeschlagen (Status: {response.status_code})")
+                    return {}
 
-                logger.error(f"❌ Klassen laden fehlgeschlagen (Status: {response.status_code})")
+            except Exception as e:
+                logger.error(f"❌ Exception beim Laden der Klassen: {e}", exc_info=True)
                 return {}
 
-        except Exception as e:
-            logger.error(f"❌ Exception beim Laden der Klassen: {e}", exc_info=True)
-            return {}
+        return await self._get_cached_data(
+            db=db,
+            cache_key='webuntis:classes',
+            fetch_func=fetch_from_api,
+            force_refresh=force_refresh
+        )
 
-    async def _load_rooms(self) -> dict:
+    async def _load_rooms(self, db, force_refresh: bool = False) -> dict:
         """
         Lädt Raum-Stammdaten und erstellt ID->Name Mapping
+
+        Args:
+            db: Database session
+            force_refresh: Force API call even if cache exists
 
         Returns:
             Dictionary mit room_id -> room_name
         """
-        if self._rooms_cache is not None:
-            return self._rooms_cache
+        async def fetch_from_api():
+            logger.info("🏫 Lade Raum-Stammdaten...")
 
-        logger.info("🏫 Lade Raum-Stammdaten...")
+            try:
+                async with httpx.AsyncClient() as client:
+                    payload = {
+                        "id": "getRooms",
+                        "method": "getRooms",
+                        "params": {},
+                        "jsonrpc": "2.0"
+                    }
 
-        try:
-            async with httpx.AsyncClient() as client:
-                payload = {
-                    "id": "getRooms",
-                    "method": "getRooms",
-                    "params": {},
-                    "jsonrpc": "2.0"
-                }
+                    response = await client.post(
+                        f"{self.base_url}",
+                        json=payload,
+                        cookies={"JSESSIONID": self.session_id}
+                    )
 
-                response = await client.post(
-                    f"{self.base_url}",
-                    json=payload,
-                    cookies={"JSESSIONID": self.session_id}
-                )
+                    if response.status_code == 200:
+                        data = response.json()
 
-                if response.status_code == 200:
-                    data = response.json()
+                        if "result" in data:
+                            rooms = data["result"]
+                            rooms_dict = {
+                                room["id"]: room.get("longName", room.get("name", "Unbekannt"))
+                                for room in rooms
+                            }
+                            logger.info(f"✅ {len(rooms_dict)} Räume geladen")
+                            return rooms_dict
 
-                    if "result" in data:
-                        rooms = data["result"]
-                        self._rooms_cache = {
-                            room["id"]: room.get("longName", room.get("name", "Unbekannt"))
-                            for room in rooms
-                        }
-                        logger.info(f"✅ {len(self._rooms_cache)} Räume geladen")
-                        return self._rooms_cache
+                    logger.error(f"❌ Räume laden fehlgeschlagen (Status: {response.status_code})")
+                    return {}
 
-                logger.error(f"❌ Räume laden fehlgeschlagen (Status: {response.status_code})")
+            except Exception as e:
+                logger.error(f"❌ Exception beim Laden der Räume: {e}", exc_info=True)
                 return {}
 
-        except Exception as e:
-            logger.error(f"❌ Exception beim Laden der Räume: {e}", exc_info=True)
-            return {}
+        return await self._get_cached_data(
+            db=db,
+            cache_key='webuntis:rooms',
+            fetch_func=fetch_from_api,
+            force_refresh=force_refresh
+        )
 
-    async def _load_timegrid(self) -> dict:
+    async def _load_timegrid(self, db, force_refresh: bool = False) -> dict:
         """
         Lädt Stundenraster und erstellt startTime -> period Mapping
+
+        Args:
+            db: Database session
+            force_refresh: Force API call even if cache exists
 
         Returns:
             Dictionary mit startTime -> period_number
         """
-        if self._timegrid_cache is not None:
-            return self._timegrid_cache
+        async def fetch_from_api():
+            logger.info("⏰ Lade Stundenraster...")
 
-        logger.info("⏰ Lade Stundenraster...")
+            try:
+                async with httpx.AsyncClient() as client:
+                    payload = {
+                        "id": "getTimegridUnits",
+                        "method": "getTimegridUnits",
+                        "params": {},
+                        "jsonrpc": "2.0"
+                    }
 
-        try:
-            async with httpx.AsyncClient() as client:
-                payload = {
-                    "id": "getTimegridUnits",
-                    "method": "getTimegridUnits",
-                    "params": {},
-                    "jsonrpc": "2.0"
-                }
+                    response = await client.post(
+                        f"{self.base_url}",
+                        json=payload,
+                        cookies={"JSESSIONID": self.session_id}
+                    )
 
-                response = await client.post(
-                    f"{self.base_url}",
-                    json=payload,
-                    cookies={"JSESSIONID": self.session_id}
-                )
+                    if response.status_code == 200:
+                        data = response.json()
+                        logger.info(f"📦 Timegrid Response: {data}")
 
-                if response.status_code == 200:
-                    data = response.json()
-                    logger.info(f"📦 Timegrid Response: {data}")
+                        if "result" in data:
+                            timegrid_days = data["result"]
+                            logger.info(f"📋 Timegrid hat {len(timegrid_days)} Tage")
 
-                    if "result" in data:
-                        timegrid_days = data["result"]
-                        logger.info(f"📋 Timegrid hat {len(timegrid_days)} Tage")
+                            # Erstelle Mapping: startTime -> period (Stundennummer)
+                            # Structure: [{day: 2, timeUnits: [{name: "1", startTime: 730, ...}]}]
+                            timegrid_dict = {}
+                            for day_entry in timegrid_days:
+                                day = day_entry.get("day")
+                                time_units = day_entry.get("timeUnits", [])
+                                logger.debug(f"Tag {day}: {len(time_units)} Zeiteinheiten")
 
-                        # Erstelle Mapping: startTime -> period (Stundennummer)
-                        # Structure: [{day: 2, timeUnits: [{name: "1", startTime: 730, ...}]}]
-                        self._timegrid_cache = {}
-                        for day_entry in timegrid_days:
-                            day = day_entry.get("day")
-                            time_units = day_entry.get("timeUnits", [])
-                            logger.debug(f"Tag {day}: {len(time_units)} Zeiteinheiten")
+                                for unit in time_units:
+                                    start_time = unit.get("startTime")
+                                    period_name = unit.get("name")  # "1", "2", "3" als String
 
-                            for unit in time_units:
-                                start_time = unit.get("startTime")
-                                period_name = unit.get("name")  # "1", "2", "3" als String
+                                    if start_time and period_name:
+                                        try:
+                                            period = int(period_name)
+                                            timegrid_dict[start_time] = period
+                                            logger.debug(f"  {start_time} -> Stunde {period}")
+                                        except ValueError:
+                                            logger.warning(f"Ungültiger Period-Name: {period_name}")
 
-                                if start_time and period_name:
-                                    try:
-                                        period = int(period_name)
-                                        self._timegrid_cache[start_time] = period
-                                        logger.debug(f"  {start_time} -> Stunde {period}")
-                                    except ValueError:
-                                        logger.warning(f"Ungültiger Period-Name: {period_name}")
+                            logger.info(f"✅ Stundenraster mit {len(timegrid_dict)} Einträgen geladen")
+                            return timegrid_dict
+                        elif "error" in data:
+                            logger.error(f"❌ WebUntis API Error beim Timegrid-Abruf: {data['error']}")
+                            return {}
 
-                        logger.info(f"✅ Stundenraster mit {len(self._timegrid_cache)} Einträgen geladen")
-                        return self._timegrid_cache
-                    elif "error" in data:
-                        logger.error(f"❌ WebUntis API Error beim Timegrid-Abruf: {data['error']}")
-                        return {}
+                    logger.error(f"❌ Stundenraster laden fehlgeschlagen (Status: {response.status_code})")
+                    logger.error(f"Response: {response.text}")
+                    return {}
 
-                logger.error(f"❌ Stundenraster laden fehlgeschlagen (Status: {response.status_code})")
-                logger.error(f"Response: {response.text}")
+            except Exception as e:
+                logger.error(f"❌ Exception beim Laden des Stundenrasters: {e}", exc_info=True)
                 return {}
 
-        except Exception as e:
-            logger.error(f"❌ Exception beim Laden des Stundenrasters: {e}", exc_info=True)
-            return {}
+        return await self._get_cached_data(
+            db=db,
+            cache_key='webuntis:timegrid',
+            fetch_func=fetch_from_api,
+            force_refresh=force_refresh
+        )
 
-    async def _parse_timetable(self, timetable_data: List[dict], teacher_id: int) -> List[WebUntisLesson]:
+    async def _parse_timetable(self, timetable_data: List[dict], teacher_id: int, db) -> List[WebUntisLesson]:
         """
         Parsed Stundenplan-Daten von WebUntis
 
         Args:
             timetable_data: Rohdaten von WebUntis
             teacher_id: ID des Lehrers (zum Filtern bei Team-Teaching)
+            db: Database session
 
         Returns:
             Liste von WebUntisLesson Objekten
@@ -539,10 +653,10 @@ class WebUntisService:
         logger.debug(f"Parse Timetable: {len(timetable_data)} Einträge")
 
         # Stammdaten laden (werden gecached)
-        subjects = await self._load_subjects()
-        classes = await self._load_classes()
-        rooms = await self._load_rooms()
-        timegrid = await self._load_timegrid()
+        subjects = await self._load_subjects(db)
+        classes = await self._load_classes(db)
+        rooms = await self._load_rooms(db)
+        timegrid = await self._load_timegrid(db)
 
         lessons = []
 

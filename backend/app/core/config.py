@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "absenzflow@schule.de"
     SMTP_USE_TLS: bool = True
 
+    # WebUntis Cache Configuration
+    WEBUNTIS_CACHE_TTL_HOURS: int = 168  # 7 Tage (7 * 24h)
+    WEBUNTIS_CACHE_ENABLED: bool = True
+
     # File Upload Configuration
     # Default: backend/uploads (außerhalb webroot, im Projekt-Tree)
     UPLOAD_DIR: str = str(Path(__file__).resolve().parent.parent.parent / "uploads")

@@ -52,6 +52,16 @@ class AbsenzFlow_Admin {
             'absenzflow-roles',
             array($this, 'render_roles_page')
         );
+
+        // Untermenü: WebUntis Cache
+        add_submenu_page(
+            'absenzflow',
+            'WebUntis Cache',
+            'WebUntis Cache',
+            'manage_options',
+            'absenzflow-cache',
+            array($this, 'render_cache_page')
+        );
     }
     
     /**
@@ -307,6 +317,107 @@ class AbsenzFlow_Admin {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+        <?php
+    }
+
+    /**
+     * Rendert Cache-Verwaltungsseite
+     */
+    public function render_cache_page() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+
+        // Handle refresh action
+        if (isset($_POST['refresh_cache']) && check_admin_referer('absenzflow_refresh_cache')) {
+            require_once plugin_dir_path(__FILE__) . 'class-api-proxy.php';
+            $api_proxy = new AbsenzFlow_API_Proxy();
+            $result = $api_proxy->request('POST', '/absences/admin/webuntis-cache/refresh');
+
+            if ($result && !isset($result['error'])) {
+                echo '<div class="notice notice-success"><p>WebUntis Cache wurde erfolgreich aktualisiert.</p></div>';
+            } else {
+                $error_msg = isset($result['error']) ? $result['error'] : 'Unbekannter Fehler';
+                echo '<div class="notice notice-error"><p>Fehler beim Aktualisieren des Cache: ' . esc_html($error_msg) . '</p></div>';
+            }
+        }
+
+        // Get cache status
+        require_once plugin_dir_path(__FILE__) . 'class-api-proxy.php';
+        $api_proxy = new AbsenzFlow_API_Proxy();
+        $status = $api_proxy->request('GET', '/absences/admin/webuntis-cache/status');
+
+        ?>
+        <div class="wrap">
+            <h1>WebUntis Cache Verwaltung</h1>
+
+            <div class="card">
+                <h2>Performance-Optimierung</h2>
+                <p>
+                    WebUntis Stammdaten (Fächer, Klassen, Räume, Stundenraster) werden gecacht,
+                    um die Absenzerstellung zu beschleunigen.
+                </p>
+                <p>
+                    <strong>Cache-Gültigkeit:</strong> 7 Tage (konfigurierbar in .env)
+                </p>
+            </div>
+
+            <div class="card">
+                <h2>Cache-Status</h2>
+                <?php if ($status && isset($status['cached_keys'])): ?>
+                    <table class="widefat">
+                        <thead>
+                            <tr>
+                                <th>Daten</th>
+                                <th>Anzahl Einträge</th>
+                                <th>Erstellt</th>
+                                <th>Verfällt</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($status['cached_keys'] as $entry): ?>
+                                <tr>
+                                    <td><?php echo esc_html(str_replace('webuntis:', '', $entry['key'])); ?></td>
+                                    <td><?php echo esc_html($entry['items_count']); ?></td>
+                                    <td><?php echo esc_html($entry['created_at'] ? date('d.m.Y H:i', strtotime($entry['created_at'])) : '-'); ?></td>
+                                    <td><?php echo esc_html($entry['expires_at'] ? date('d.m.Y H:i', strtotime($entry['expires_at'])) : 'Nie'); ?></td>
+                                    <td>
+                                        <?php if ($entry['is_expired']): ?>
+                                            <span class="dashicons dashicons-warning" style="color: orange;"></span> Abgelaufen
+                                        <?php else: ?>
+                                            <span class="dashicons dashicons-yes" style="color: green;"></span> Gültig
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p>Noch keine Daten im Cache.</p>
+                <?php endif; ?>
+            </div>
+
+            <div class="card">
+                <h2>Cache Aktualisieren</h2>
+                <p>
+                    Verwenden Sie diese Funktion, wenn sich Stammdaten in WebUntis geändert haben
+                    (z.B. neue Lehrkräfte, neue Räume, geändertes Stundenraster).
+                </p>
+                <form method="post">
+                    <?php wp_nonce_field('absenzflow_refresh_cache'); ?>
+                    <button type="submit" name="refresh_cache" class="button button-primary">
+                        <span class="dashicons dashicons-update"></span>
+                        WebUntis Stammdaten jetzt aktualisieren
+                    </button>
+                </form>
+                <p class="description">
+                    <strong>Hinweis:</strong> Der Cache wird beim nächsten Abruf automatisch neu befüllt.
+                    Dies kann 5-10 Sekunden dauern.
+                </p>
+            </div>
         </div>
         <?php
     }
