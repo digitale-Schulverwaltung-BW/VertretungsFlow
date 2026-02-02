@@ -30,6 +30,28 @@ class WebUntisService:
         self._rooms_cache: Optional[dict] = None
         self._timegrid_cache: Optional[dict] = None  # startTime -> period mapping
 
+    def _convert_string_keys_to_int(self, data: dict) -> dict:
+        """
+        Konvertiert String-Keys zurück zu Integer-Keys
+        JSONB in PostgreSQL speichert numerische Keys als Strings
+
+        Args:
+            data: Dictionary mit möglicherweise String-Keys
+
+        Returns:
+            Dictionary mit Integer-Keys (wo möglich)
+        """
+        converted = {}
+        for key, value in data.items():
+            try:
+                # Versuche Key in Integer zu konvertieren
+                int_key = int(key)
+                converted[int_key] = value
+            except (ValueError, TypeError):
+                # Wenn Konvertierung fehlschlägt, behalte String-Key
+                converted[key] = value
+        return converted
+
     async def _get_cached_data(
         self,
         db,
@@ -70,8 +92,10 @@ class WebUntisService:
                 # Check if expired
                 if db_entry.expires_at is None or db_entry.expires_at > datetime.utcnow():
                     logger.info(f"WebUntis cache hit (DB): {cache_key}")
-                    setattr(self, memory_cache_key, db_entry.cache_data)
-                    return db_entry.cache_data
+                    # JSONB konvertiert numerische Keys zu Strings - zurückkonvertieren
+                    cached_data = self._convert_string_keys_to_int(db_entry.cache_data)
+                    setattr(self, memory_cache_key, cached_data)
+                    return cached_data
                 else:
                     logger.info(f"WebUntis cache expired: {cache_key}")
 
@@ -675,18 +699,32 @@ class WebUntisService:
                 date = datetime.strptime(date_str, "%Y%m%d")
 
                 # IDs auflösen
+                # WICHTIG: JSONB speichert numerische Keys als Strings, daher beide Varianten probieren
                 subject_ids = [s.get("id") for s in entry.get("su", [])]
-                subject = subjects.get(subject_ids[0], "Unbekannt") if subject_ids else "Unbekannt"
+                if subject_ids:
+                    subject_id = subject_ids[0]
+                    subject = subjects.get(subject_id) or subjects.get(str(subject_id), "Unbekannt")
+                else:
+                    subject = "Unbekannt"
 
                 class_ids = [c.get("id") for c in entry.get("kl", [])]
-                class_name = classes.get(class_ids[0], "Unbekannt") if class_ids else "Unbekannt"
+                if class_ids:
+                    class_id = class_ids[0]
+                    class_name = classes.get(class_id) or classes.get(str(class_id), "Unbekannt")
+                else:
+                    class_name = "Unbekannt"
 
                 room_ids = [r.get("id") for r in entry.get("ro", [])]
-                room = rooms.get(room_ids[0]) if room_ids else None
+                if room_ids:
+                    room_id = room_ids[0]
+                    room = rooms.get(room_id) or rooms.get(str(room_id))
+                else:
+                    room = None
 
                 # Stundennummer aus Timegrid ermitteln
                 start_time = entry.get("startTime", 0)
-                period = timegrid.get(start_time, start_time // 100)  # Fallback auf alte Methode
+                # JSONB konvertiert auch hier Keys zu Strings
+                period = timegrid.get(start_time) or timegrid.get(str(start_time), start_time // 100)
 
                 lesson = WebUntisLesson(
                     date=date,
