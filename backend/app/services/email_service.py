@@ -118,7 +118,7 @@ Bis: {end_date}
 
 Bitte prüfen und genehmigen Sie die Abwesenheit im AbsenzFlow-System.
 
-Link: {settings.API_URL}/absences/{absence_id}
+Link: {settings.FRONTEND_URL}/#/absence/{absence_id}
 
 Mit freundlichen Grüßen,
 AbsenzFlow System
@@ -174,7 +174,7 @@ Hallo,
 
 Die Abwesenheit #{absence_id} wurde von {approver_name} genehmigt und ist nun bereit zur Vertretungsplanung.
 
-Link: {settings.API_URL}/absences/{absence_id}
+Link: {settings.FRONTEND_URL}/#/absence/{absence_id}
 
 Mit freundlichen Grüßen,
 AbsenzFlow System

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # Application
     APP_NAME: str = "AbsenzFlow"
     API_URL: str = "http://localhost:8000"
+    FRONTEND_URL: str = "http://localhost:3000"  # WordPress page with [absenzflow] shortcode
     DEBUG: bool = False
     SECRET_KEY: str = "your-secret-key-change-in-production"
 
