@@ -811,6 +811,7 @@ async def refresh_webuntis_cache(
     if current_user.role not in [UserRole.ADMIN, UserRole.PLANNER]:
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    from datetime import datetime
     from app.models.models import WebUntisCache
 
     # Clear in-memory cache
@@ -843,6 +844,7 @@ async def get_cache_status(
     if current_user.role not in [UserRole.ADMIN, UserRole.PLANNER]:
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    from datetime import datetime
     from app.models.models import WebUntisCache
 
     cache_entries = db.query(WebUntisCache).all()
