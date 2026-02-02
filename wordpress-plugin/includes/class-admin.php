@@ -333,7 +333,7 @@ class AbsenzFlow_Admin {
         // Handle refresh action
         if (isset($_POST['refresh_cache']) && check_admin_referer('absenzflow_refresh_cache')) {
             require_once plugin_dir_path(__FILE__) . 'class-api-proxy.php';
-            $api_proxy = new AbsenzFlow_API_Proxy();
+            $api_proxy = AbsenzFlow_API_Proxy::get_instance();
             $result = $api_proxy->request('POST', '/absences/admin/webuntis-cache/refresh');
 
             if ($result && !isset($result['error'])) {
@@ -346,7 +346,7 @@ class AbsenzFlow_Admin {
 
         // Get cache status
         require_once plugin_dir_path(__FILE__) . 'class-api-proxy.php';
-        $api_proxy = new AbsenzFlow_API_Proxy();
+        $api_proxy = AbsenzFlow_API_Proxy::get_instance();
         $status = $api_proxy->request('GET', '/absences/admin/webuntis-cache/status');
 
         ?>
