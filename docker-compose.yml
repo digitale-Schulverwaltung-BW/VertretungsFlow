@@ -53,6 +53,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080}
       DEBUG: ${DEBUG:-false}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
 
       # WordPress Proxy Authentication
       WORDPRESS_PROXY_SECRET: ${WORDPRESS_PROXY_SECRET:-change-this-shared-secret-in-production}
