@@ -23,7 +23,7 @@ export interface StepOneData {
 const lessonNumbers = Array.from({ length: 16 }, (_, i) => i + 1);
 
 const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
-  const [reason, setReason] = useState<AbsenceReason>('training');
+  const [reason, setReason] = useState<AbsenceReason>('undefined');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [startLesson, setStartLesson] = useState<number>(1);
   const [endLesson, setEndLesson] = useState<number>(16);

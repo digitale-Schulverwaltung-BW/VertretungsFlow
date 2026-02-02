@@ -7,6 +7,7 @@ export type UserRole = 'teacher' | 'dept_head' | 'planner' | 'admin';
 export type AbsenceStatus = 'draft' | 'submitted' | 'approved' | 'completed' | 'rejected';
 
 export type AbsenceReason =
+  | 'undefined'   // Bitte wählen (Platzhalter)
   | 'training'    // Fortbildung
   | 'exam'        // Prüfung
   | 'excursion'   // Exkursion
