@@ -58,7 +58,7 @@ class EmailService:
                 port=self.port,
                 username=self.username if self.username else None,
                 password=self.password if self.password else None,
-                use_tls=self.use_tls
+                start_tls=self.use_tls  # STARTTLS for port 587
             )
             
             return True
