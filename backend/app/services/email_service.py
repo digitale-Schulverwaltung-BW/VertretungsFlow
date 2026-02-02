@@ -50,16 +50,28 @@ class EmailService:
                 message.attach(MIMEText(body, "html"))
             else:
                 message.attach(MIMEText(body, "plain"))
-            
-            # E-Mail versenden
-            await aiosmtplib.send(
-                message,
-                hostname=self.host,
-                port=self.port,
-                username=self.username if self.username else None,
-                password=self.password if self.password else None,
-                start_tls=self.use_tls  # STARTTLS for port 587
-            )
+
+            # E-Mail versenden mit port-basierter TLS-Auswahl
+            smtp_kwargs = {
+                'hostname': self.host,
+                'port': self.port,
+                'username': self.username if self.username else None,
+                'password': self.password if self.password else None,
+            }
+
+            # TLS-Methode basierend auf Port wählen
+            if self.port == 465:
+                # Port 465: Implizites TLS (SMTPS, legacy aber noch verwendet)
+                smtp_kwargs['use_tls'] = True
+            elif self.port == 587:
+                # Port 587: STARTTLS (Standard für Submission)
+                smtp_kwargs['start_tls'] = True
+            elif self.use_tls:
+                # Fallback: Verwende STARTTLS für andere Ports wenn aktiviert
+                smtp_kwargs['start_tls'] = True
+            # Port 25 oder andere ohne TLS: keine zusätzlichen Parameter
+
+            await aiosmtplib.send(message, **smtp_kwargs)
             
             return True
             
