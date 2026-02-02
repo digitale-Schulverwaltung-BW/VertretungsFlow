@@ -15,6 +15,7 @@ import aiofiles
 logger = logging.getLogger(__name__)
 
 from app.core.database import get_db
+from app.core.audit import audit_log, audit_absence_approved, audit_absence_completed, audit_file_uploaded, audit_file_deleted
 from app.models.models import User, Absence, AffectedLesson, UserRole, AbsenceStatus, AbsenceAttachment
 from app.schemas.schemas import (
     AbsenceCreate,
@@ -45,6 +46,18 @@ ALLOWED_MIME_TYPES = [
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain'
 ]
+
+# Allowed file extensions (whitelist for defense-in-depth)
+ALLOWED_EXTENSIONS = {
+    '.pdf',      # PDF documents
+    '.jpg',      # JPEG images
+    '.jpeg',     # JPEG images
+    '.png',      # PNG images
+    '.gif',      # GIF images
+    '.doc',      # Word documents (old format)
+    '.docx',     # Word documents (new format)
+    '.txt',      # Text files
+}
 
 # Reason labels for emails (German)
 REASON_LABELS = {
@@ -452,6 +465,7 @@ async def update_lesson_notes(
 async def approve_absence(
     absence_id: int,
     approval: AbsenceApproval,
+    request: Request,
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
@@ -497,13 +511,27 @@ async def approve_absence(
     
     # Status aktualisieren
     from datetime import datetime
-    
+
     if approval.approved:
+        old_status = absence.status.value
         absence.status = AbsenceStatus.APPROVED
         absence.approved_by = current_user.id
         absence.approved_at = datetime.utcnow()
 
         db.commit()
+
+        # Audit log
+        audit_absence_approved(
+            absence_id=absence.id,
+            approver_id=current_user.id,
+            details={
+                "old_status": old_status,
+                "new_status": "approved",
+                "teacher_id": absence.teacher_id,
+                "approver_role": current_user.role.value
+            },
+            request=request
+        )
 
         # Send email notifications
         try:
@@ -526,9 +554,25 @@ async def approve_absence(
 
         message = "Absence approved"
     else:
+        old_status = absence.status.value
         absence.status = AbsenceStatus.REJECTED
         message = "Absence rejected"
         db.commit()
+
+        # Audit log for rejection
+        audit_log(
+            action="absence_rejected",
+            user_id=current_user.id,
+            resource_type="absence",
+            resource_id=absence.id,
+            details={
+                "old_status": old_status,
+                "new_status": "rejected",
+                "teacher_id": absence.teacher_id,
+                "rejector_role": current_user.role.value
+            },
+            request=request
+        )
 
     return {"message": message}
 
@@ -579,22 +623,57 @@ async def complete_absence(
         )
 
     # Kein Status-Check mehr - Admin/Planner können immer complete
-    
+
     # Status aktualisieren
     from datetime import datetime
+    old_status = absence.status.value
     absence.status = AbsenceStatus.COMPLETED
     absence.completed_at = datetime.utcnow()
+
+    # Audit log
+    audit_absence_completed(
+        absence_id=absence.id,
+        completer_id=current_user.id,
+        details={
+            "old_status": old_status,
+            "new_status": "completed",
+            "teacher_id": absence.teacher_id,
+            "completer_role": current_user.role.value,
+            "attachments_count": len(absence.attachments) if absence.attachments else 0
+        },
+        request=request
+    )
 
     # Attachments automatisch löschen
     if absence.attachments:
         logger.info(f"Deleting {len(absence.attachments)} attachments for completed absence {absence_id}")
 
+        upload_path = UPLOAD_DIR.resolve()
+
         for attachment in absence.attachments:
-            # Datei von Disk löschen
-            file_path = Path(attachment.file_path)
-            if file_path.exists():
-                file_path.unlink()
-                logger.info(f"Deleted file: {file_path}")
+            try:
+                # Datei von Disk löschen mit Path Traversal Check
+                file_path = Path(attachment.file_path).resolve()
+
+                # Verify path is within upload directory
+                if not str(file_path).startswith(str(upload_path)):
+                    logger.error(f"Path traversal attempt detected: {file_path} not in {upload_path}")
+                    raise HTTPException(status_code=400, detail="Invalid file path")
+
+                if file_path.exists():
+                    file_path.unlink()
+                    logger.info(f"Deleted file: {file_path}")
+                else:
+                    logger.warning(f"File already deleted or not found: {file_path}")
+            except FileNotFoundError:
+                # Race condition: file was already deleted
+                logger.warning(f"File not found (race condition): {attachment.file_path}")
+            except PermissionError:
+                logger.error(f"Permission denied deleting file: {attachment.file_path}")
+                # Continue with other files instead of failing completely
+            except Exception as e:
+                logger.error(f"Unexpected error deleting file {attachment.file_path}: {e}")
+                # Continue with other files
 
         # DB-Einträge werden durch CASCADE automatisch gelöscht
 
@@ -671,6 +750,7 @@ async def delete_absence(
 @router.post("/{absence_id}/attachments", response_model=AttachmentResponse)
 async def upload_attachment(
     absence_id: int,
+    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
@@ -719,7 +799,23 @@ async def upload_attachment(
         temp_content.append(chunk)
 
     # Generiere sicheren Dateinamen
-    file_ext = Path(file.filename).suffix
+    # Sanitize filename: only extract extension, prevent path traversal
+    original_filename = Path(file.filename).name  # Get only filename, no path
+    file_ext = Path(original_filename).suffix.lower()
+
+    # Validate file extension doesn't contain path separators
+    if '/' in file_ext or '\\' in file_ext or '..' in file_ext:
+        logger.error(f"Invalid file extension detected: {file_ext}")
+        raise HTTPException(status_code=400, detail="Invalid file extension")
+
+    # Validate file extension is in whitelist (defense-in-depth)
+    if file_ext not in ALLOWED_EXTENSIONS:
+        logger.warning(f"File extension not allowed: {file_ext} (filename: {file.filename})")
+        raise HTTPException(
+            status_code=400,
+            detail=f"File extension '{file_ext}' not allowed. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
+        )
+
     stored_filename = f"{uuid.uuid4()}{file_ext}"
 
     # Erstelle Unterverzeichnis pro Abwesenheit
@@ -727,6 +823,11 @@ async def upload_attachment(
     absence_dir.mkdir(parents=True, exist_ok=True)
 
     file_path = absence_dir / stored_filename
+
+    # Verify final path is within upload directory
+    if not str(file_path.resolve()).startswith(str(UPLOAD_DIR.resolve())):
+        logger.error(f"Path traversal attempt in upload: {file_path}")
+        raise HTTPException(status_code=400, detail="Invalid file path")
 
     # Speichere Datei
     async with aiofiles.open(file_path, 'wb') as f:
@@ -748,6 +849,19 @@ async def upload_attachment(
     db.refresh(attachment)
 
     logger.info(f"File uploaded: {file.filename} -> {stored_filename} ({file_size} bytes)")
+
+    # Audit log
+    audit_file_uploaded(
+        attachment_id=attachment.id,
+        user_id=current_user.id,
+        details={
+            "absence_id": absence_id,
+            "filename": file.filename,
+            "mime_type": file.content_type,
+            "file_size": file_size
+        },
+        request=request
+    )
 
     return attachment
 
@@ -784,8 +898,15 @@ async def download_attachment(
         if absence.teacher_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized")
 
+    # Path Traversal Check
+    upload_path = UPLOAD_DIR.resolve()
+    file_path = Path(attachment.file_path).resolve()
+
+    if not str(file_path).startswith(str(upload_path)):
+        logger.error(f"Path traversal attempt detected in download: {file_path} not in {upload_path}")
+        raise HTTPException(status_code=400, detail="Invalid file path")
+
     # Datei existiert?
-    file_path = Path(attachment.file_path)
     if not file_path.exists():
         logger.error(f"File not found on disk: {file_path}")
         raise HTTPException(status_code=404, detail="File not found on server")
@@ -872,6 +993,7 @@ async def get_cache_status(
 async def delete_attachment(
     absence_id: int,
     attachment_id: int,
+    request: Request,
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
@@ -898,11 +1020,42 @@ async def delete_attachment(
         if absence.status == AbsenceStatus.COMPLETED:
             raise HTTPException(status_code=400, detail="Cannot delete from completed absence")
 
-    # Datei von Disk löschen
-    file_path = Path(attachment.file_path)
-    if file_path.exists():
-        file_path.unlink()
-        logger.info(f"Deleted file: {file_path}")
+    # Datei von Disk löschen mit Path Traversal Check
+    try:
+        upload_path = UPLOAD_DIR.resolve()
+        file_path = Path(attachment.file_path).resolve()
+
+        # Verify path is within upload directory
+        if not str(file_path).startswith(str(upload_path)):
+            logger.error(f"Path traversal attempt detected in delete: {file_path} not in {upload_path}")
+            raise HTTPException(status_code=400, detail="Invalid file path")
+
+        if file_path.exists():
+            file_path.unlink()
+            logger.info(f"Deleted file: {file_path}")
+        else:
+            logger.warning(f"File already deleted: {file_path}")
+    except FileNotFoundError:
+        logger.warning(f"File not found during deletion (race condition): {attachment.file_path}")
+    except PermissionError:
+        logger.error(f"Permission denied deleting file: {attachment.file_path}")
+        raise HTTPException(status_code=500, detail="Permission denied deleting file")
+    except Exception as e:
+        logger.error(f"Unexpected error deleting file {attachment.file_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")
+
+    # Audit log (before deleting from DB)
+    audit_file_deleted(
+        attachment_id=attachment.id,
+        user_id=current_user.id,
+        details={
+            "absence_id": absence_id,
+            "filename": attachment.filename,
+            "mime_type": attachment.mime_type,
+            "file_size": attachment.file_size
+        },
+        request=request
+    )
 
     # DB-Eintrag löschen
     db.delete(attachment)

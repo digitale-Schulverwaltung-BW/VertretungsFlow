@@ -1,10 +1,69 @@
 """
 Pydantic Schemas für Request/Response Validierung
 """
+import re
 from datetime import datetime, date
 from typing import Optional, List, Union
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from app.models.models import UserRole, AbsenceStatus
+
+
+# ============ Security: Text Sanitization ============
+
+def sanitize_text_input(
+    value: Optional[str],
+    max_length: int = 5000,
+    allow_newlines: bool = True
+) -> Optional[str]:
+    """
+    Sanitizes user text input to prevent XSS and injection attacks
+
+    Security measures:
+    - Strips HTML tags (e.g., <script>, <img>)
+    - Removes dangerous control characters
+    - Enforces max length
+    - Allows normal text characters including <, >, etc. in text context
+
+    Args:
+        value: Input string to sanitize
+        max_length: Maximum allowed length
+        allow_newlines: Whether to keep newline characters
+
+    Returns:
+        Sanitized string or None
+    """
+    if value is None:
+        return None
+
+    if not isinstance(value, str):
+        return str(value)
+
+    # Strip leading/trailing whitespace
+    value = value.strip()
+
+    if not value:
+        return None
+
+    # Remove HTML tags (simple but effective for most cases)
+    # This removes <tag>, </tag>, <tag attr="value">, etc.
+    value = re.sub(r'<[^>]+>', '', value)
+
+    # Remove dangerous control characters (keep \n, \r, \t if allowed)
+    if allow_newlines:
+        # Keep newlines and tabs, remove other control chars
+        value = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', value)
+    else:
+        # Remove all control characters
+        value = re.sub(r'[\x00-\x1f\x7f]', '', value)
+
+    # Remove NULL bytes (can cause issues in databases)
+    value = value.replace('\x00', '')
+
+    # Enforce max length
+    if len(value) > max_length:
+        value = value[:max_length]
+
+    return value if value else None
 
 
 # ============ User Schemas ============
@@ -104,7 +163,11 @@ class AbsenceBase(BaseModel):
     @field_validator('excursion_classes')
     @classmethod
     def validate_excursion_classes(cls, v, info):
-        """Validierung: Pflicht bei Exkursion"""
+        """Validierung: Pflicht bei Exkursion + Sanitization"""
+        # Sanitize input first
+        v = sanitize_text_input(v, max_length=500, allow_newlines=False)
+
+        # Then validate required field logic
         reason = info.data.get('reason')
         if reason == 'excursion' and (not v or not v.strip()):
             raise ValueError('Klasse(n) sind bei Exkursionen Pflichtfeld')
@@ -113,11 +176,21 @@ class AbsenceBase(BaseModel):
     @field_validator('personal_reason')
     @classmethod
     def validate_personal_reason(cls, v, info):
-        """Validierung: Pflicht bei Privat/Sonstiges"""
+        """Validierung: Pflicht bei Privat/Sonstiges + Sanitization"""
+        # Sanitize input first
+        v = sanitize_text_input(v, max_length=2000, allow_newlines=True)
+
+        # Then validate required field logic
         reason = info.data.get('reason')
         if reason in ['personal', 'other'] and (not v or not v.strip()):
             raise ValueError('Begründung ist bei Privat/Sonstiges Pflichtfeld')
         return v
+
+    @field_validator('admin_notes')
+    @classmethod
+    def validate_admin_notes(cls, v):
+        """Sanitization for admin notes"""
+        return sanitize_text_input(v, max_length=2000, allow_newlines=True)
 
 
 class AbsenceCreate(AbsenceBase):
@@ -137,6 +210,12 @@ class AffectedLessonResponse(AffectedLessonBase):
 class AffectedLessonUpdate(BaseModel):
     """Update für Hinweise zu betroffenen Stunden"""
     notes: Optional[str] = None
+
+    @field_validator('notes')
+    @classmethod
+    def validate_notes(cls, v):
+        """Sanitization for lesson notes"""
+        return sanitize_text_input(v, max_length=1000, allow_newlines=True)
 
 
 # ============ Attachment Schemas ============

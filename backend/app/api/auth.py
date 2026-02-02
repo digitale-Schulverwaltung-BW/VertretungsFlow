@@ -2,6 +2,7 @@
 Authentication API Routes
 Login, JWT Token Management
 """
+import hmac
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Header
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.audit import audit_log
 from app.models.models import User, UserRole
 from app.schemas.schemas import Token, TokenData, UserResponse, LoginRequest
 
@@ -190,8 +192,8 @@ async def get_wordpress_proxy_user(
             detail="Not authenticated"
         )
 
-    # Shared Secret validieren
-    if x_wordpress_secret != settings.WORDPRESS_PROXY_SECRET:
+    # Shared Secret validieren (constant-time comparison to prevent timing attacks)
+    if not hmac.compare_digest(x_wordpress_secret, settings.WORDPRESS_PROXY_SECRET):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid proxy secret"
@@ -221,23 +223,49 @@ async def get_wordpress_proxy_user(
             db.add(user)
             db.commit()
             db.refresh(user)
+
+            # Audit log for user creation
+            audit_log(
+                action="user_created",
+                user_id=user.id,
+                resource_type="user",
+                resource_id=user.id,
+                details={
+                    "username": x_wordpress_user,
+                    "email": user_email,
+                    "role": user_role.value,
+                    "webuntis_code": webuntis_code,
+                    "source": "wordpress_proxy"
+                },
+                ip_address="wordpress-proxy"  # Server-to-server, no client IP
+            )
         else:
             # Smart Update: Nur aktualisieren wenn sich Daten geändert haben
             needs_update = False
+            update_details = {}
 
             if user.email != user_email:
+                update_details["old_email"] = user.email
+                update_details["new_email"] = user_email
                 user.email = user_email
                 needs_update = True
 
             if user.full_name != user_name:
+                update_details["old_name"] = user.full_name
+                update_details["new_name"] = user_name
                 user.full_name = user_name
                 needs_update = True
 
             if user.role != user_role:
+                # Role change is critical security event
+                update_details["old_role"] = user.role.value
+                update_details["new_role"] = user_role.value
                 user.role = user_role
                 needs_update = True
 
             if user.webuntis_teacher_code != webuntis_code:
+                update_details["old_webuntis_code"] = user.webuntis_teacher_code
+                update_details["new_webuntis_code"] = webuntis_code
                 user.webuntis_teacher_code = webuntis_code
                 needs_update = True
 
@@ -245,6 +273,20 @@ async def get_wordpress_proxy_user(
                 user.updated_at = datetime.utcnow()
                 db.commit()
                 db.refresh(user)
+
+                # Audit log for user update
+                audit_log(
+                    action="user_updated",
+                    user_id=user.id,
+                    resource_type="user",
+                    resource_id=user.id,
+                    details={
+                        "username": x_wordpress_user,
+                        "changes": update_details,
+                        "source": "wordpress_proxy"
+                    },
+                    ip_address="wordpress-proxy"
+                )
 
     else:
         # Standalone-Modus: Daten aus LDAP
@@ -275,6 +317,21 @@ async def get_wordpress_proxy_user(
             db.add(user)
             db.commit()
             db.refresh(user)
+
+            # Audit log for LDAP user creation
+            audit_log(
+                action="user_created",
+                user_id=user.id,
+                resource_type="user",
+                resource_id=user.id,
+                details={
+                    "username": x_wordpress_user,
+                    "email": ldap_info.get("email"),
+                    "role": UserRole.TEACHER.value,
+                    "source": "ldap"
+                },
+                ip_address="wordpress-proxy"
+            )
 
     if not user.is_active:
         raise HTTPException(

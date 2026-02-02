@@ -8,6 +8,8 @@ from app.models.models import (
     AbsenceStatus,
     AffectedLesson,
     Notification,
+    AbsenceAttachment,
+    WebUntisCache,
 )
 
 __all__ = [
@@ -17,4 +19,6 @@ __all__ = [
     "AbsenceStatus",
     "AffectedLesson",
     "Notification",
+    "AbsenceAttachment",
+    "WebUntisCache",
 ]

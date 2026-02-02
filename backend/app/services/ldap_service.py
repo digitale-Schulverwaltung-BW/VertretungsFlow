@@ -77,7 +77,7 @@ class LDAPService:
             conn.simple_bind_s(self.bind_dn, self.bind_password)
             
             # Suche nach User
-            search_filter = f"(uid={username})"  # oder (sAMAccountName={username}) für AD
+            search_filter = ldap.filter.filter_format("(uid=%s)", [username])  # oder (sAMAccountName={username}) für AD
             result = conn.search_s(
                 self.base_dn,
                 ldap.SCOPE_SUBTREE,
