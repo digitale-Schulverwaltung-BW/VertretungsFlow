@@ -230,6 +230,7 @@ async def create_absence(
 async def fetch_lessons_from_webuntis(
     request: FetchLessonsRequest,
     current_user: User = Depends(get_wordpress_proxy_user),
+    db: Session = Depends(get_db)
 ):
     """
     Lädt Stunden aus WebUntis für Vorschau (ohne DB-Speicherung)
@@ -240,6 +241,7 @@ async def fetch_lessons_from_webuntis(
     Args:
         request: Zeitraum und Perioden
         current_user: Aktueller User (via WordPress Proxy Auth)
+        db: Database session
 
     Returns:
         Liste von WebUntis-Stunden im angegebenen Zeitraum
