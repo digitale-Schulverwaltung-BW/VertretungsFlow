@@ -30,25 +30,25 @@ const ToDoList: React.FC<ToDoListProps> = ({ absences, userRole, onActionClick }
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {absences.map((absence) => (
         <div
           key={absence.id}
-          className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
+          className="grid grid-cols-[2fr_2fr_1.5fr_auto] gap-3 items-center p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
         >
-          <div className="flex-1">
-            <p className="font-medium text-gray-900">
-              {absence.teacher.full_name || absence.teacher.username}
-            </p>
-            <p className="text-sm text-gray-600 mt-1">
-              {format(new Date(absence.start_date), 'dd.MM.yyyy', { locale: de })} - {' '}
-              {format(new Date(absence.end_date), 'dd.MM.yyyy', { locale: de })}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">{getAbsenceReasonLabel(absence.reason)}</p>
+          <div className="font-medium text-gray-900 truncate">
+            {absence.teacher.full_name || absence.teacher.username}
+          </div>
+          <div className="text-sm text-gray-600 whitespace-nowrap">
+            {format(new Date(absence.start_date), 'dd.MM.yyyy', { locale: de })} - {' '}
+            {format(new Date(absence.end_date), 'dd.MM.yyyy', { locale: de })}
+          </div>
+          <div className="text-sm text-gray-500 truncate">
+            {getAbsenceReasonLabel(absence.reason)}
           </div>
           <button
             onClick={() => onActionClick?.(absence)}
-            className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap"
           >
             {getActionLabel(absence)}
           </button>
