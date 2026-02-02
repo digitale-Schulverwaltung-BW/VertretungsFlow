@@ -330,24 +330,60 @@ class AbsenzFlow_Admin {
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 
+        // Get API settings
+        $options = get_option('absenzflow_options');
+        $api_url = isset($options['api_url']) ? rtrim($options['api_url'], '/') : '';
+        $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
+
+        if (empty($api_url) || empty($api_secret)) {
+            echo '<div class="notice notice-error"><p>API URL oder Secret nicht konfiguriert. Bitte in den Einstellungen eintragen.</p></div>';
+            return;
+        }
+
         // Handle refresh action
         if (isset($_POST['refresh_cache']) && check_admin_referer('absenzflow_refresh_cache')) {
-            require_once plugin_dir_path(__FILE__) . 'class-api-proxy.php';
-            $api_proxy = AbsenzFlow_API_Proxy::get_instance();
-            $result = $api_proxy->request('POST', '/absences/admin/webuntis-cache/refresh');
+            $response = wp_remote_post($api_url . '/absences/admin/webuntis-cache/refresh', array(
+                'headers' => array(
+                    'Content-Type' => 'application/json',
+                    'X-WordPress-Secret' => $api_secret,
+                    'X-WordPress-User' => wp_get_current_user()->user_login,
+                    'X-WordPress-Email' => wp_get_current_user()->user_email,
+                    'X-WordPress-Role' => 'admin',
+                ),
+                'timeout' => 30
+            ));
 
-            if ($result && !isset($result['error'])) {
-                echo '<div class="notice notice-success"><p>WebUntis Cache wurde erfolgreich aktualisiert.</p></div>';
+            if (is_wp_error($response)) {
+                echo '<div class="notice notice-error"><p>Fehler beim Aktualisieren des Cache: ' . esc_html($response->get_error_message()) . '</p></div>';
             } else {
-                $error_msg = isset($result['error']) ? $result['error'] : 'Unbekannter Fehler';
-                echo '<div class="notice notice-error"><p>Fehler beim Aktualisieren des Cache: ' . esc_html($error_msg) . '</p></div>';
+                $body = wp_remote_retrieve_body($response);
+                $result = json_decode($body, true);
+
+                if ($result && isset($result['message'])) {
+                    echo '<div class="notice notice-success"><p>' . esc_html($result['message']) . '</p></div>';
+                } else {
+                    echo '<div class="notice notice-error"><p>Cache aktualisiert, aber unerwartete Antwort erhalten.</p></div>';
+                }
             }
         }
 
         // Get cache status
-        require_once plugin_dir_path(__FILE__) . 'class-api-proxy.php';
-        $api_proxy = AbsenzFlow_API_Proxy::get_instance();
-        $status = $api_proxy->request('GET', '/absences/admin/webuntis-cache/status');
+        $response = wp_remote_get($api_url . '/absences/admin/webuntis-cache/status', array(
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'X-WordPress-Secret' => $api_secret,
+                'X-WordPress-User' => wp_get_current_user()->user_login,
+                'X-WordPress-Email' => wp_get_current_user()->user_email,
+                'X-WordPress-Role' => 'admin',
+            ),
+            'timeout' => 15
+        ));
+
+        $status = null;
+        if (!is_wp_error($response)) {
+            $body = wp_remote_retrieve_body($response);
+            $status = json_decode($body, true);
+        }
 
         ?>
         <div class="wrap">
