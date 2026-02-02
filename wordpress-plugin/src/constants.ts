@@ -1,6 +1,7 @@
 import type { AbsenceReason } from './types';
 
 export const ABSENCE_REASONS: Array<{ value: AbsenceReason; label: string }> = [
+  { value: 'undefined', label: 'bitte wählen...' },
   { value: 'training', label: 'Fortbildung' },
   { value: 'exam', label: 'Prüfung' },
   { value: 'excursion', label: 'Exkursion' },

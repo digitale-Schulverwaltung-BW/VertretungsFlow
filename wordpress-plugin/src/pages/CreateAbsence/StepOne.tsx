@@ -90,6 +90,10 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
 
     const newErrors: string[] = [];
 
+    if (reason === 'undefined') {
+      newErrors.push('Bitte wählen Sie einen Absenzgrund aus.');
+    }
+
     if (!dateRange?.from || !dateRange?.to) {
       newErrors.push('Bitte wählen Sie einen Datumszeitraum aus.');
     }
@@ -197,7 +201,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
               htmlFor="reason"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Grund
+              Grund<span className="text-red-500">*</span>
             </label>
             <select
               id="reason"
