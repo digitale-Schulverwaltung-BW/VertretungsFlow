@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10 MB
 
     # JWT Token
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 Stunden
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 8  # 8 Stunden
     ALGORITHM: str = "HS256"
 
     # Authentication Mode
