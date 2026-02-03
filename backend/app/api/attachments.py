@@ -6,6 +6,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, File, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.core.database import get_db
 from app.core.audit import audit_file_uploaded, audit_file_deleted
@@ -19,11 +21,15 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post("/{absence_id}/attachments", response_model=AttachmentResponse)
+@limiter.limit("10/minute")
 async def upload_attachment(
-    absence_id: int,
     request: Request,
+    absence_id: int,
     file: UploadFile = File(...),
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
@@ -83,7 +89,9 @@ async def upload_attachment(
 
 
 @router.get("/{absence_id}/attachments/{attachment_id}")
+@limiter.limit("30/minute")
 async def download_attachment(
+    request: Request,
     absence_id: int,
     attachment_id: int,
     current_user: User = Depends(get_wordpress_proxy_user),
@@ -125,10 +133,11 @@ async def download_attachment(
 
 
 @router.delete("/{absence_id}/attachments/{attachment_id}")
+@limiter.limit("10/minute")
 async def delete_attachment(
+    request: Request,
     absence_id: int,
     attachment_id: int,
-    request: Request,
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):

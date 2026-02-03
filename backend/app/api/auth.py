@@ -5,10 +5,12 @@ Login, JWT Token Management
 import hmac
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -26,6 +28,9 @@ router = APIRouter()
 
 # OAuth2 Schema für Token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+# Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
 
 
 def map_wordpress_role(wp_role: str) -> UserRole:
@@ -345,7 +350,9 @@ async def get_wordpress_proxy_user(
 # Login-Endpoint nur im Standalone-Modus verfügbar
 if settings.AUTH_MODE == "standalone":
     @router.post("/login", response_model=Token)
+    @limiter.limit("5/minute")
     async def login(
+        request: Request,
         login_data: LoginRequest,
         db: Session = Depends(get_db)
     ):
@@ -411,13 +418,15 @@ if settings.AUTH_MODE == "standalone":
 
 
 @router.get("/me", response_model=UserResponse)
-async def read_users_me(current_user: User = Depends(get_wordpress_proxy_user)):
+@limiter.limit("30/minute")
+async def read_users_me(request: Request, current_user: User = Depends(get_wordpress_proxy_user)):
     """
     Gibt Informationen über aktuellen User zurück
 
     Unterstützt sowohl JWT-Auth als auch WordPress Proxy Auth
 
     Args:
+        request: HTTP Request
         current_user: Current User
 
     Returns:
@@ -427,7 +436,8 @@ async def read_users_me(current_user: User = Depends(get_wordpress_proxy_user)):
 
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_active_user)):
+@limiter.limit("10/minute")
+async def logout(request: Request, current_user: User = Depends(get_current_active_user)):
     """
     Logout Endpoint
     

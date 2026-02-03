@@ -6,6 +6,8 @@ import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session, selectinload, joinedload
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +30,14 @@ from app.services.absence_service import absence_service
 
 router = APIRouter()
 
+# Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post("/", response_model=AbsenceResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("20/minute")
 async def create_absence(
+    request: Request,
     absence: AbsenceCreate,
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
@@ -51,7 +58,9 @@ async def create_absence(
 
 
 @router.get("/", response_model=List[AbsenceResponse])
+@limiter.limit("60/minute")
 async def list_absences(
+    request: Request,
     skip: int = 0,
     limit: int = 100,
     status: AbsenceStatus = None,
@@ -97,7 +106,9 @@ async def list_absences(
 
 
 @router.get("/{absence_id}", response_model=AbsenceResponse)
+@limiter.limit("60/minute")
 async def get_absence(
+    request: Request,
     absence_id: int,
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
@@ -139,7 +150,9 @@ async def get_absence(
 
 
 @router.patch("/{absence_id}/lessons/{lesson_id}", response_model=AffectedLessonResponse)
+@limiter.limit("30/minute")
 async def update_lesson_notes(
+    request: Request,
     absence_id: int,
     lesson_id: int,
     lesson_update: AffectedLessonUpdate,
@@ -198,10 +211,11 @@ async def update_lesson_notes(
 
 
 @router.post("/{absence_id}/approve")
+@limiter.limit("30/minute")
 async def approve_absence(
+    request: Request,
     absence_id: int,
     approval: AbsenceApproval,
-    request: Request,
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
@@ -243,9 +257,10 @@ async def approve_absence(
 
 
 @router.post("/{absence_id}/complete")
+@limiter.limit("30/minute")
 async def complete_absence(
-    absence_id: int,
     request: Request,
+    absence_id: int,
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)
 ):
@@ -278,7 +293,9 @@ async def complete_absence(
 
 
 @router.delete("/{absence_id}")
+@limiter.limit("10/minute")
 async def delete_absence(
+    request: Request,
     absence_id: int,
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db)

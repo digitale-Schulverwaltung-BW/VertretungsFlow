@@ -5,9 +5,11 @@ Verwaltung von Benutzerrollen, Dashboard, WebUntis Cache
 import logging
 from typing import List
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.core.database import get_db
 from app.models.models import User, Absence, AffectedLesson, UserRole, AbsenceStatus, WebUntisCache
@@ -22,9 +24,14 @@ from app.api.auth import get_current_active_user, require_role
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.get("/users", response_model=List[UserResponse])
+@limiter.limit("30/minute")
 async def list_users(
+    request: Request,
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.DEPARTMENT_HEAD])),
@@ -49,7 +56,9 @@ async def list_users(
 
 
 @router.post("/users/{user_id}/role", response_model=UserResponse)
+@limiter.limit("10/minute")
 async def assign_role(
+    request: Request,
     user_id: int,
     role_assignment: RoleAssignment,
     current_user: User = Depends(require_role([UserRole.ADMIN])),
@@ -85,7 +94,9 @@ async def assign_role(
 
 
 @router.get("/dashboard", response_model=DashboardStats)
+@limiter.limit("60/minute")
 async def get_dashboard_stats(
+    request: Request,
     current_user: User = Depends(require_role([UserRole.PLANNER, UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])),
     db: Session = Depends(get_db)
 ):
@@ -128,7 +139,9 @@ async def get_dashboard_stats(
 
 
 @router.get("/absences/pending", response_model=List[AbsenceResponse])
+@limiter.limit("60/minute")
 async def list_pending_absences(
+    request: Request,
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(require_role([UserRole.PLANNER, UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])),
@@ -158,7 +171,9 @@ async def list_pending_absences(
 
 
 @router.get("/absences/by-date")
+@limiter.limit("60/minute")
 async def list_absences_by_date(
+    request: Request,
     from_date: str,
     to_date: str,
     current_user: User = Depends(require_role([UserRole.PLANNER, UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])),
@@ -199,7 +214,9 @@ async def list_absences_by_date(
 # ============ WebUntis Cache Management ============
 
 @router.post("/webuntis-cache/refresh")
+@limiter.limit("5/minute")
 async def refresh_webuntis_cache(
+    request: Request,
     current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.PLANNER])),
     db: Session = Depends(get_db)
 ):
@@ -229,7 +246,9 @@ async def refresh_webuntis_cache(
 
 
 @router.get("/webuntis-cache/status")
+@limiter.limit("30/minute")
 async def get_cache_status(
+    request: Request,
     current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.PLANNER])),
     db: Session = Depends(get_db)
 ):

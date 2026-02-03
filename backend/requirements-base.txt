@@ -13,6 +13,7 @@ psycopg2-binary==2.9.9
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
+slowapi==0.1.9
 
 # HTTP Client (für WebUntis API)
 httpx==0.26.0
