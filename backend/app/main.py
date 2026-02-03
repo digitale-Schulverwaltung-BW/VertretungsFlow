@@ -5,6 +5,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -46,6 +47,35 @@ app = FastAPI(
 # Rate Limiter an App binden
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Adds security headers to all responses
+
+    Headers:
+    - X-Content-Type-Options: Prevents MIME type sniffing
+    - X-Frame-Options: Prevents clickjacking attacks
+    - Referrer-Policy: Controls referrer information
+    - Strict-Transport-Security (HSTS): Only in production (DEBUG=False)
+    """
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # Always set these headers (work with HTTP)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        # HSTS only in production (requires HTTPS)
+        if not settings.DEBUG:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # CORS Middleware
 app.add_middleware(

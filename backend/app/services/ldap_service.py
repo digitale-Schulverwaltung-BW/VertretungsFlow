@@ -3,6 +3,7 @@ LDAP Authentication Service
 Authentifizierung gegen Active Directory / LDAP
 """
 import ldap
+from ldap.filter import filter_format
 from typing import Optional
 from app.core.config import settings
 
@@ -110,7 +111,7 @@ class LDAPService:
             conn = self._get_connection()
             conn.simple_bind_s(self.bind_dn, self.bind_password)
             
-            search_filter = f"(uid={username})"
+            search_filter = filter_format("(uid=%s)", [username])
             result = conn.search_s(
                 self.base_dn,
                 ldap.SCOPE_SUBTREE,
