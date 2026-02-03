@@ -50,7 +50,7 @@ Siehe: `backend/app/api/auth.py:get_wordpress_proxy_user()`
 - Sicherheit: UUID-basierte Dateinamen, auth-geschützter Download
 - Auto-Deletion: Dateien werden gelöscht wenn Absenz auf "erledigt" gesetzt wird
 
-Siehe: `backend/app/api/absences.py` (Lines 581-712)
+Siehe: `backend/app/api/attachments.py` und `backend/app/services/attachment_service.py`
 
 ## Verzeichnisstruktur
 
@@ -58,11 +58,26 @@ Siehe: `backend/app/api/absences.py` (Lines 581-712)
 AbsenzFlow/
 ├── backend/                    # FastAPI Backend
 │   ├── app/
-│   │   ├── api/               # REST API Endpoints
-│   │   │   ├── absences.py    # Hauptlogik für Absenzen
-│   │   │   └── auth.py        # WordPress Proxy Auth
+│   │   ├── api/               # REST API Endpoints (dünn, delegieren an Services)
+│   │   │   ├── absences.py    # CRUD Endpoints für Absenzen (317 LOC)
+│   │   │   ├── attachments.py # File Upload/Download/Delete (183 LOC)
+│   │   │   ├── webuntis.py    # WebUntis Timetable Integration (72 LOC)
+│   │   │   ├── auth.py        # WordPress Proxy Auth
+│   │   │   └── admin.py       # Admin Endpoints
+│   │   ├── services/          # Business Logic (neu seit 2026-02-03)
+│   │   │   ├── absence_service.py      # Absence Business Logic (417 LOC)
+│   │   │   ├── attachment_service.py   # File Management Logic (235 LOC)
+│   │   │   ├── permission_service.py   # Centralized Authorization (134 LOC)
+│   │   │   ├── email_service.py        # Email Notifications
+│   │   │   ├── webuntis_service.py     # WebUntis API Integration
+│   │   │   └── ldap_service.py         # LDAP Authentication (optional)
+│   │   ├── utils/             # Helper Functions (neu seit 2026-02-03)
+│   │   │   ├── email_utils.py # get_recipients_by_roles, REASON_LABELS
+│   │   │   └── __init__.py
 │   │   ├── core/
-│   │   │   └── config.py      # Settings (Pydantic BaseSettings)
+│   │   │   ├── config.py      # Settings (Pydantic BaseSettings)
+│   │   │   ├── database.py    # Database Connection
+│   │   │   └── audit.py       # Audit Logging
 │   │   ├── models/
 │   │   │   └── models.py      # SQLAlchemy ORM Models
 │   │   └── schemas/
@@ -97,11 +112,36 @@ AbsenzFlow/
 
 ### Backend
 
+**API Routes (dünn, delegieren an Services):**
+
+| Datei | Beschreibung | Endpoints |
+|-------|--------------|-----------|
+| `backend/app/api/absences.py` | Absence CRUD Endpoints (317 LOC) | `POST /`, `GET /`, `GET /{id}`, `PATCH /{id}/lessons/{lesson_id}`, `POST /{id}/approve`, `POST /{id}/complete`, `DELETE /{id}` |
+| `backend/app/api/attachments.py` | File Upload/Download/Delete (183 LOC) | `POST /{id}/attachments`, `GET /{id}/attachments/{att_id}`, `DELETE /{id}/attachments/{att_id}` |
+| `backend/app/api/webuntis.py` | WebUntis Integration (72 LOC) | `POST /absences/fetch-lessons` |
+| `backend/app/api/auth.py` | WordPress Proxy Auth | `get_wordpress_proxy_user()` - validiert Secret |
+
+**Services (Business Logic):**
+
 | Datei | Beschreibung | Wichtige Funktionen |
 |-------|--------------|---------------------|
-| `backend/app/api/absences.py` | Haupt-API-Logik | `create_absence()`, `upload_attachment()`, `complete_absence()` |
-| `backend/app/api/auth.py` | WordPress Proxy Auth | `get_wordpress_proxy_user()` - validiert Secret |
-| `backend/app/models/models.py` | Datenbank-Modelle | `Absence`, `AffectedLesson`, `AbsenceAttachment` |
+| `backend/app/services/absence_service.py` | Absence Business Logic (417 LOC) | `create_absence()`, `approve_absence()`, `complete_absence()`, `validate_date_range()` |
+| `backend/app/services/attachment_service.py` | File Management (235 LOC) | `validate_file()`, `save_file()`, `delete_file()`, `get_file_path()` |
+| `backend/app/services/permission_service.py` | Authorization (134 LOC) | `can_view_absence()`, `can_edit_absence()`, `can_approve_absence()`, `can_complete_absence()` |
+| `backend/app/services/email_service.py` | Email Notifications | `send_absence_submitted_notification()`, etc. |
+| `backend/app/services/webuntis_service.py` | WebUntis API | `get_timetable_for_teacher()` |
+
+**Utilities:**
+
+| Datei | Beschreibung | Funktionen |
+|-------|--------------|-----------|
+| `backend/app/utils/email_utils.py` | Email Helpers | `get_recipients_by_roles()`, `REASON_LABELS` |
+
+**Core:**
+
+| Datei | Beschreibung | Wichtige Elemente |
+|-------|--------------|-------------------|
+| `backend/app/models/models.py` | Datenbank-Modelle | `Absence`, `AffectedLesson`, `AbsenceAttachment`, `User` |
 | `backend/app/schemas/schemas.py` | Pydantic Schemas | Validierung mit `@field_validator` für Conditional Fields |
 | `backend/app/core/config.py` | Konfiguration | `WORDPRESS_PROXY_SECRET`, `UPLOAD_DIR` |
 
@@ -538,10 +578,37 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 - **WordPress Plugin:** Inline-Kommentare in PHP-Dateien
 - **Environment Vars:** `.env.example` mit allen Optionen
 
+## Refactoring-Historie
+
+### 2026-02-03: Backend-Refactoring - Services & Routes-Aufteilung
+
+**Problem:** `backend/app/api/absences.py` war mit 993 LOC zu groß und schwer wartbar.
+
+**Lösung:** 3-Layer-Refactoring
+1. **Services extrahiert** (Business Logic aus Routes)
+   - `absence_service.py` (417 LOC) - Absence CRUD Logic
+   - `attachment_service.py` (235 LOC) - File Management
+   - `permission_service.py` (134 LOC) - Authorization
+2. **Routes aufgeteilt** (nach Feature)
+   - `absences.py` (317 LOC) - Absence CRUD Endpoints
+   - `attachments.py` (183 LOC) - File Upload/Download/Delete
+   - `webuntis.py` (72 LOC) - WebUntis Integration
+3. **Utils erstellt** (Wiederverwendbare Helpers)
+   - `email_utils.py` - `get_recipients_by_roles()`, `REASON_LABELS`
+
+**Ergebnis:**
+- ✅ `absences.py` von 993 LOC → 317 LOC (68% Reduktion)
+- ✅ Bessere Testbarkeit (Services unabhängig testbar)
+- ✅ Wiederverwendbarkeit (Services können von mehreren Routes genutzt werden)
+- ✅ DRY (keine Code-Duplikation mehr bei Permission-Checks, Validierung, Email-Logik)
+- ✅ Klare Verantwortlichkeiten (Single Responsibility Principle)
+
+**Von:** Claude Sonnet 4.5 (mit User Seyfried)
+
 ## Letzte Aktualisierung
 
-- Datum: 2026-02-02
-- Version: Nach Feature "Uploads + Conditional Inputs"
+- Datum: 2026-02-03
+- Version: Nach Backend-Refactoring (Services & Routes-Aufteilung)
 - Von: Claude Sonnet 4.5 (mit User Seyfried)
 
 ---

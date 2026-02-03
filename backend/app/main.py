@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.config import settings
-from app.api import auth, absences, admin
+from app.api import auth, absences, attachments, webuntis, admin
 
 # Logging konfigurieren
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
@@ -81,6 +81,8 @@ async def limit_request_size(request: Request, call_next):
 # API Routes einbinden
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(absences.router, prefix="/api/absences", tags=["Absences"])
+app.include_router(attachments.router, prefix="/api/absences", tags=["Attachments"])
+app.include_router(webuntis.router, prefix="/api", tags=["WebUntis"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Administration"])
 
 

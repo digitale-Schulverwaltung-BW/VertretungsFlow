@@ -1,14 +1,16 @@
 """
 Admin API Routes
-Verwaltung von Benutzerrollen, Dashboard
+Verwaltung von Benutzerrollen, Dashboard, WebUntis Cache
 """
+import logging
 from typing import List
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.database import get_db
-from app.models.models import User, Absence, AffectedLesson, UserRole, AbsenceStatus
+from app.models.models import User, Absence, AffectedLesson, UserRole, AbsenceStatus, WebUntisCache
 from app.schemas.schemas import (
     UserResponse,
     RoleAssignment,
@@ -18,6 +20,7 @@ from app.schemas.schemas import (
 from app.api.auth import get_current_active_user, require_role
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/users", response_model=List[UserResponse])
@@ -189,5 +192,71 @@ async def list_absences_by_date(
         Absence.end_date <= end,
         Absence.status != AbsenceStatus.REJECTED
     ).order_by(Absence.start_date.asc()).all()
-    
+
     return absences
+
+
+# ============ WebUntis Cache Management ============
+
+@router.post("/webuntis-cache/refresh")
+async def refresh_webuntis_cache(
+    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.PLANNER])),
+    db: Session = Depends(get_db)
+):
+    """
+    Manuelles Refresh der WebUntis Stammdaten
+    Nur für Admin/Planner
+    """
+    # Import here to avoid circular dependency
+    from app.services.webuntis import webuntis_service
+
+    # Clear in-memory cache
+    webuntis_service._subjects_cache = None
+    webuntis_service._classes_cache = None
+    webuntis_service._rooms_cache = None
+    webuntis_service._timegrid_cache = None
+
+    # Delete DB cache (force re-fetch)
+    db.query(WebUntisCache).delete()
+    db.commit()
+
+    logger.info(f"WebUntis cache cleared by {current_user.username}")
+
+    return {
+        "message": "WebUntis cache cleared. Next absence will refresh data.",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
+@router.get("/webuntis-cache/status")
+async def get_cache_status(
+    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.PLANNER])),
+    db: Session = Depends(get_db)
+):
+    """
+    Cache-Status anzeigen
+    Nur für Admin/Planner
+    """
+    # Import here to avoid circular dependency
+    from app.services.webuntis import webuntis_service
+
+    cache_entries = db.query(WebUntisCache).all()
+
+    return {
+        "cached_keys": [
+            {
+                "key": entry.cache_key,
+                "created_at": entry.created_at.isoformat(),
+                "expires_at": entry.expires_at.isoformat() if entry.expires_at else None,
+                "is_expired": entry.expires_at < datetime.utcnow() if entry.expires_at else False,
+                "items_count": len(entry.cache_data) if isinstance(entry.cache_data, dict) else 0
+            }
+            for entry in cache_entries
+        ],
+        "in_memory_cache": {
+            "subjects": webuntis_service._subjects_cache is not None,
+            "classes": webuntis_service._classes_cache is not None,
+            "rooms": webuntis_service._rooms_cache is not None,
+            "timegrid": webuntis_service._timegrid_cache is not None
+        }
+    }

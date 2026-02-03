@@ -69,6 +69,7 @@ services:
         condition: service_healthy
     networks:
       - absenzflow-network
+      - absenzflow-shared  # Für WordPress-Zugriff
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   # Optional: pgAdmin für Datenbank-Management
@@ -93,3 +94,5 @@ volumes:
 networks:
   absenzflow-network:
     driver: bridge
+  absenzflow-shared:
+    external: true  # Externes Netzwerk für WordPress-Integration
