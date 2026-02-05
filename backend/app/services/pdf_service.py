@@ -25,7 +25,11 @@ class PDFService:
         """Initialize PDF service"""
         self.config: Optional[Dict[str, Any]] = None
         self.config_path = Path(__file__).parent.parent.parent / "config" / "pdf_form_mappings.json"
-        self.pdf_dir = Path(__file__).parent.parent.parent.parent / "wordpress-plugin" / "assets"
+        self.pdf_dir = Path(__file__).parent.parent.parent / "assets"
+
+        # Import here to avoid circular imports
+        from app.services.webuntis_service import WebUntisService
+        self.webuntis_service = WebUntisService()
 
     def _load_pdf_config(self) -> Dict[str, Any]:
         """
@@ -93,44 +97,6 @@ class PDFService:
         logger.info(f"Available forms for absence {absence.id} (reason={absence.reason}): {len(available)}")
         return available
 
-    def _extract_time_from_lessons(
-        self,
-        lessons: List[AffectedLesson],
-        extract_type: str = "start"
-    ) -> Optional[str]:
-        """
-        Extract start or end time from lessons
-
-        Args:
-            lessons: List of affected lessons
-            extract_type: "start" or "end"
-
-        Returns:
-            Time string in format "HH:MM" or None
-        """
-        if not lessons:
-            return None
-
-        # Sort lessons by date and period
-        sorted_lessons = sorted(lessons, key=lambda l: (l.date, l.period))
-
-        if extract_type == "start":
-            # Get earliest lesson's start time
-            first_lesson = sorted_lessons[0]
-            if first_lesson.start_time:
-                return self._format_webuntis_time(first_lesson.start_time)
-            else:
-                # Fallback to period mapping
-                return self._get_time_from_period_mapping(first_lesson.period, "start")
-        else:
-            # Get latest lesson's end time
-            last_lesson = sorted_lessons[-1]
-            if last_lesson.end_time:
-                return self._format_webuntis_time(last_lesson.end_time)
-            else:
-                # Fallback to period mapping
-                return self._get_time_from_period_mapping(last_lesson.period, "end")
-
     def _format_webuntis_time(self, webuntis_time: int) -> str:
         """
         Convert WebUntis time format to HH:MM
@@ -145,26 +111,85 @@ class PDFService:
         minutes = webuntis_time % 100
         return f"{hours:02d}:{minutes:02d}"
 
-    def _get_time_from_period_mapping(self, period: int, time_type: str = "start") -> str:
+    def _get_time_from_period(self, timegrid: Dict[int, int], period: int, time_type: str) -> str:
         """
-        Get time from period mapping fallback
+        Reverse lookup: Find time for a given period from timegrid
 
         Args:
-            period: Period number (1-10)
-            time_type: "start" or "end" (currently both use same mapping)
+            timegrid: Timegrid dict from WebUntis ({start_time -> period})
+            period: Period number (1-16)
+            time_type: "start" or "end"
 
         Returns:
             Time string in format "HH:MM"
         """
-        config = self._load_pdf_config()
-        period_mapping = config.get("period_time_mapping", {})
-        time_str = period_mapping.get(str(period), "08:00")
-        return time_str
+        # Reverse search: find start_time where period matches
+        for start_time, p in timegrid.items():
+            # Handle both int and str keys (JSONB conversion)
+            try:
+                p_int = int(p)
+            except (ValueError, TypeError):
+                continue
 
-    def _build_template_context(
+            if p_int == period:
+                if time_type == "start":
+                    return self._format_webuntis_time(start_time)
+                else:
+                    # Calculate end time: add 45 minutes (German school periods)
+                    hours = start_time // 100
+                    minutes = start_time % 100
+                    end_minutes = minutes + 45
+                    end_hours = hours
+                    if end_minutes >= 60:
+                        end_minutes -= 60
+                        end_hours += 1
+                    return f"{end_hours:02d}:{end_minutes:02d}"
+
+        # Fallback to config if period not found in timegrid
+        logger.warning(f"Period {period} nicht im WebUntis Timegrid gefunden, nutze Config Fallback")
+        config = self._load_pdf_config()
+        if time_type == "end":
+            period_mapping = config.get("period_end_time_mapping", {})
+            return period_mapping.get(str(period), "15:45")
+        else:
+            period_mapping = config.get("period_time_mapping", {})
+            return period_mapping.get(str(period), "08:00")
+
+    def _get_time_for_period_from_lessons_or_timegrid(
+        self,
+        lessons: List[AffectedLesson],
+        period: int,
+        time_type: str,
+        timegrid: Dict[int, int]
+    ) -> str:
+        """
+        Get time for a specific period, preferring WebUntis lesson data over timegrid reverse lookup
+
+        Args:
+            lessons: List of affected lessons
+            period: Period number (1-16)
+            time_type: "start" or "end"
+            timegrid: Timegrid dict from WebUntis ({start_time -> period})
+
+        Returns:
+            Time string in format "HH:MM"
+        """
+        # Try to find a lesson with the given period that has time data
+        for lesson in lessons:
+            if lesson.period == period:
+                if time_type == "start" and lesson.start_time:
+                    return self._format_webuntis_time(lesson.start_time)
+                elif time_type == "end" and lesson.end_time:
+                    return self._format_webuntis_time(lesson.end_time)
+
+        # Fallback to timegrid reverse lookup
+        return self._get_time_from_period(timegrid, period, time_type)
+
+    async def _build_template_context(
         self,
         absence: Absence,
-        lessons: List[AffectedLesson]
+        lessons: List[AffectedLesson],
+        db: Session
     ) -> Dict[str, Any]:
         """
         Build context dictionary for template variable substitution
@@ -179,9 +204,24 @@ class PDFService:
         config = self._load_pdf_config()
         defaults = config.get("defaults", {})
 
-        # Extract lesson-derived data
-        lessons_time_start = self._extract_time_from_lessons(lessons, "start")
-        lessons_time_end = self._extract_time_from_lessons(lessons, "end")
+        # Get timegrid from WebUntis (cached)
+        try:
+            timegrid = await self.webuntis_service._load_timegrid(db, force_refresh=False)
+            if not timegrid:
+                logger.warning("⚠️ WebUntis Timegrid leer, nutze Config Fallback")
+                timegrid = {}
+        except Exception as e:
+            logger.warning(f"⚠️ WebUntis Timegrid Exception: {e}, nutze Config Fallback")
+            timegrid = {}
+
+        # Extract time from absence periods (from StepOne)
+        # Prefer WebUntis lesson times if available, then reverse-lookup from timegrid
+        lessons_time_start = self._get_time_for_period_from_lessons_or_timegrid(
+            lessons, absence.start_period, "start", timegrid
+        )
+        lessons_time_end = self._get_time_for_period_from_lessons_or_timegrid(
+            lessons, absence.end_period, "end", timegrid
+        )
 
         # Combine subjects and rooms
         subjects = list(set([l.subject for l in lessons if l.subject]))
@@ -189,12 +229,32 @@ class PDFService:
         lessons_subjects_combined = ", ".join(subjects) if subjects else ""
         lessons_rooms_combined = ", ".join(rooms) if rooms else ""
 
+        # Get name data - prefer first_name/last_name from WordPress, fallback to parsing full_name
+        full_name = absence.teacher.full_name if absence.teacher else ""
+        first_name = ""
+        last_name = ""
+
+        # Check if we have first_name and last_name from WordPress user meta
+        if absence.teacher and absence.teacher.first_name:
+            first_name = absence.teacher.first_name.capitalize()
+        if absence.teacher and absence.teacher.last_name:
+            last_name = absence.teacher.last_name.capitalize()
+
+        # Fallback: Parse from full_name if first/last name not available
+        if not first_name and not last_name and full_name:
+            parts = full_name.split(maxsplit=1)
+            if len(parts) == 2:
+                first_name = parts[0].capitalize()
+                last_name = parts[1].capitalize()
+            elif len(parts) == 1:
+                last_name = parts[0].capitalize()  # If only one name, use as last_name
+
         context = {
             "absence": {
                 "teacher": {
-                    "full_name": absence.teacher.full_name if absence.teacher else "",
-                    "first_name": absence.teacher.first_name if absence.teacher else "",
-                    "last_name": absence.teacher.last_name if absence.teacher else "",
+                    "full_name": full_name,
+                    "first_name": first_name,
+                    "last_name": last_name,
                     "email": absence.teacher.email if absence.teacher else ""
                 },
                 "start_date": absence.start_date,
@@ -331,7 +391,7 @@ class PDFService:
 
         return filled_fields
 
-    def generate_filled_pdf(
+    async def generate_filled_pdf(
         self,
         absence: Absence,
         form_type: str,
@@ -380,7 +440,7 @@ class PDFService:
         lessons = absence.affected_lessons or []
 
         # Build template context
-        context = self._build_template_context(absence, lessons)
+        context = await self._build_template_context(absence, lessons, db)
 
         # Process field mappings
         filled_fields = self._process_field_mappings(field_mappings, context)
@@ -399,9 +459,50 @@ class PDFService:
                 detail=f"PDF generation failed: {str(e)}"
             )
 
+    def _fix_pdf_encoding(self, text: str) -> str:
+        """
+        Fix encoding issues for PDF form fields
+
+        PDF forms often expect Latin-1 (ISO-8859-1) encoding.
+        We try to encode as Latin-1, and if that fails (for characters not in Latin-1),
+        we use Unicode normalization.
+
+        Args:
+            text: Input text
+
+        Returns:
+            Properly encoded text string for PDF forms
+        """
+        if not text:
+            return text
+
+        # If it's bytes, decode first
+        if isinstance(text, bytes):
+            try:
+                text = text.decode('utf-8')
+            except UnicodeDecodeError:
+                text = text.decode('latin-1', errors='replace')
+
+        # Ensure it's a string
+        if not isinstance(text, str):
+            text = str(text)
+
+        # Try to handle the encoding issue by ensuring proper UTF-8
+        # The issue is that PyPDF2 might be double-encoding strings
+        try:
+            # Try to encode as Latin-1 to see if it's compatible
+            text.encode('latin-1')
+            # If it works, return as-is (it's Latin-1 compatible)
+            return text
+        except UnicodeEncodeError:
+            # Contains characters not in Latin-1, keep as UTF-8 string
+            # PyPDF2 3.0.1 should handle this correctly
+            logger.debug(f"Text contains non-Latin-1 characters: {text}")
+            return text
+
     def _merge_fdf_with_pdf(self, pdf_path: Path, filled_fields: Dict[str, str]) -> bytes:
         """
-        Merge FDF data with PDF template
+        Fill PDF form fields with data
 
         Args:
             pdf_path: Path to PDF template
@@ -411,8 +512,7 @@ class PDFService:
             Filled PDF bytes
         """
         try:
-            from fdfgen import forge_fdf
-            from PyPDF2 import PdfReader, PdfWriter
+            from pypdf import PdfReader, PdfWriter
         except ImportError as e:
             logger.error(f"PDF libraries not available: {e}")
             raise HTTPException(
@@ -420,27 +520,33 @@ class PDFService:
                 detail="PDF processing libraries not installed"
             )
 
-        # Generate FDF
-        fdf_data = forge_fdf("", filled_fields.items(), [], [], [])
-
         # Read original PDF
         reader = PdfReader(str(pdf_path))
         writer = PdfWriter()
 
-        # Copy all pages
-        for page in reader.pages:
-            writer.add_page(page)
+        # Clone the entire document including AcroForm (form field definitions)
+        writer.clone_reader_document_root(reader)
 
-        # Update form fields
-        if writer.get_fields():
-            for field_name, field_value in filled_fields.items():
-                try:
-                    writer.update_page_form_field_values(
-                        writer.pages[0],  # Assume form fields on first page (will update all pages)
-                        {field_name: field_value}
-                    )
-                except Exception as e:
-                    logger.warning(f"Could not fill field '{field_name}': {e}")
+        # pypdf 5.x handles string encoding automatically - just pass plain strings
+        # The library will choose the appropriate encoding (PDFDocEncoding or UTF-16BE)
+        logger.debug(f"Filling {len(filled_fields)} fields with values")
+        for key, value in filled_fields.items():
+            if isinstance(value, str):
+                logger.debug(f"Field '{key}' = '{value}'")
+
+        # Use filled_fields directly - pypdf handles encoding
+        fixed_fields = filled_fields
+
+        # Update form fields for each page
+        for page_num, page in enumerate(writer.pages):
+            try:
+                writer.update_page_form_field_values(
+                    page,
+                    fixed_fields
+                )
+                logger.debug(f"Updated form fields on page {page_num + 1}")
+            except Exception as e:
+                logger.warning(f"Could not update fields on page {page_num + 1}: {e}")
 
         # Write to bytes
         output = BytesIO()

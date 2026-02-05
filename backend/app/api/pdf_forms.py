@@ -128,7 +128,7 @@ async def download_pdf_form(
         )
 
     # Generate filled PDF
-    pdf_bytes = pdf_service.generate_filled_pdf(absence, form_type, db)
+    pdf_bytes = await pdf_service.generate_filled_pdf(absence, form_type, db)
 
     # Determine filename
     form_label = next((f["label"] for f in available_forms if f["type"] == form_type), form_type)

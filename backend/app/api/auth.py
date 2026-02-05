@@ -5,6 +5,7 @@ Login, JWT Token Management
 import hmac
 from datetime import datetime, timedelta
 from typing import Optional
+from urllib.parse import unquote
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -164,6 +165,8 @@ async def get_wordpress_proxy_user(
     x_wordpress_user: Optional[str] = Header(None),
     x_wordpress_email: Optional[str] = Header(None),
     x_wordpress_name: Optional[str] = Header(None),
+    x_wordpress_first_name: Optional[str] = Header(None),
+    x_wordpress_last_name: Optional[str] = Header(None),
     x_wordpress_role: Optional[str] = Header(None),
     x_wordpress_webuntis_code: Optional[str] = Header(None),
     db: Session = Depends(get_db)
@@ -217,10 +220,16 @@ async def get_wordpress_proxy_user(
 
         if not user:
             # Neuer User - aus WordPress-Headers anlegen
+            # URL-decode first/last name (PHP sends them URL-encoded for UTF-8 support)
+            first_name_decoded = unquote(x_wordpress_first_name).strip() if x_wordpress_first_name else None
+            last_name_decoded = unquote(x_wordpress_last_name).strip() if x_wordpress_last_name else None
+
             user = User(
                 username=x_wordpress_user,
                 email=user_email,
                 full_name=user_name,
+                first_name=first_name_decoded,
+                last_name=last_name_decoded,
                 role=user_role,
                 webuntis_teacher_code=webuntis_code,
                 is_active=True
@@ -259,6 +268,19 @@ async def get_wordpress_proxy_user(
                 update_details["old_name"] = user.full_name
                 update_details["new_name"] = user_name
                 user.full_name = user_name
+                needs_update = True
+
+            # Update first_name and last_name if provided
+            # URL-decode first/last name (PHP sends them URL-encoded for UTF-8 support)
+            first_name = unquote(x_wordpress_first_name).strip() if x_wordpress_first_name else None
+            last_name = unquote(x_wordpress_last_name).strip() if x_wordpress_last_name else None
+
+            if user.first_name != first_name:
+                user.first_name = first_name
+                needs_update = True
+
+            if user.last_name != last_name:
+                user.last_name = last_name
                 needs_update = True
 
             if user.role != user_role:

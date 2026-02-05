@@ -37,6 +37,8 @@ class User(Base):
     username = Column(String(100), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True)
     full_name = Column(String(255))
+    first_name = Column(String(100), nullable=True)
+    last_name = Column(String(100), nullable=True)
     role = Column(Enum(UserRole), default=UserRole.TEACHER)
     webuntis_teacher_code = Column(String(20), nullable=True, index=True)
     is_active = Column(Boolean, default=True)

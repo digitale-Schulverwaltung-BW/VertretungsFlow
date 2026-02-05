@@ -28,7 +28,7 @@ python-dotenv==1.0.0
 aiofiles==23.2.1
 
 # PDF Processing
-PyPDF2==3.0.1
+pypdf==5.1.0  # Modern continuation of PyPDF2
 fdfgen==0.16.1
 pycryptodome==3.21.0  # Required for encrypted PDFs
 

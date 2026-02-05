@@ -319,15 +319,12 @@ class APIClient {
    */
   async downloadPDFForm(absenceId: number, formType: string): Promise<Blob> {
     if (this.useProxy) {
-      // Use WordPress proxy with blob response type
+      // Use dedicated WordPress PDF proxy endpoint
       const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
+      const pdfProxyUrl = `/wp-json/absenzflow/v1/proxy/pdf/${absenceId}/${formType}`;
 
-      const response = await axios.post(
-        this.proxyURL,
-        {
-          method: 'GET',
-          endpoint: `/absences/${absenceId}/pdf-forms/${formType}`
-        },
+      const response = await axios.get(
+        pdfProxyUrl,
         {
           responseType: 'blob',
           withCredentials: true,

@@ -35,10 +35,10 @@ def extract_pdf_fields(pdf_path: str) -> Dict[str, Any]:
         ImportError: If PyPDF2 is not installed
     """
     try:
-        from PyPDF2 import PdfReader
+        from pypdf import PdfReader
     except ImportError:
-        print("❌ Error: PyPDF2 is not installed")
-        print("Please install it: pip install PyPDF2==3.0.1")
+        print("❌ Error: pypdf is not installed")
+        print("Please install it: pip install pypdf")
         sys.exit(1)
 
     pdf_file = Path(pdf_path)

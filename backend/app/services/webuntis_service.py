@@ -5,7 +5,7 @@ Integration mit WebUntis für Stundenplan-Abfragen
 import logging
 import httpx
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Dict
 from app.core.config import settings
 from app.schemas.schemas import WebUntisLesson
 
@@ -661,6 +661,7 @@ class WebUntisService:
             fetch_func=fetch_from_api,
             force_refresh=force_refresh
         )
+
 
     async def _parse_timetable(self, timetable_data: List[dict], teacher_id: int, db) -> List[WebUntisLesson]:
         """

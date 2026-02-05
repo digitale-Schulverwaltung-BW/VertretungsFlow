@@ -93,6 +93,27 @@ class AbsenzFlow_API_Proxy {
                 ),
             )
         ));
+
+        // PDF Form Download Proxy (auth-protected PDF download)
+        register_rest_route('absenzflow/v1', '/proxy/pdf/(?P<absence_id>\d+)/(?P<form_type>[a-z_]+)', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'proxy_pdf_download'),
+            'permission_callback' => 'is_user_logged_in',
+            'args' => array(
+                'absence_id' => array(
+                    'required' => true,
+                    'validate_callback' => function($param) {
+                        return is_numeric($param);
+                    }
+                ),
+                'form_type' => array(
+                    'required' => true,
+                    'validate_callback' => function($param) {
+                        return preg_match('/^[a-z_]+$/', $param);
+                    }
+                ),
+            )
+        ));
     }
     
     /**
@@ -142,6 +163,10 @@ class AbsenzFlow_API_Proxy {
         // Read settings
         $dept_heads_can_complete = isset($options['dept_heads_can_complete']) && $options['dept_heads_can_complete'] ? '1' : '0';
 
+        // URL-encode names to handle UTF-8 characters (äöüß) in HTTP headers
+        $first_name = get_user_meta($current_user->ID, 'first_name', true);
+        $last_name = get_user_meta($current_user->ID, 'last_name', true);
+
         $args = array(
             'method' => strtoupper($method),
             'headers' => array(
@@ -150,6 +175,8 @@ class AbsenzFlow_API_Proxy {
                 'X-WordPress-User' => $current_user->user_login,
                 'X-WordPress-Email' => $current_user->user_email,
                 'X-WordPress-Name' => $current_user->display_name,
+                'X-WordPress-First-Name' => rawurlencode($first_name),
+                'X-WordPress-Last-Name' => rawurlencode($last_name),
                 'X-WordPress-Role' => $this->map_wp_role_to_absenzflow($current_user),
                 'X-WordPress-WebUntis-Code' => get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
                 'X-WordPress-Dept-Heads-Can-Complete' => $dept_heads_can_complete
@@ -244,12 +271,18 @@ class AbsenzFlow_API_Proxy {
         // Multipart form data
         $post_data = array('file' => $curl_file);
 
+        // URL-encode names to handle UTF-8 characters (äöüß) in HTTP headers
+        $first_name = get_user_meta($current_user->ID, 'first_name', true);
+        $last_name = get_user_meta($current_user->ID, 'last_name', true);
+
         // Headers
         $headers = array(
             'X-WordPress-Secret: ' . $api_secret,
             'X-WordPress-User: ' . $current_user->user_login,
             'X-WordPress-Email: ' . $current_user->user_email,
             'X-WordPress-Name: ' . $current_user->display_name,
+            'X-WordPress-First-Name: ' . rawurlencode($first_name),
+            'X-WordPress-Last-Name: ' . rawurlencode($last_name),
             'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
             'X-WordPress-WebUntis-Code: ' . get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
             'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
@@ -309,12 +342,18 @@ class AbsenzFlow_API_Proxy {
         // Build backend URL
         $url = rtrim($api_url, '/') . '/absences/' . $absence_id . '/attachments/' . $attachment_id;
 
+        // URL-encode names to handle UTF-8 characters (äöüß) in HTTP headers
+        $first_name = get_user_meta($current_user->ID, 'first_name', true);
+        $last_name = get_user_meta($current_user->ID, 'last_name', true);
+
         // Headers
         $headers = array(
             'X-WordPress-Secret: ' . $api_secret,
             'X-WordPress-User: ' . $current_user->user_login,
             'X-WordPress-Email: ' . $current_user->user_email,
             'X-WordPress-Name: ' . $current_user->display_name,
+            'X-WordPress-First-Name: ' . rawurlencode($first_name),
+            'X-WordPress-Last-Name: ' . rawurlencode($last_name),
             'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
             'X-WordPress-WebUntis-Code: ' . get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
             'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
@@ -361,6 +400,109 @@ class AbsenzFlow_API_Proxy {
         }
 
         // Stream file back to browser
+        header('Content-Type: ' . $content_type);
+        if ($content_disposition) {
+            header('Content-Disposition: ' . $content_disposition);
+        }
+        header('Content-Length: ' . strlen($body));
+        echo $body;
+        exit;
+    }
+
+    /**
+     * Proxy PDF Form Download (streaming with auth)
+     */
+    public function proxy_pdf_download($request) {
+        error_log('AbsenzFlow PDF Download Proxy: Request received');
+
+        $options = get_option('absenzflow_options');
+        $api_url = $options['api_url'];
+        $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
+
+        if (empty($api_url) || empty($api_secret)) {
+            return new WP_Error('config_error', 'API nicht konfiguriert', array('status' => 500));
+        }
+
+        // Get parameters
+        $absence_id = $request->get_param('absence_id');
+        $form_type = $request->get_param('form_type');
+
+        // Current WordPress user
+        $current_user = wp_get_current_user();
+        $dept_heads_can_complete = isset($options['dept_heads_can_complete']) && $options['dept_heads_can_complete'] ? '1' : '0';
+
+        // Build backend URL
+        $url = rtrim($api_url, '/') . '/absences/' . $absence_id . '/pdf-forms/' . $form_type;
+
+        error_log('AbsenzFlow PDF Download: URL: ' . $url);
+
+        // URL-encode names to handle UTF-8 characters (äöüß) in HTTP headers
+        $first_name = get_user_meta($current_user->ID, 'first_name', true);
+        $last_name = get_user_meta($current_user->ID, 'last_name', true);
+
+        // Headers
+        $headers = array(
+            'X-WordPress-Secret: ' . $api_secret,
+            'X-WordPress-User: ' . $current_user->user_login,
+            'X-WordPress-Email: ' . $current_user->user_email,
+            'X-WordPress-Name: ' . $current_user->display_name,
+            'X-WordPress-First-Name: ' . rawurlencode($first_name),
+            'X-WordPress-Last-Name: ' . rawurlencode($last_name),
+            'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
+            'X-WordPress-WebUntis-Code: ' . get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
+            'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
+        );
+
+        // Use cURL for streaming
+        $ch = curl_init($url);
+        curl_setopt_array($ch, array(
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT => 60,
+            CURLOPT_HEADER => true // Include headers in output
+        ));
+
+        $response = curl_exec($ch);
+        $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+
+        if ($curl_error) {
+            error_log('AbsenzFlow PDF Download: cURL error: ' . $curl_error);
+            return new WP_Error('curl_error', $curl_error, array('status' => 500));
+        }
+
+        // Split headers and body
+        $headers_str = substr($response, 0, $header_size);
+        $body = substr($response, $header_size);
+
+        error_log('AbsenzFlow PDF Download: Status: ' . $status_code . ', Body size: ' . strlen($body));
+
+        // If error, return JSON error
+        if ($status_code !== 200) {
+            error_log('AbsenzFlow PDF Download: Error response: ' . substr($body, 0, 200));
+            return new WP_REST_Response(
+                json_decode($body, true),
+                $status_code
+            );
+        }
+
+        // Extract Content-Type and Content-Disposition from headers
+        $content_type = 'application/pdf';
+        $content_disposition = '';
+
+        foreach (explode("\r\n", $headers_str) as $header) {
+            if (stripos($header, 'Content-Type:') === 0) {
+                $content_type = trim(substr($header, 13));
+            }
+            if (stripos($header, 'Content-Disposition:') === 0) {
+                $content_disposition = trim(substr($header, 20));
+            }
+        }
+
+        // Stream PDF back to browser
         header('Content-Type: ' . $content_type);
         if ($content_disposition) {
             header('Content-Disposition: ' . $content_disposition);

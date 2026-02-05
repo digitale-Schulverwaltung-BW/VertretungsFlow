@@ -14,24 +14,26 @@
       "applicable_reasons": ["excursion"],
       "field_mappings": {
         "_comment": "=== Lehrkraft-Daten ===",
-        "Nachname": "{{ absence.teacher.last_name }}",
-        "Vorname_2": "{{ absence.teacher.first_name }}",
+        "0": "{{ absence.teacher.last_name }}",
+        "Text6": "{{ absence.teacher.first_name }}",
 
         "_comment2": "=== Veranstaltungs-Details ===",
         "Klasse": "{{ absence.excursion_classes }}",
-        "außerunterrichtliche Veranstaltung": "{{ absence.admin_notes }}",
-        "Veranstaltungsziel Ort Stadt Land": "{{ absence.admin_notes }}",
+        "außerunterrichtliche Veranstaltung": "++++++ Bitte ergänzen",
+        "Veranstaltungsziel Ort Stadt Land": "++++++ Bitte ergänzen",
 
         "_comment3": "=== Datum und Uhrzeit ===",
         "Datum_2": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
-        "Datum_3": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
-        "Uhrzeit": "{{ lessons_time_start }}",
-        "Uhrzeit_2": "{{ lessons_time_end }}",
+        "Text4": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
+        "Text1": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
+        "Text3": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
+        "Uhrzeit_2": "{{ lessons_time_start }}",
+        "Text5": "{{ lessons_time_end }}",
 
         "_comment4": "=== Weitere Felder (TODO: Manuell zuordnen) ===",
-        "Text1": "",
+        
         "Text2": "",
-        "Text3": "",
+        
         "Zahl der teilnehmenden Schülerinnen": ""
       }
     },
@@ -42,25 +44,23 @@
       "applicable_reasons": ["training", "exam", "official", "other"],
       "field_mappings": {
         "_comment": "=== Seite 1: Persönliche Angaben (Abschnitt 1) ===",
-        "Name": "{{ absence.teacher.last_name }}",
-        "Vorname": "{{ absence.teacher.first_name }}",
+        "Text1": "{{ absence.teacher.last_name }}",
+        "Text2": "{{ absence.teacher.first_name }}",
         "Personalnummer/Arbeitsgebiet": "",
 
         "_comment2": "=== Schulinformationen (aus defaults) ===",
-        "Beschäftigungsdienststelle": "{{ config.school_name }}",
-        "bei Abordnung: Dienststelle": "",
-        "Dienstort": "{{ config.school_city }}",
-        "Privatanschrift (Straße, Postleitzahl, Wohnort)": "{{ config.school_address }}",
-        "Telefon (dienstlich)": "{{ config.school_phone }}",
+        "Text4": "{{ config.school_name }}",        
+        "Text6": "{{ config.school_city }}",
+        "Privatanschrift (Straße, Postleitzahl, Wohnort)": "*** bitte vervollständigen ***",
+        "Text8": "{{ config.school_phone }}",
         "Telefon (privat) (Angabe freiwillig)": "",
 
         "_comment3": "=== Angaben zur Dienstreise (Abschnitt 2) ===",
-        "Anlass der Reise": "{{ absence.admin_notes }}",
-        "Geschäftsort/e/Land": "{{ config.school_city }}",
+        "Text10": "{{ absence.admin_notes }}",        
 
         "_comment4": "=== Reisedaten ===",
-        "Datum": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
-        "BeginnDat": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
+        "Text12": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
+        "Text13": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
         "Uhrzeit": "{{ lessons_time_start }}",
         "Zeit": "{{ lessons_time_start }}",
         "Datum_2": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
@@ -94,6 +94,20 @@
     "8": "13:30",
     "9": "14:15",
     "10": "15:00"
+  },
+
+  "period_end_time_mapping": {
+    "_comment": "End-Zeiten für jede Stunde (Standard-Stundenraster)",
+    "1": "08:30",
+    "2": "09:15",
+    "3": "10:15",
+    "4": "11:05",
+    "5": "11:55",
+    "6": "12:45",
+    "7": "13:30",
+    "8": "14:15",
+    "9": "15:00",
+    "10": "15:45"
   },
 
   "info_texts": {
