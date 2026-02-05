@@ -42,9 +42,8 @@ def fill_pdf_with_field_names(input_pdf: str, output_pdf: str):
     reader = PdfReader(str(input_path))
     writer = PdfWriter()
 
-    # Copy all pages
-    for page in reader.pages:
-        writer.add_page(page)
+    # Clone the entire document including AcroForm (form field definitions)
+    writer.clone_reader_document_root(reader)
 
     # Get all form fields
     fields = reader.get_fields()
@@ -63,11 +62,9 @@ def fill_pdf_with_field_names(input_pdf: str, output_pdf: str):
     print(f"📝 Filling {len(field_values)} fields with their names...")
 
     # Update form fields for each page
-    filled_count = 0
     for page_num, page in enumerate(writer.pages):
         try:
             writer.update_page_form_field_values(page, field_values)
-            filled_count += 1
             print(f"   ✓ Updated fields on page {page_num + 1}")
         except Exception as e:
             print(f"   ⚠ Warning: Could not update fields on page {page_num + 1}: {e}")

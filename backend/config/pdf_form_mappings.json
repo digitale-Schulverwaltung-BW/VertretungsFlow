@@ -28,18 +28,17 @@
         "Text1": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
         "Text3": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
         "Uhrzeit_2": "{{ lessons_time_start }}",
+        "Uhrzeit": "+++++",
+        "Text2": "+++++",
         "Text5": "{{ lessons_time_end }}",
-
+        "Text16": "{{ absence.duration_days }}",
         "_comment4": "=== Weitere Felder (TODO: Manuell zuordnen) ===",
-        
-        "Text2": "",
-        
-        "Zahl der teilnehmenden Schülerinnen": ""
+        "Zahl der teilnehmenden Schülerinnen": "+++++"
       }
     },
 
     "business_trip_form": {
-      "pdf_filename": "1201.pdf",
+      "pdf_filename": "1201-sanitized.pdf",
       "display_name": "Dienstreiseantrag",
       "applicable_reasons": ["training", "exam", "official", "other"],
       "field_mappings": {
@@ -51,24 +50,23 @@
         "_comment2": "=== Schulinformationen (aus defaults) ===",
         "Text4": "{{ config.school_name }}",        
         "Text6": "{{ config.school_city }}",
-        "Privatanschrift (Straße, Postleitzahl, Wohnort)": "*** bitte vervollständigen ***",
+        "Text7": "+++++ bitte vervollständigen",
         "Text8": "{{ config.school_phone }}",
         "Telefon (privat) (Angabe freiwillig)": "",
 
         "_comment3": "=== Angaben zur Dienstreise (Abschnitt 2) ===",
         "Text10": "{{ absence.admin_notes }}",        
+        "Text11": "+++++ bitte vervollständigen",
 
         "_comment4": "=== Reisedaten ===",
         "Text12": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
         "Text13": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
-        "Uhrzeit": "{{ lessons_time_start }}",
-        "Zeit": "{{ lessons_time_start }}",
-        "Datum_2": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
-        "Uhrzeit_2": "{{ lessons_time_start }}",
-        "EndeDat": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
-        "Uhrzeit_3": "{{ lessons_time_end }}",
-        "Datum_3": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
-        "Uhrzeit_4": "{{ lessons_time_end }}",
+        "Text16": "{{ lessons_time_start }}",
+        "Text17": "+++++",
+        "Text20": "+++++",
+        "Text14": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
+        "Text15": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
+        "Text21": "{{ lessons_time_end }}",
 
         "_comment5": "=== Numerische Felder (aus PDF-Extraktion) ===",
         "_note": "Die folgenden Felder sind Beispiele - bitte an tatsächliche Feldnamen anpassen",
@@ -128,6 +126,7 @@
       "  {{ absence.teacher.email }} - E-Mail",
       "  {{ absence.start_date | format_date('%d.%m.%Y') }} - Startdatum",
       "  {{ absence.end_date | format_date('%d.%m.%Y') }} - Enddatum",
+      "  {{ absence.duration_days }} - Dauer in Tagen (inklusiv)",
       "  {{ absence.excursion_classes }} - Klassen (nur bei Exkursion)",
       "  {{ absence.admin_notes }} - Bemerkungen",
       "",

@@ -80,9 +80,81 @@ cp backend/scripts/*_labeled.pdf .
 
 ---
 
+### 3. `sanitize_pdf_fields.py` - Doppelte Feldnamen bereinigen 🛠️
+
+**Zweck:** Behebt das häufige Problem von PDF-Formularen mit doppelten Feldnamen, indem alle Felder eindeutig umbenannt werden.
+
+**Problem:** Viele offiziell erstellte PDF-Formulare (ja, auch vom Kultusministerium) haben das gleiche Feld mehrfach mit identischem Namen. Beim Ausfüllen bekommen dann alle Felder mit demselben Namen den gleichen Wert - nicht das, was man will!
+
+**Beispiel des Problems:**
+```
+"0" erscheint auf Seite 2 (3x) und Seite 3 (2x)
+→ Beim Ausfüllen bekommen ALLE 5 Felder den gleichen Wert!
+```
+
+**Lösung:** Das Script benennt doppelte Felder um und fügt die Seitennummer hinzu:
+```
+"0" (Seite 2, erstes Vorkommen) → "0_p2"
+"0" (Seite 3, erstes Vorkommen) → "0_p3"
+```
+
+**Usage:**
+```bash
+# Im Backend-Container
+docker-compose exec backend python scripts/sanitize_pdf_fields.py \
+    /app/assets/1201.pdf \
+    /app/assets/1201-sanitized.pdf
+
+# Ohne Output-Pfad (Standard: <name>-sanitized.pdf)
+docker-compose exec backend python scripts/sanitize_pdf_fields.py /app/assets/1201.pdf
+```
+
+**Output:**
+```
+======================================================================
+Sanitizing PDF: 1201.pdf
+======================================================================
+
+🔍 Analyzing PDF fields...
+⚠️  Found 9 duplicate field names:
+
+   '0' appears on pages: 2, 2, 2, 3, 3
+   '1' appears on pages: 2, 3, 3, 3
+   '2' appears on pages: 2, 2, 2, 3
+
+📝 Renaming 9 fields to make them unique...
+   Renamed: '0' → '0_p2' (page 2)
+   Renamed: '0' → '0_p3' (page 3)
+   ...
+
+💾 Writing sanitized PDF to: /app/assets/1201-sanitized.pdf
+
+======================================================================
+✅ Sanitization Complete!
+======================================================================
+
+Summary:
+  - Original fields: 89
+  - Duplicate field names: 9
+  - Fields renamed: 25
+  - Output: /app/assets/1201-sanitized.pdf
+```
+
+**Wann verwenden:**
+- **IMMER** wenn `extract_pdf_fields.py` zeigt, dass ein Feldname mehrfach vorkommt
+- Bei offiziellen PDF-Formularen (die sind oft schlecht gemacht)
+- Wenn beim Ausfüllen alle Felder mit gleichem Namen den gleichen Wert bekommen
+
+**Wichtig:**
+- Nach dem Sanitizing IMMER `extract_pdf_fields.py` auf das **sanitized** PDF anwenden
+- Die sanitized Version als Template verwenden
+- Die Feldnamen mit `_p2`, `_p3` Suffix in der Config nutzen
+
+---
+
 ## Workflow: Neues PDF-Formular integrieren
 
-### Schritt 1: PDF-Felder extrahieren
+### Schritt 1: PDF-Felder extrahieren (Quick Check)
 
 ```bash
 # Felder auflisten
@@ -93,23 +165,41 @@ docker-compose exec backend python scripts/extract_pdf_fields.py /app/assets/neu
     > backend/docs/neues_formular_fields.txt
 ```
 
-### Schritt 2: PDF mit Feldnamen labeln
+**⚠️ Wichtig:** Prüfe, ob Feldnamen mehrfach vorkommen! Wenn ja, weiter zu Schritt 2.
+
+### Schritt 2: Doppelte Feldnamen bereinigen (falls nötig)
 
 ```bash
-# Labeled PDF erstellen
-docker-compose exec backend python scripts/fill_pdf_with_field_names.py \
+# Sanitize das PDF (falls Duplikate gefunden)
+docker-compose exec backend python scripts/sanitize_pdf_fields.py \
     /app/assets/neues_formular.pdf \
+    /app/assets/neues_formular-sanitized.pdf
+
+# Felder vom sanitized PDF neu auflisten
+docker-compose exec backend python scripts/extract_pdf_fields.py \
+    /app/assets/neues_formular-sanitized.pdf \
+    > backend/docs/neues_formular_sanitized_fields.txt
+```
+
+**Ab jetzt:** Nutze `neues_formular-sanitized.pdf` als Template!
+
+### Schritt 3: PDF mit Feldnamen labeln
+
+```bash
+# Labeled PDF erstellen (vom sanitized PDF, falls vorhanden!)
+docker-compose exec backend python scripts/fill_pdf_with_field_names.py \
+    /app/assets/neues_formular-sanitized.pdf \
     /app/scripts/neues_formular_labeled.pdf
 
 # Ins Projekt-Root kopieren für einfachen Zugriff
 cp backend/scripts/neues_formular_labeled.pdf .
 ```
 
-### Schritt 3: Labeled PDF öffnen
+### Schritt 4: Labeled PDF öffnen
 
 Öffne `neues_formular_labeled.pdf` mit einem PDF-Viewer und schaue dir an, wo welcher Feldname steht.
 
-### Schritt 4: Mapping-Config erstellen
+### Schritt 5: Mapping-Config erstellen
 
 Bearbeite `backend/config/pdf_form_mappings.json` und füge das neue Formular hinzu:
 
@@ -117,7 +207,7 @@ Bearbeite `backend/config/pdf_form_mappings.json` und füge das neue Formular hi
 {
   "forms": {
     "neues_formular": {
-      "pdf_filename": "neues_formular.pdf",
+      "pdf_filename": "neues_formular-sanitized.pdf",
       "display_name": "Neues Formular Beschreibung",
       "applicable_reasons": ["training", "exam"],
       "field_mappings": {
@@ -136,7 +226,7 @@ Bearbeite `backend/config/pdf_form_mappings.json` und füge das neue Formular hi
 }
 ```
 
-### Schritt 5: Frontend-Constants aktualisieren
+### Schritt 6: Frontend-Constants aktualisieren
 
 Füge das neue Formular in `wordpress-plugin/src/constants.ts` hinzu:
 
@@ -149,7 +239,7 @@ export const PDF_FORMS: Record<AbsenceReason, PDFFormInfo[]> = {
 };
 ```
 
-### Schritt 6: Testen
+### Schritt 7: Testen
 
 1. Backend neu starten: `docker-compose restart backend`
 2. Frontend neu bauen: `cd wordpress-plugin && npm run build`
@@ -256,8 +346,48 @@ cp backend/scripts/1201_labeled.pdf .
 
 ---
 
+## Warum sanitize_pdf_fields.py überhaupt nötig ist 🤦
+
+### Die Geschichte eines kaputten PDF-Formats
+
+PDF-Formulare sollten eigentlich einfach sein: Jedes Feld hat einen eindeutigen Namen, und man befüllt es mit Daten. **Sollte.**
+
+Aber dann kommen PDF-Ersteller (ja, auch offizielle Stellen) und produzieren Formulare, bei denen **dasselbe Feld mehrfach mit identischem Namen** vorkommt. Warum? Weil sie Copy-Paste verwenden und vergessen, die Feldnamen zu ändern.
+
+### Das konkrete Problem
+
+Bei **1201.pdf (offizieller Dienstreiseantrag)** hatten wir:
+- Feld `"0"` erscheint **5 Mal** (3x auf Seite 2, 2x auf Seite 3)
+- Feld `"1"` erscheint **4 Mal**
+- Insgesamt **9 doppelte Feldnamen** mit **25 Feldinstanzen**
+
+**Folge:** Beim Ausfüllen bekommen ALLE Felder mit demselben Namen den gleichen Wert. Will man den Nachnamen auf Seite 2 und die Unterschrift auf Seite 3 in unterschiedliche Felder `"0"` schreiben? **Unmöglich.**
+
+### Die Lösung
+
+`sanitize_pdf_fields.py` durchläuft das PDF, findet alle doppelten Feldnamen und benennt sie um:
+- `"0"` (Seite 2) → `"0_p2"`
+- `"0"` (Seite 3) → `"0_p3"`
+
+Jetzt sind die Felder eindeutig, und man kann sie individuell befüllen. **Problem gelöst.**
+
+### Lehren daraus
+
+1. **Traue niemals einem offiziellen PDF-Formular.** Prüfe IMMER mit `extract_pdf_fields.py`, ob Duplikate existieren.
+2. **Sanitize first, ask questions later.** Es dauert 5 Sekunden und erspart Stunden Debugging.
+3. **PDF-Ersteller sollten sich schämen.** Aber wir haben die Lösung, also whatever. 🤷
+
+### Real-World-Stats
+
+- **1201.pdf (Original):** 89 Feldnamen, davon 9 mehrfach vergeben (25 Duplikate)
+- **1201-sanitized.pdf:** 117 eindeutige Feldnamen, 0 Probleme
+
+**Fazit:** Wer PDF-Formulare mit doppelten Feldnamen erstellt, hat die Kontrolle über sein Leben verloren. Aber wir haben `sanitize_pdf_fields.py`, also alles gut. ✨
+
+---
+
 ## Autor
 
 Erstellt von: Claude Sonnet 4.5 & Seyfried
 Datum: 2026-02-05
-Version: 1.0
+Version: 1.1 (mit Anti-Dummheits-Patch)

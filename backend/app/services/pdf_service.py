@@ -249,6 +249,9 @@ class PDFService:
             elif len(parts) == 1:
                 last_name = parts[0].capitalize()  # If only one name, use as last_name
 
+        # Calculate duration in days (inclusive)
+        duration_days = (absence.end_date - absence.start_date).days + 1
+
         context = {
             "absence": {
                 "teacher": {
@@ -259,6 +262,7 @@ class PDFService:
                 },
                 "start_date": absence.start_date,
                 "end_date": absence.end_date,
+                "duration_days": duration_days,
                 "excursion_classes": absence.excursion_classes or "",
                 "admin_notes": absence.admin_notes or ""
             },
