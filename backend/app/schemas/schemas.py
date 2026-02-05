@@ -120,6 +120,8 @@ class AffectedLessonBase(BaseModel):
     date: datetime
     period: int  # Start-Stunde
     end_period: Optional[int] = None  # End-Stunde (für Doppelstunden)
+    start_time: Optional[int] = None  # WebUntis startTime format (e.g., 730 = 07:30)
+    end_time: Optional[int] = None    # WebUntis endTime format (e.g., 815 = 08:15)
     subject: Optional[str] = None
     class_name: Optional[str] = None
     room: Optional[str] = None
@@ -310,6 +312,8 @@ class WebUntisLesson(BaseModel):
     date: datetime
     period: int  # Start-Stunde
     end_period: Optional[int] = None  # End-Stunde (für Doppelstunden, None = Einzelstunde)
+    start_time: Optional[int] = None  # WebUntis startTime format (e.g., 730 = 07:30)
+    end_time: Optional[int] = None    # WebUntis endTime format (e.g., 815 = 08:15)
     subject: str
     class_name: str
     room: Optional[str] = None

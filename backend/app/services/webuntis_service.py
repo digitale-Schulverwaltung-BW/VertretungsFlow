@@ -723,12 +723,15 @@ class WebUntisService:
 
                 # Stundennummer aus Timegrid ermitteln
                 start_time = entry.get("startTime", 0)
+                end_time = entry.get("endTime", 0)
                 # JSONB konvertiert auch hier Keys zu Strings
                 period = timegrid.get(start_time) or timegrid.get(str(start_time), start_time // 100)
 
                 lesson = WebUntisLesson(
                     date=date,
                     period=period,
+                    start_time=start_time if start_time else None,
+                    end_time=end_time if end_time else None,
                     subject=subject,
                     class_name=class_name,
                     room=room

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import api from '../../api/client';
-import type { Lesson } from '../../types';
+import type { Lesson, Absence } from '../../types';
 import type { StepOneData } from './StepOne';
 
 interface StepTwoProps {
   stepOneData: StepOneData;
   onBack: () => void;
-  onSubmit: () => void;
+  onSubmit: (absence: Absence) => void;
 }
 
 interface LessonWithMeta extends Lesson {
@@ -239,7 +239,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         }
       }
 
-      onSubmit();
+      onSubmit(createdAbsence);
     } catch (err) {
       console.error('Fehler beim Erstellen der Abwesenheit:', err);
       setError('Abwesenheit konnte nicht erstellt werden. Bitte versuchen Sie es erneut.');

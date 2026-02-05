@@ -1,0 +1,642 @@
+
+======================================================================
+PDF Form Fields: 1201.pdf
+======================================================================
+
+✅ Found 101 form fields:
+
+📄 Field: 0
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: 1
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: 1a
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: 1b
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: 2
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: 3
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: 3a
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: 3b
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: 4
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: 5
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Drucken
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: Kontrollkästchen100a
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen100b
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen25
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen27
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen29
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen29a
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen31
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen34
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen37a
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen37b
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen37c
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen40
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen43a
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen43b
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen43c
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen50
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen50c
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen51
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen52
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen53
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen54
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen55a
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen55b
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen57
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen58a
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen58b
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen60
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen61
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen63
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen91
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen93
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen95
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen98a
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Kontrollkästchen98b
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Speichern
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: Text1
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text10
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text102
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text103
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text104
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text105
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text106
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text107
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text108
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text109
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text11
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text110
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text111
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text112
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text113
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text114
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text115
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text12
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text13
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text14
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text15
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text16
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text17
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text18
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text19
+   Type:     Unknown
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Text2
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text20
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text21
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text22
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text23
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text24
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text25
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text26
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text27
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text28
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text29
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text3
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text30
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text4
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text5
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text6
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text65
+   Type:     Unknown
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Text66
+   Type:     Unknown
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Text7
+   Type:     Text
+   Value:    (empty)
+   Flags:    12587008 (binary: 0b110000000001000000000000)
+
+📄 Field: Text71
+   Type:     Unknown
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Text79
+   Type:     Unknown
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Text8
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text80
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text81
+   Type:     Unknown
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Text9
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Wichtig1
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: Wichtig2
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: Wichtig3
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: Wichtig4
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: Wichtig5
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+
+======================================================================
+Generated Config Template (JSON)
+======================================================================
+
+"field_mappings": {
+  "0": "{{ absence.FIELD_NAME_HERE }},"
+  "1": "{{ absence.FIELD_NAME_HERE }},"
+  "1a": "{{ absence.FIELD_NAME_HERE }},"
+  "1b": "{{ absence.FIELD_NAME_HERE }},"
+  "2": "{{ absence.FIELD_NAME_HERE }},"
+  "3": "{{ absence.FIELD_NAME_HERE }},"
+  "3a": "{{ absence.FIELD_NAME_HERE }},"
+  "3b": "{{ absence.FIELD_NAME_HERE }},"
+  "4": "{{ absence.FIELD_NAME_HERE }},"
+  "5": "{{ absence.FIELD_NAME_HERE }},"
+  "Drucken": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen100a": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen100b": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen25": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen27": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen29": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen29a": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen31": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen34": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen37a": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen37b": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen37c": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen40": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen43a": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen43b": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen43c": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen50": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen50c": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen51": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen52": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen53": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen54": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen55a": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen55b": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen57": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen58a": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen58b": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen60": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen61": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen63": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen91": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen93": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen95": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen98a": "{{ absence.FIELD_NAME_HERE }},"
+  "Kontrollkästchen98b": "{{ absence.FIELD_NAME_HERE }},"
+  "Speichern": "{{ absence.FIELD_NAME_HERE }},"
+  "Text1": "{{ absence.FIELD_NAME_HERE }},"
+  "Text10": "{{ absence.FIELD_NAME_HERE }},"
+  "Text102": "{{ absence.FIELD_NAME_HERE }},"
+  "Text103": "{{ absence.FIELD_NAME_HERE }},"
+  "Text104": "{{ absence.FIELD_NAME_HERE }},"
+  "Text105": "{{ absence.FIELD_NAME_HERE }},"
+  "Text106": "{{ absence.FIELD_NAME_HERE }},"
+  "Text107": "{{ absence.FIELD_NAME_HERE }},"
+  "Text108": "{{ absence.FIELD_NAME_HERE }},"
+  "Text109": "{{ absence.FIELD_NAME_HERE }},"
+  "Text11": "{{ absence.FIELD_NAME_HERE }},"
+  "Text110": "{{ absence.FIELD_NAME_HERE }},"
+  "Text111": "{{ absence.FIELD_NAME_HERE }},"
+  "Text112": "{{ absence.FIELD_NAME_HERE }},"
+  "Text113": "{{ absence.FIELD_NAME_HERE }},"
+  "Text114": "{{ absence.FIELD_NAME_HERE }},"
+  "Text115": "{{ absence.FIELD_NAME_HERE }},"
+  "Text12": "{{ absence.FIELD_NAME_HERE }},"
+  "Text13": "{{ absence.FIELD_NAME_HERE }},"
+  "Text14": "{{ absence.FIELD_NAME_HERE }},"
+  "Text15": "{{ absence.FIELD_NAME_HERE }},"
+  "Text16": "{{ absence.FIELD_NAME_HERE }},"
+  "Text17": "{{ absence.FIELD_NAME_HERE }},"
+  "Text18": "{{ absence.FIELD_NAME_HERE }},"
+  "Text19": "{{ absence.FIELD_NAME_HERE }},"
+  "Text2": "{{ absence.FIELD_NAME_HERE }},"
+  "Text20": "{{ absence.FIELD_NAME_HERE }},"
+  "Text21": "{{ absence.FIELD_NAME_HERE }},"
+  "Text22": "{{ absence.FIELD_NAME_HERE }},"
+  "Text23": "{{ absence.FIELD_NAME_HERE }},"
+  "Text24": "{{ absence.FIELD_NAME_HERE }},"
+  "Text25": "{{ absence.FIELD_NAME_HERE }},"
+  "Text26": "{{ absence.FIELD_NAME_HERE }},"
+  "Text27": "{{ absence.FIELD_NAME_HERE }},"
+  "Text28": "{{ absence.FIELD_NAME_HERE }},"
+  "Text29": "{{ absence.FIELD_NAME_HERE }},"
+  "Text3": "{{ absence.FIELD_NAME_HERE }},"
+  "Text30": "{{ absence.FIELD_NAME_HERE }},"
+  "Text4": "{{ absence.FIELD_NAME_HERE }},"
+  "Text5": "{{ absence.FIELD_NAME_HERE }},"
+  "Text6": "{{ absence.FIELD_NAME_HERE }},"
+  "Text65": "{{ absence.FIELD_NAME_HERE }},"
+  "Text66": "{{ absence.FIELD_NAME_HERE }},"
+  "Text7": "{{ absence.FIELD_NAME_HERE }},"
+  "Text71": "{{ absence.FIELD_NAME_HERE }},"
+  "Text79": "{{ absence.FIELD_NAME_HERE }},"
+  "Text8": "{{ absence.FIELD_NAME_HERE }},"
+  "Text80": "{{ absence.FIELD_NAME_HERE }},"
+  "Text81": "{{ absence.FIELD_NAME_HERE }},"
+  "Text9": "{{ absence.FIELD_NAME_HERE }},"
+  "Wichtig1": "{{ absence.FIELD_NAME_HERE }},"
+  "Wichtig2": "{{ absence.FIELD_NAME_HERE }},"
+  "Wichtig3": "{{ absence.FIELD_NAME_HERE }},"
+  "Wichtig4": "{{ absence.FIELD_NAME_HERE }},"
+  "Wichtig5": "{{ absence.FIELD_NAME_HERE }}"
+}
+
+Available template variables:
+  {{ absence.teacher.full_name }}
+  {{ absence.teacher.email }}
+  {{ absence.start_date | format_date('%d.%m.%Y') }}
+  {{ absence.end_date | format_date('%d.%m.%Y') }}
+  {{ absence.excursion_classes }}
+  {{ absence.admin_notes }}
+  {{ lessons_time_start }}
+  {{ lessons_time_end }}
+  {{ lessons_subjects_combined }}
+  {{ lessons_rooms_combined }}
+
+======================================================================
+Summary: 101 fields extracted from 1201.pdf
+======================================================================
+
+Next steps:
+  1. Review the field names above
+  2. Map them to absence data in pdf_form_mappings.json
+  3. Test with a real absence to verify mappings
+

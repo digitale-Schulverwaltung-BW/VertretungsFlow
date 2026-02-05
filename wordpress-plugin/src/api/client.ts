@@ -312,6 +312,44 @@ class APIClient {
     // Use WordPress proxy for auth-protected download
     return `/wp-json/absenzflow/v1/proxy/download/${absenceId}/${attachmentId}`;
   }
+
+  /**
+   * Download pre-filled PDF form for absence
+   * Returns blob for immediate browser download
+   */
+  async downloadPDFForm(absenceId: number, formType: string): Promise<Blob> {
+    if (this.useProxy) {
+      // Use WordPress proxy with blob response type
+      const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
+
+      const response = await axios.post(
+        this.proxyURL,
+        {
+          method: 'GET',
+          endpoint: `/absences/${absenceId}/pdf-forms/${formType}`
+        },
+        {
+          responseType: 'blob',
+          withCredentials: true,
+          headers: {
+            'X-WP-Nonce': nonce || ''
+          }
+        }
+      );
+
+      return response.data;
+    } else {
+      // Direct backend call with blob response type
+      const response = await this.client.get(
+        `/absences/${absenceId}/pdf-forms/${formType}`,
+        {
+          responseType: 'blob'
+        }
+      );
+
+      return response.data;
+    }
+  }
 }
 
 // Export singleton instance

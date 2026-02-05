@@ -1,0 +1,143 @@
+{
+  "defaults": {
+    "_comment": "Schulweite Standard-Werte, die für alle Formulare gelten",
+    "school_name": "Name Ihrer Schule",
+    "school_address": "Straße, PLZ Ort",
+    "school_city": "Ort",
+    "school_phone": "0123/456789"
+  },
+
+  "forms": {
+    "excursion_form": {
+      "pdf_filename": "1211.pdf",
+      "display_name": "Antrag auf außerunterrichtliche Veranstaltung",
+      "applicable_reasons": ["excursion"],
+      "field_mappings": {
+        "_comment": "=== Lehrkraft-Daten ===",
+        "Nachname": "{{ absence.teacher.last_name }}",
+        "Vorname_2": "{{ absence.teacher.first_name }}",
+
+        "_comment2": "=== Veranstaltungs-Details ===",
+        "Klasse": "{{ absence.excursion_classes }}",
+        "außerunterrichtliche Veranstaltung": "{{ absence.admin_notes }}",
+        "Veranstaltungsziel Ort Stadt Land": "{{ absence.admin_notes }}",
+
+        "_comment3": "=== Datum und Uhrzeit ===",
+        "Datum_2": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
+        "Datum_3": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
+        "Uhrzeit": "{{ lessons_time_start }}",
+        "Uhrzeit_2": "{{ lessons_time_end }}",
+
+        "_comment4": "=== Weitere Felder (TODO: Manuell zuordnen) ===",
+        "Text1": "",
+        "Text2": "",
+        "Text3": "",
+        "Zahl der teilnehmenden Schülerinnen": ""
+      }
+    },
+
+    "business_trip_form": {
+      "pdf_filename": "1201.pdf",
+      "display_name": "Dienstreiseantrag",
+      "applicable_reasons": ["training", "exam", "official", "other"],
+      "field_mappings": {
+        "_comment": "=== Seite 1: Persönliche Angaben (Abschnitt 1) ===",
+        "Name": "{{ absence.teacher.last_name }}",
+        "Vorname": "{{ absence.teacher.first_name }}",
+        "Personalnummer/Arbeitsgebiet": "",
+
+        "_comment2": "=== Schulinformationen (aus defaults) ===",
+        "Beschäftigungsdienststelle": "{{ config.school_name }}",
+        "bei Abordnung: Dienststelle": "",
+        "Dienstort": "{{ config.school_city }}",
+        "Privatanschrift (Straße, Postleitzahl, Wohnort)": "{{ config.school_address }}",
+        "Telefon (dienstlich)": "{{ config.school_phone }}",
+        "Telefon (privat) (Angabe freiwillig)": "",
+
+        "_comment3": "=== Angaben zur Dienstreise (Abschnitt 2) ===",
+        "Anlass der Reise": "{{ absence.admin_notes }}",
+        "Geschäftsort/e/Land": "{{ config.school_city }}",
+
+        "_comment4": "=== Reisedaten ===",
+        "Datum": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
+        "BeginnDat": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
+        "Uhrzeit": "{{ lessons_time_start }}",
+        "Zeit": "{{ lessons_time_start }}",
+        "Datum_2": "{{ absence.start_date | format_date('%d.%m.%Y') }}",
+        "Uhrzeit_2": "{{ lessons_time_start }}",
+        "EndeDat": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
+        "Uhrzeit_3": "{{ lessons_time_end }}",
+        "Datum_3": "{{ absence.end_date | format_date('%d.%m.%Y') }}",
+        "Uhrzeit_4": "{{ lessons_time_end }}",
+
+        "_comment5": "=== Numerische Felder (aus PDF-Extraktion) ===",
+        "_note": "Die folgenden Felder sind Beispiele - bitte an tatsächliche Feldnamen anpassen",
+        "0": "",
+        "1": "",
+        "2": "",
+        "3": "",
+        "4": "",
+        "5": ""
+      }
+    }
+  },
+
+  "period_time_mapping": {
+    "_comment": "Fallback wenn WebUntis keine Zeitdaten liefert (Standard-Stundenraster)",
+    "1": "07:45",
+    "2": "08:30",
+    "3": "09:30",
+    "4": "10:20",
+    "5": "11:10",
+    "6": "12:00",
+    "7": "12:45",
+    "8": "13:30",
+    "9": "14:15",
+    "10": "15:00"
+  },
+
+  "info_texts": {
+    "training": "Dienstreisen zu Fortbildungen, die über LFB-online gestellt werden, werden automatisch genehmigt und können über Drive-BW abgerechnet werden."
+  },
+
+  "_metadata": {
+    "version": "1.1",
+    "created": "2026-02-05",
+    "updated": "2026-02-05",
+    "author": "Claude Sonnet 4.5",
+    "notes": [
+      "Template variables:",
+      "  === Absence Data ===",
+      "  {{ absence.teacher.full_name }} - Vor- und Nachname",
+      "  {{ absence.teacher.first_name }} - Vorname",
+      "  {{ absence.teacher.last_name }} - Nachname",
+      "  {{ absence.teacher.email }} - E-Mail",
+      "  {{ absence.start_date | format_date('%d.%m.%Y') }} - Startdatum",
+      "  {{ absence.end_date | format_date('%d.%m.%Y') }} - Enddatum",
+      "  {{ absence.excursion_classes }} - Klassen (nur bei Exkursion)",
+      "  {{ absence.admin_notes }} - Bemerkungen",
+      "",
+      "  === Derived from Lessons ===",
+      "  {{ lessons_time_start }} - Start-Uhrzeit (aus WebUntis, z.B. 07:45)",
+      "  {{ lessons_time_end }} - End-Uhrzeit (aus WebUntis, z.B. 15:00)",
+      "  {{ lessons_subjects_combined }} - Fächer kombiniert (z.B. 'Mathe, Deutsch')",
+      "  {{ lessons_rooms_combined }} - Räume kombiniert (z.B. 'A101, A102')",
+      "",
+      "  === Config Defaults ===",
+      "  {{ config.school_name }} - Schulname (aus defaults)",
+      "  {{ config.school_address }} - Schuladresse (aus defaults)",
+      "  {{ config.school_city }} - Schulort (aus defaults)",
+      "  {{ config.school_phone }} - Schultelefon (aus defaults)",
+      "",
+      "Extracted field names:",
+      "  - 1211.pdf: 49 fields (see backend/docs/1211_fields.txt)",
+      "  - 1201.pdf: 101 fields (see backend/docs/1201_fields.txt)",
+      "",
+      "Setup:",
+      "  1. Passe 'defaults' Abschnitt an deine Schule an",
+      "  2. Öffne backend/docs/1201_fields.txt für vollständige Feldliste",
+      "  3. Aktualisiere field_mappings mit tatsächlichen PDF-Feldnamen",
+      "  4. Teste mit einer echten Absenz"
+    ]
+  }
+}

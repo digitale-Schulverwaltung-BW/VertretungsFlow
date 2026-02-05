@@ -101,6 +101,8 @@ class AffectedLesson(Base):
     date = Column(DateTime, nullable=False)
     period = Column(Integer, nullable=False)  # Start-Stundennummer (1-10)
     end_period = Column(Integer, nullable=True)  # End-Stundennummer (für Doppelstunden)
+    start_time = Column(Integer, nullable=True)  # WebUntis startTime format (e.g., 730 = 07:30)
+    end_time = Column(Integer, nullable=True)    # WebUntis endTime format (e.g., 815 = 08:15)
     subject = Column(String(100))
     class_name = Column(String(50))
     room = Column(String(50))

@@ -192,6 +192,8 @@ class AbsenceService:
                     date=lesson.date,
                     period=lesson.period,
                     end_period=lesson.end_period,  # Für Doppelstunden
+                    start_time=lesson.start_time,  # WebUntis startTime (e.g., 730 = 07:30)
+                    end_time=lesson.end_time,      # WebUntis endTime (e.g., 815 = 08:15)
                     subject=lesson.subject,
                     class_name=lesson.class_name,
                     room=lesson.room,

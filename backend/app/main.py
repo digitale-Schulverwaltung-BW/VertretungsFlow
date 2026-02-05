@@ -10,7 +10,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
-from app.api import auth, absences, attachments, webuntis, admin
+from app.api import auth, absences, attachments, webuntis, admin, pdf_forms
 
 # Logging konfigurieren
 log_level = logging.DEBUG if settings.DEBUG else logging.INFO
@@ -124,6 +124,7 @@ app.include_router(absences.router, prefix="/api/absences", tags=["Absences"])
 app.include_router(attachments.router, prefix="/api/absences", tags=["Attachments"])
 app.include_router(webuntis.router, prefix="/api", tags=["WebUntis"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Administration"])
+app.include_router(pdf_forms.router, prefix="/api", tags=["PDF Forms"])
 
 
 @app.get("/")

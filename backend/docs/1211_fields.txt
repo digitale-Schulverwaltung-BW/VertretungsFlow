@@ -1,0 +1,330 @@
+
+======================================================================
+PDF Form Fields: 1211.pdf
+======================================================================
+
+✅ Found 49 form fields:
+
+📄 Field: 0
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: 1
+   Type:     Unknown
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: 2
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Check Box11
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Check Box12
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Datum_2
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Datum_3
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Datum_5
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Drucken
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: Ich verzichte auf Reisekostenvergütung_2
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Ich verzichte auf den_2
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Ich werde die volle Reisekostenvergütung beantragen_2
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Klasse
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Nachname
+   Type:     Unknown
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Personalnummer
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Speichern
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: Text1
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text10
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text11
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text12
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text13
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text14
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text15
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text16
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text17
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text2
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text3
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text4
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text5
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text6
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Text7
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text8
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Text9
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Uhrzeit
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Uhrzeit_2
+   Type:     Text
+   Value:    (empty)
+   Flags:    12582912 (binary: 0b110000000000000000000000)
+
+📄 Field: Unterschrift
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    65536 (binary: 0b10000000000000000)
+
+📄 Field: Unterschrift1
+   Type:     Unknown
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: Veranstaltungsziel Ort Stadt Land
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Vorname_2
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Vorname_3
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: Zahl der teilnehmenden Schülerinnen
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: außerunterrichtliche Veranstaltung
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: insgesamt
+   Type:     Text
+   Value:    (empty)
+   Flags:    8388608 (binary: 0b100000000000000000000000)
+
+📄 Field: ja
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: ja_2
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: ja_3
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: mit dem Bus
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: mit einem regelmäßig verkehrenden Beförderungsmittel zB SBahn UBahn
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+📄 Field: mit einem sonstigen Verkehrsmittel Art Gründe bitte kurz erläutern
+   Type:     Button/Checkbox
+   Value:    (empty)
+   Flags:    0 (binary: 0b0)
+
+
+======================================================================
+Generated Config Template (JSON)
+======================================================================
+
+"field_mappings": {
+  "0": "{{ absence.FIELD_NAME_HERE }},"
+  "1": "{{ absence.FIELD_NAME_HERE }},"
+  "2": "{{ absence.FIELD_NAME_HERE }},"
+  "Check Box11": "{{ absence.FIELD_NAME_HERE }},"
+  "Check Box12": "{{ absence.FIELD_NAME_HERE }},"
+  "Datum_2": "{{ absence.FIELD_NAME_HERE }},"
+  "Datum_3": "{{ absence.FIELD_NAME_HERE }},"
+  "Datum_5": "{{ absence.FIELD_NAME_HERE }},"
+  "Drucken": "{{ absence.FIELD_NAME_HERE }},"
+  "Ich verzichte auf Reisekostenvergütung_2": "{{ absence.FIELD_NAME_HERE }},"
+  "Ich verzichte auf den_2": "{{ absence.FIELD_NAME_HERE }},"
+  "Ich werde die volle Reisekostenvergütung beantragen_2": "{{ absence.FIELD_NAME_HERE }},"
+  "Klasse": "{{ absence.FIELD_NAME_HERE }},"
+  "Nachname": "{{ absence.FIELD_NAME_HERE }},"
+  "Personalnummer": "{{ absence.FIELD_NAME_HERE }},"
+  "Speichern": "{{ absence.FIELD_NAME_HERE }},"
+  "Text1": "{{ absence.FIELD_NAME_HERE }},"
+  "Text10": "{{ absence.FIELD_NAME_HERE }},"
+  "Text11": "{{ absence.FIELD_NAME_HERE }},"
+  "Text12": "{{ absence.FIELD_NAME_HERE }},"
+  "Text13": "{{ absence.FIELD_NAME_HERE }},"
+  "Text14": "{{ absence.FIELD_NAME_HERE }},"
+  "Text15": "{{ absence.FIELD_NAME_HERE }},"
+  "Text16": "{{ absence.FIELD_NAME_HERE }},"
+  "Text17": "{{ absence.FIELD_NAME_HERE }},"
+  "Text2": "{{ absence.FIELD_NAME_HERE }},"
+  "Text3": "{{ absence.FIELD_NAME_HERE }},"
+  "Text4": "{{ absence.FIELD_NAME_HERE }},"
+  "Text5": "{{ absence.FIELD_NAME_HERE }},"
+  "Text6": "{{ absence.FIELD_NAME_HERE }},"
+  "Text7": "{{ absence.FIELD_NAME_HERE }},"
+  "Text8": "{{ absence.FIELD_NAME_HERE }},"
+  "Text9": "{{ absence.FIELD_NAME_HERE }},"
+  "Uhrzeit": "{{ absence.FIELD_NAME_HERE }},"
+  "Uhrzeit_2": "{{ absence.FIELD_NAME_HERE }},"
+  "Unterschrift": "{{ absence.FIELD_NAME_HERE }},"
+  "Unterschrift1": "{{ absence.FIELD_NAME_HERE }},"
+  "Veranstaltungsziel Ort Stadt Land": "{{ absence.FIELD_NAME_HERE }},"
+  "Vorname_2": "{{ absence.FIELD_NAME_HERE }},"
+  "Vorname_3": "{{ absence.FIELD_NAME_HERE }},"
+  "Zahl der teilnehmenden Schülerinnen": "{{ absence.FIELD_NAME_HERE }},"
+  "außerunterrichtliche Veranstaltung": "{{ absence.FIELD_NAME_HERE }},"
+  "insgesamt": "{{ absence.FIELD_NAME_HERE }},"
+  "ja": "{{ absence.FIELD_NAME_HERE }},"
+  "ja_2": "{{ absence.FIELD_NAME_HERE }},"
+  "ja_3": "{{ absence.FIELD_NAME_HERE }},"
+  "mit dem Bus": "{{ absence.FIELD_NAME_HERE }},"
+  "mit einem regelmäßig verkehrenden Beförderungsmittel zB SBahn UBahn": "{{ absence.FIELD_NAME_HERE }},"
+  "mit einem sonstigen Verkehrsmittel Art Gründe bitte kurz erläutern": "{{ absence.FIELD_NAME_HERE }}"
+}
+
+Available template variables:
+  {{ absence.teacher.full_name }}
+  {{ absence.teacher.email }}
+  {{ absence.start_date | format_date('%d.%m.%Y') }}
+  {{ absence.end_date | format_date('%d.%m.%Y') }}
+  {{ absence.excursion_classes }}
+  {{ absence.admin_notes }}
+  {{ lessons_time_start }}
+  {{ lessons_time_end }}
+  {{ lessons_subjects_combined }}
+  {{ lessons_rooms_combined }}
+
+======================================================================
+Summary: 49 fields extracted from 1211.pdf
+======================================================================
+
+Next steps:
+  1. Review the field names above
+  2. Map them to absence data in pdf_form_mappings.json
+  3. Test with a real absence to verify mappings
+

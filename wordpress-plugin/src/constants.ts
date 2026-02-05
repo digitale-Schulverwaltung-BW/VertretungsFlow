@@ -18,3 +18,61 @@ export const getAbsenceReasonLabel = (reason: string): string => {
   const found = ABSENCE_REASONS.find(r => r.value === reason);
   return found ? found.label : reason;
 };
+
+/**
+ * PDF-Formulare für verschiedene Abwesenheitsgründe
+ */
+export interface PDFFormInfo {
+  type: string;
+  label: string;
+}
+
+export const PDF_FORMS: Record<AbsenceReason, PDFFormInfo[]> = {
+  excursion: [
+    {
+      type: 'excursion_form',
+      label: 'Antrag auf außerunterrichtliche Veranstaltung'
+    }
+  ],
+  training: [
+    {
+      type: 'business_trip_form',
+      label: 'Dienstreiseantrag'
+    }
+  ],
+  exam: [
+    {
+      type: 'business_trip_form',
+      label: 'Dienstreiseantrag'
+    }
+  ],
+  official: [
+    {
+      type: 'business_trip_form',
+      label: 'Dienstreiseantrag'
+    }
+  ],
+  other: [
+    {
+      type: 'business_trip_form',
+      label: 'Dienstreiseantrag'
+    }
+  ],
+  personal: [],
+  sick: [],
+  undefined: []
+};
+
+/**
+ * Gibt verfügbare PDF-Formulare für einen Abwesenheitsgrund zurück
+ */
+export function getAvailableFormsForReason(reason: AbsenceReason): PDFFormInfo[] {
+  return PDF_FORMS[reason] || [];
+}
+
+/**
+ * Info-Texte für bestimmte Abwesenheitsgründe
+ */
+export const INFO_TEXTS: Record<string, string> = {
+  training: "Fortbildungen, die über LFB-online gestellt werden, werden automatisch genehmigt und können über Drive-BW abgerechnet werden."
+};
