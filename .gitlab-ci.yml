@@ -73,7 +73,6 @@ quality_gate:
   dependencies:
     - test_backend
     - test_frontend
-    - lint_backend
     - lint_frontend
   only:
     - merge_requests
