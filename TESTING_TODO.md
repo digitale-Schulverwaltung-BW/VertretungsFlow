@@ -12,8 +12,22 @@ Comprehensive testing checklist for AbsenzFlow frontend. Check off items as you 
 - [x] Update GitLab CI to run tests
 - [x] Fix React Router v7 future flag warnings
 - [x] Create API Client tests (26 tests) - Integration/Contract tests
+  - ✅ Token management, config setup, proxy mode switching
+  - ✅ API endpoint URL construction, type definitions
+  - ✅ Request configuration (nonce, withCredentials, FormData)
+  - ✅ HTTP methods and download URL generation
+  - ⚠️ **NOT covered:** Axios mocking, error handling (401/403/404/500), interceptors
+  - 💡 **Note:** These are contract tests, not full unit tests with mocked axios behavior
 - [x] Set up ESLint for code quality
 - [x] Create Absence Wizard Step One tests (30 tests) - Form rendering, conditional fields, validation, submission
+  - ✅ Form rendering (all fields, title, dropdowns, date pickers, period selectors)
+  - ✅ Reason selection and all options
+  - ✅ Conditional fields (excursion classes, personal reason) - show/hide/validation
+  - ✅ Lesson/period selection with defaults (1-16)
+  - ✅ Form validation (required fields, conditional validation, range validation, error clearing)
+  - ✅ Form submission and error handling
+  - ✅ Button behavior (rendering, clickability)
+  - ⚠️ **Limitations:** Calendar date picker only tested at render level (not full date selection interaction)
 
 **Current Status:** 71 tests passing ✨ + ESLint configured + Absence Wizard Step One fully tested
 
@@ -43,35 +57,6 @@ Comprehensive testing checklist for AbsenzFlow frontend. Check off items as you 
 ---
 
 ## 🎯 High Priority - Core Components
-
-### API Client (`src/api/client.ts`)
-- [ ] Test `setBaseURL()` - URL configuration
-- [ ] Test `setToken()` / `getToken()` - Token management
-- [ ] Test `request()` method with different HTTP methods (GET, POST, PATCH, DELETE)
-- [ ] Test proxy mode vs direct mode switching
-- [ ] Test error handling (network errors, 401, 403, 404, 500)
-- [ ] Test nonce header injection
-- [ ] Test `withCredentials` in proxy mode
-- [ ] Mock axios interceptors
-- [ ] Test `getCurrentUser()` API call
-- [ ] Test `createAbsence()`, `getAbsences()`, `updateAbsence()` calls
-
-### Create Absence Wizard - Step One (`src/pages/CreateAbsence/StepOne.tsx`)
-- [ ] Test form renders with all fields
-- [ ] Test reason dropdown selection
-- [ ] Test date picker interactions
-- [ ] Test period selection (start/end)
-- [ ] **Conditional Inputs:**
-  - [ ] Test excursion classes field shows when reason="excursion"
-  - [ ] Test excursion classes field hidden for other reasons
-  - [ ] Test personal reason field shows when reason="personal"
-  - [ ] Test personal reason field hidden for other reasons
-- [ ] Test form validation (required fields)
-- [ ] Test date range validation (end >= start)
-- [ ] Test period validation (end >= start)
-- [ ] Test "Weiter" button disabled when invalid
-- [ ] Test "Weiter" button enabled when valid
-- [ ] Test navigation to Step Two on submit
 
 ### Create Absence Wizard - Step Two (`src/pages/CreateAbsence/StepTwo.tsx`)
 
@@ -126,19 +111,91 @@ Comprehensive testing checklist for AbsenzFlow frontend. Check off items as you 
 - [ ] Test pagination
 
 ### Absence Detail (`src/pages/AbsenceDetail/index.tsx`)
-- [ ] Test absence data displays correctly
-- [ ] Test affected lessons table
-- [ ] Test attachments section
-- [ ] Test file download links
-- [ ] Test conditional fields (excursion_classes, personal_reason)
-- [ ] Test status badge rendering
-- [ ] Test approve button (for dept_head/admin)
-- [ ] Test complete button (for planner/admin)
-- [ ] Test delete button (for owner/admin)
-- [ ] Test permission-based button visibility
-- [ ] Test PDF form download buttons
-- [ ] Test admin notes display
-- [ ] Test timeline/history (if implemented)
+
+**Testing Plan:** Comprehensive page with permission logic, conditional rendering, and user actions. Testing in 5 phases.
+
+#### **Phase 1: Basic Rendering & States** ✅ (Foundation) - 11 tests passing
+- [x] Test loading state displays spinner and "Lädt Abwesenheit..." message
+- [x] Test error state displays error message and "Zurück zum Dashboard" button
+- [x] Test "no ID" error state (missing absence ID in URL)
+- [x] Test "not found" error state (absence doesn't exist)
+- [x] Test successful data load renders main content
+- [x] Test page title "Abwesenheit Details" is displayed
+- [x] Test "Zurück zum Dashboard" button in header
+- [x] Test API calls with correct parameters
+- [x] Test loading to success state transition
+- [x] Test loading to error state transition
+
+#### **Phase 2: Permission Logic** (Core Authorization)
+- [ ] Test admin role can see all action buttons (approve, complete, delete)
+- [ ] Test planner role can see all action buttons
+- [ ] Test dept_head role can see approve button
+- [ ] Test dept_head can see complete button when config.deptHeadsCanComplete = true
+- [ ] Test dept_head cannot see complete button when config.deptHeadsCanComplete = false
+- [ ] Test teacher role cannot see any action buttons
+- [ ] Test action buttons section hidden when user has no permissions
+
+#### **Phase 3: Data Display & Conditional Fields** (Business Logic)
+- [ ] Test teacher name displays (full_name or username)
+- [ ] Test date range displays correctly (dd.MM.yyyy format)
+- [ ] Test period range displays (start_period - end_period)
+- [ ] Test absence reason label displays
+- [ ] Test status badge renders with correct color and text (submitted/approved/rejected/completed/draft)
+- [ ] Test conditional field: excursion_classes shown when reason="excursion"
+- [ ] Test conditional field: excursion_classes hidden for other reasons
+- [ ] Test conditional field: personal_reason shown when present
+- [ ] Test conditional field: personal_reason hidden when not present
+- [ ] Test conditional field: admin_notes shown when present
+- [ ] Test conditional field: admin_notes hidden when empty
+- [ ] Test created_at timestamp displays
+- [ ] Test approved_at timestamp displays when status="approved"
+- [ ] Test completed_at timestamp displays when status="completed"
+
+#### **Phase 4: Affected Lessons Table** (Data Tables)
+- [ ] Test affected lessons table renders with correct headers
+- [ ] Test lesson count displays correctly (e.g., "Betroffene Stunden (3)")
+- [ ] Test lesson data displays (date, period, subject, class_name)
+- [ ] Test "Kann entfallen" column shown when reason !== "personal"
+- [ ] Test "Kann entfallen" column hidden when reason = "personal"
+- [ ] Test "Kann entfallen" badge shows "✓ Ja" when can_be_canceled = true
+- [ ] Test "Kann entfallen" badge shows "- Nein" when can_be_canceled = false
+- [ ] Test lesson notes display or "Keine Angaben" placeholder
+- [ ] Test empty state: "Keine betroffenen Stunden" when no lessons
+- [ ] Test period formatting for single period (e.g., "3")
+- [ ] Test period formatting for range (e.g., "3-5")
+
+#### **Phase 5: Attachments & Downloads** (File Handling)
+- [ ] Test attachments section renders when attachments exist
+- [ ] Test attachments section hidden when no attachments
+- [ ] Test attachment count displays (e.g., "Anhänge (2)")
+- [ ] Test attachment filename displays
+- [ ] Test attachment file size displays (KB format)
+- [ ] Test attachment upload timestamp displays
+- [ ] Test download link has correct href (getAttachmentDownloadUrl)
+- [ ] Test download button renders with "Download" text
+
+#### **Phase 6: User Actions** (Interactions)
+- [ ] Test approve button calls handleApprove(true) and reloads data
+- [ ] Test reject button calls handleApprove(false) and reloads data
+- [ ] Test approve button disabled when status="approved"
+- [ ] Test reject button disabled when status="rejected"
+- [ ] Test complete button calls handleComplete() and reloads data
+- [ ] Test complete button disabled when status="completed"
+- [ ] Test delete button shows confirmation dialog
+- [ ] Test delete button navigates to dashboard after successful deletion
+- [ ] Test delete confirmation can be cancelled
+- [ ] Test action buttons show loading state during API calls
+- [ ] Test error alerts display when API calls fail
+
+#### **Phase 7: Navigation Between Absences** (Prev/Next)
+- [ ] Test navigation buttons render when multiple absences exist
+- [ ] Test navigation buttons hidden when only one absence
+- [ ] Test "Zurück" button disabled when at first absence
+- [ ] Test "Weiter →" button disabled when at last absence
+- [ ] Test counter displays "X / Y" (current / total)
+- [ ] Test "Zurück" button navigates to previous absence
+- [ ] Test "Weiter →" button navigates to next absence
+- [ ] Test navigation updates when absence ID changes in URL
 
 ---
 
@@ -322,6 +379,23 @@ npm run test -- --coverage
 - [ ] Test file upload progress
 - [ ] Test API request debouncing
 - [ ] Test lazy loading
+
+---
+
+## 🔬 Advanced API Client Tests (Optional Enhancement)
+
+**Current Status:** Contract tests exist (26 tests). Full axios mocking tests would require refactoring.
+
+**Future Enhancement Options:**
+- [ ] Mock axios and test actual API call behavior
+- [ ] Test error handling with mocked responses (401, 403, 404, 500)
+- [ ] Test axios interceptors (request/response)
+- [ ] Test retry logic on network failures
+- [ ] Test request cancellation
+- [ ] Test concurrent request handling
+- [ ] Test rate limiting/throttling
+
+**Note:** This would require refactoring the API client to be injectable/mockable.
 
 ---
 
