@@ -8,7 +8,7 @@ variables:
   POSTGRES_USER: absenzflow
   POSTGRES_PASSWORD: password
 
-.test_template: &test_definition
+test_template: &test_definition
   image: python:3.11
   services:
     - postgres:15
@@ -17,7 +17,7 @@ variables:
     - pip install -r requirements-dev.txt
     - cd ..
 
-.test_backend:
+test_backend:
   <<: *test_definition
   stage: test
   script:
@@ -27,7 +27,7 @@ variables:
     reports:
       cobertura: backend/coverage.xml
 
-.test_frontend:
+test_frontend:
   image: node:18
   stage: test
   script:
@@ -35,7 +35,7 @@ variables:
     - npm ci
     - npm run test
 
-.build_frontend:
+build_frontend:
   image: node:18
   stage: build
   script:
@@ -46,7 +46,7 @@ variables:
     paths:
       - wordpress-plugin/build/
 
-.lint_backend:
+lint_backend:
   <<: *test_definition
   stage: quality
   script:
@@ -55,7 +55,7 @@ variables:
     - flake8 .
     - mypy .
 
-.lint_frontend:
+lint_frontend:
   image: node:18
   stage: quality
   script:
@@ -63,7 +63,7 @@ variables:
     - npm ci
     - npm run lint
 
-.quality_gate:
+quality_gate:
   image: alpine:latest
   stage: quality
   script:
@@ -76,7 +76,7 @@ variables:
   only:
     - merge_requests
 
-.deploy:
+deploy:
   image: alpine:latest
   stage: deploy
   script:
