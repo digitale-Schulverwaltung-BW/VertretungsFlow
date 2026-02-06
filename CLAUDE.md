@@ -19,7 +19,7 @@ Dieses Dokument hilft Claude (und anderen Entwicklern) beim Arbeiten mit dem Abs
 
 ## Architektur
 
-### Authentifizierung: WordPress Proxy Mode
+### Authentifizierung: WordPress Proxy Mode (Production)
 
 Das System nutzt **WordPress-Cookie-Authentication** über einen Proxy:
 
@@ -37,7 +37,18 @@ Das System nutzt **WordPress-Cookie-Authentication** über einen Proxy:
 - `withCredentials: true` setzen (für WordPress-Cookies)
 - `X-WP-Nonce` Header mitschicken (für CSRF-Schutz)
 
-Siehe: `backend/app/api/auth.py:get_wordpress_proxy_user()`
+**🔒 Sicherheit:**
+- ✅ **HTTP-only cookies** - Nicht über JavaScript zugreifbar (XSS-geschützt)
+- ✅ **Keine localStorage-Tokens** - Keine client-seitigen Token-Speicherung
+- ✅ **Server-to-server secret** - Proxy-Validierung mit HMAC constant-time comparison
+- ✅ **CSRF-Protection** - WordPress-Nonce-Validierung
+
+**Alternative:** Standalone/LDAP Mode verfügbar (siehe [AUTHENTICATION.md](AUTHENTICATION.md))
+- ⚠️ Nutzt JWT tokens in localStorage (XSS-vulnerabel)
+- ⚠️ Nur für Development/Testing oder spezielle LDAP-Integration
+- ⚠️ Nicht empfohlen für Production
+
+Siehe: `backend/app/api/auth.py:get_wordpress_proxy_user()` und [AUTHENTICATION.md](AUTHENTICATION.md)
 
 ### File Uploads
 
@@ -583,10 +594,12 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 ## Weiterführende Dokumentation
 
-- **Backend Auth:** `backend/AUTH_MODES.md` (LDAP vs WordPress Proxy)
+- **Authentication:** [AUTHENTICATION.md](AUTHENTICATION.md) - WordPress Proxy vs LDAP/Standalone modes, security comparison
+- **Deployment:** [DEPLOYMENT.md](DEPLOYMENT.md) - Production deployment guide, security checklist
+- **Security Audit:** [SEC-AUDIT.md](SEC-AUDIT.md) - Security assessment and recommendations
 - **API Endpoints:** FastAPI Docs: `http://localhost:8000/docs`
 - **WordPress Plugin:** Inline-Kommentare in PHP-Dateien
-- **Environment Vars:** `.env.example` mit allen Optionen
+- **Environment Vars:** [.env.example](.env.example) mit allen Optionen und Sicherheitshinweisen
 
 ## Refactoring-Historie
 

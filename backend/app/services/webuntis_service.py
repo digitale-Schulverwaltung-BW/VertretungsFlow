@@ -152,8 +152,30 @@ class WebUntisService:
             logger.info(f"✅ {len(parsed_lessons)} Stunden erfolgreich geparst")
             return parsed_lessons
 
+        except httpx.TimeoutException as e:
+            logger.error(f"❌ WebUntis Timeout: Request took too long for {teacher_lookup}")
+            logger.debug(f"Timeout details: {e}")
+            return []
+        except httpx.ConnectError as e:
+            logger.error(f"❌ WebUntis Connection Error: Cannot reach WebUntis server for {teacher_lookup}")
+            logger.debug(f"Connection error details: {e}")
+            return []
+        except httpx.HTTPStatusError as e:
+            logger.error(f"❌ WebUntis HTTP Error: Server returned status {e.response.status_code} for {teacher_lookup}")
+            logger.debug(f"HTTP error details: {e}")
+            return []
+        except KeyError as e:
+            logger.error(f"❌ WebUntis Data Error: Missing expected field in response for {teacher_lookup}")
+            logger.debug(f"Missing key: {e}", exc_info=True)
+            return []
+        except ValueError as e:
+            logger.error(f"❌ WebUntis Data Error: Invalid data format in response for {teacher_lookup}")
+            logger.debug(f"Value error: {e}", exc_info=True)
+            return []
         except Exception as e:
-            logger.error(f"❌ WebUntis Get Timetable Exception: {e}", exc_info=True)
+            # Catch-all for unexpected errors - log with full trace for debugging
+            logger.error(f"❌ WebUntis Unexpected Error for {teacher_lookup}: {type(e).__name__}")
+            logger.debug(f"Unexpected error details: {e}", exc_info=True)
             return []
     
     async def _get_teacher_id(self, username: str) -> Optional[int]:

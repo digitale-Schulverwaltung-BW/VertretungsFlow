@@ -1,18 +1,15 @@
 services:
-  # PostgreSQL Datenbank (DEVELOPMENT)
-  # ⚠️ SECURITY WARNING: Port 5432 is exposed for development convenience
-  # For production deployment, use: docker-compose -f docker-compose.prod.yml up
+  # PostgreSQL Datenbank (PRODUCTION - No Port Exposure)
   postgres:
     image: postgres:15-alpine
     container_name: absenzflow-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-absenzflow}
       POSTGRES_USER: ${POSTGRES_USER:-absenzflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # Must be set in .env - no default!
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"  # ⚠️ DEVELOPMENT ONLY - Removed in production config
+    # ⚠️ NO PORTS EXPOSED - Database only accessible from Docker network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-absenzflow}"]
       interval: 10s
@@ -20,8 +17,9 @@ services:
       retries: 5
     networks:
       - absenzflow-network
+    restart: unless-stopped
 
-  # FastAPI Backend (DEVELOPMENT)
+  # FastAPI Backend (PRODUCTION)
   backend:
     build:
       context: ./backend
@@ -29,7 +27,7 @@ services:
     container_name: absenzflow-backend
     environment:
       # Database
-      DATABASE_URL: postgresql://${POSTGRES_USER:-absenzflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-absenzflow}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-absenzflow}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-absenzflow}
 
       # LDAP Configuration
       LDAP_SERVER: ${LDAP_SERVER}
@@ -51,44 +49,50 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-absenzflow@schule.de}
 
-      # Application Settings (DEVELOPMENT DEFAULTS)
-      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080}
-      DEBUG: ${DEBUG:-true}  # Development default: true
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # Application Settings (PRODUCTION DEFAULTS)
+      SECRET_KEY: ${SECRET_KEY}  # Must be set in .env - no default!
+      CORS_ORIGINS: ${CORS_ORIGINS}  # Must be set to production domains only (NO localhost!)
+      DEBUG: ${DEBUG:-false}  # Default: false (production)
+      FRONTEND_URL: ${FRONTEND_URL}
+      ENVIRONMENT: production  # Triggers production checks including CORS validation
 
       # WordPress Proxy Authentication
-      WORDPRESS_PROXY_SECRET: ${WORDPRESS_PROXY_SECRET:-change-this-shared-secret-in-production}
+      WORDPRESS_PROXY_SECRET: ${WORDPRESS_PROXY_SECRET}  # Must be set in .env - no default!
 
       # File Upload
       UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
     volumes:
-      - ./backend:/app  # Full source mount for hot-reload
+      - ./backend/uploads:/app/uploads  # Only uploads, not full backend source
+      # ⚠️ NO SOURCE CODE MOUNT - Production uses built image
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - absenzflow-network
       - absenzflow-shared  # Für WordPress-Zugriff
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload  # Hot-reload enabled
+    restart: unless-stopped
+    # Production command (no --reload)
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 
-  # Optional: pgAdmin für Datenbank-Management
+  # pgAdmin (DISABLED in production - use docker exec for DB access)
+  # To enable for emergency DB access: docker-compose -f docker-compose.prod.yml --profile admin up
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: absenzflow-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@absenzflow.local}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}  # Must be set if using pgAdmin
     ports:
-      - "5050:80"
+      - "127.0.0.1:5050:80"  # Only accessible from localhost
     depends_on:
       - postgres
     networks:
       - absenzflow-network
     profiles:
-      - dev
+      - admin  # Only starts with --profile admin
+    restart: unless-stopped
 
 volumes:
   postgres_data:

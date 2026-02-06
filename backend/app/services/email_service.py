@@ -2,11 +2,14 @@
 E-Mail Service
 Versand von Benachrichtigungen per E-Mail
 """
+import logging
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class EmailService:
@@ -72,11 +75,24 @@ class EmailService:
             # Port 25 oder andere ohne TLS: keine zusätzlichen Parameter
 
             await aiosmtplib.send(message, **smtp_kwargs)
-            
+
             return True
-            
+
+        except aiosmtplib.SMTPAuthenticationError as e:
+            logger.error(f"SMTP authentication failed: Invalid credentials for {self.host}:{self.port}")
+            logger.debug(f"Auth error details: {e}", exc_info=True)
+            return False
+        except aiosmtplib.SMTPConnectError as e:
+            logger.error(f"SMTP connection failed: Cannot reach server {self.host}:{self.port}")
+            logger.debug(f"Connection error details: {e}", exc_info=True)
+            return False
+        except aiosmtplib.SMTPException as e:
+            logger.error(f"SMTP error sending email to {to}: {type(e).__name__}")
+            logger.debug(f"SMTP error details: {e}", exc_info=True)
+            return False
         except Exception as e:
-            print(f"Email Send Error: {e}")
+            logger.error(f"Unexpected error sending email to {to}: {type(e).__name__}")
+            logger.debug(f"Unexpected error details: {e}", exc_info=True)
             return False
     
     async def send_absence_submitted_notification(

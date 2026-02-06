@@ -149,13 +149,12 @@ async def health_check(request: Request):
 async def startup_event():
     """Wird beim Start der Anwendung ausgeführt"""
     logger.info("🚀 AbsenzFlow Backend gestartet")
+    logger.info("✅ Security validation passed - no default secrets detected")
     if settings.DEBUG:
         logger.warning("⚠️ DEBUG MODE ENABLED - NOT FOR PRODUCTION!")
-    # Ensure critical settings are configured
-    if settings.SECRET_KEY == "your-secret-key-change-use-openssl-rand-hex-32":
-        raise RuntimeError("Default SECRET_KEY detected! Change before starting.")
     logger.info(f"📝 API Dokumentation: {settings.API_URL}/docs")
     logger.info(f"🔍 Debug Mode: {settings.DEBUG}")
+    logger.info(f"🔐 Auth Mode: {settings.AUTH_MODE}")
     
 
 

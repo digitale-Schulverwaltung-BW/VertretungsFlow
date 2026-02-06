@@ -193,12 +193,18 @@ class AttachmentService:
         except FileNotFoundError:
             # Race condition: file was already deleted
             logger.warning(f"File not found (race condition): {file_path}")
-        except PermissionError:
+        except PermissionError as e:
             logger.error(f"Permission denied deleting file: {file_path}")
-            raise HTTPException(status_code=500, detail="Permission denied deleting file")
+            logger.debug(f"Permission error details: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to delete file: permission denied")
+        except OSError as e:
+            logger.error(f"OS error deleting file {file_path}: {type(e).__name__}")
+            logger.debug(f"OS error details: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to delete file: system error")
         except Exception as e:
-            logger.error(f"Unexpected error deleting file {file_path}: {e}")
-            raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")
+            logger.error(f"Unexpected error deleting file {file_path}: {type(e).__name__}")
+            logger.debug(f"Unexpected error details: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to delete file")
 
     def get_file_path(self, file_path: str) -> Path:
         """

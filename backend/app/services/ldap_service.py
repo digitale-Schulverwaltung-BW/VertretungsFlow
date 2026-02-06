@@ -2,10 +2,13 @@
 LDAP Authentication Service
 Authentifizierung gegen Active Directory / LDAP
 """
+import logging
 import ldap
 from ldap.filter import filter_format
 from typing import Optional
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class LDAPService:
@@ -58,9 +61,19 @@ class LDAPService:
             return True
             
         except ldap.INVALID_CREDENTIALS:
+            logger.warning(f"LDAP authentication failed: Invalid credentials for user {username}")
+            return False
+        except ldap.SERVER_DOWN as e:
+            logger.error(f"LDAP server unreachable: {self.server}:{self.port}")
+            logger.debug(f"Server error details: {e}", exc_info=True)
+            return False
+        except ldap.LDAPError as e:
+            logger.error(f"LDAP error during authentication for {username}: {type(e).__name__}")
+            logger.debug(f"LDAP error details: {e}", exc_info=True)
             return False
         except Exception as e:
-            print(f"LDAP Auth Error: {e}")
+            logger.error(f"Unexpected error during LDAP authentication for {username}: {type(e).__name__}")
+            logger.debug(f"Unexpected error details: {e}", exc_info=True)
             return False
     
     def _find_user_dn(self, username: str) -> Optional[str]:
@@ -90,11 +103,20 @@ class LDAPService:
             
             if result and len(result) > 0:
                 return result[0][0]  # DN ist das erste Element
-            
+
             return None
-            
+
+        except ldap.SERVER_DOWN as e:
+            logger.error(f"LDAP server unreachable during user search: {self.server}:{self.port}")
+            logger.debug(f"Server error details: {e}", exc_info=True)
+            return None
+        except ldap.LDAPError as e:
+            logger.error(f"LDAP error during user search for {username}: {type(e).__name__}")
+            logger.debug(f"LDAP error details: {e}", exc_info=True)
+            return None
         except Exception as e:
-            print(f"LDAP Search Error: {e}")
+            logger.error(f"Unexpected error during LDAP user search for {username}: {type(e).__name__}")
+            logger.debug(f"Unexpected error details: {e}", exc_info=True)
             return None
     
     def get_user_info(self, username: str) -> Optional[dict]:
@@ -131,9 +153,22 @@ class LDAPService:
                 }
             
             return None
-            
+
+        except ldap.SERVER_DOWN as e:
+            logger.error(f"LDAP server unreachable during get_user_info: {self.server}:{self.port}")
+            logger.debug(f"Server error details: {e}", exc_info=True)
+            return None
+        except ldap.LDAPError as e:
+            logger.error(f"LDAP error during get_user_info for {username}: {type(e).__name__}")
+            logger.debug(f"LDAP error details: {e}", exc_info=True)
+            return None
+        except (KeyError, IndexError, UnicodeDecodeError) as e:
+            logger.error(f"Data parsing error during get_user_info for {username}: {type(e).__name__}")
+            logger.debug(f"Parsing error details: {e}", exc_info=True)
+            return None
         except Exception as e:
-            print(f"LDAP Get User Info Error: {e}")
+            logger.error(f"Unexpected error during get_user_info for {username}: {type(e).__name__}")
+            logger.debug(f"Unexpected error details: {e}", exc_info=True)
             return None
 
 

@@ -108,19 +108,28 @@ CORS_ORIGINS: Union[List[str], str] = []  # Empty in production
 
 
 #### 5. Client-Side Token Storage
-Impact: XSS vulnerability could lead to token theft
+Impact: XSS vulnerability could lead to token theft (LDAP/Standalone Mode Only)
 
 File: wordpress-plugin/src/api/client.ts:82
 
 Details: JWT tokens stored in localStorage
 
-Risk: Cross-site scripting attacks can steal authentication tokens
+**⚠️ CLARIFICATION (2026-02-06):**
+This issue **only applies to LDAP/Standalone authentication mode** (`AUTH_MODE=standalone`).
+
+The **default WordPress Proxy mode** (`AUTH_MODE=wordpress`) uses **HTTP-only cookies** and is **NOT vulnerable** to this issue. WordPress cookies are handled by the browser and not accessible to JavaScript, providing XSS protection.
+
+Risk:
+- ❌ **Standalone/LDAP mode**: Cross-site scripting attacks can steal authentication tokens from localStorage
+- ✅ **WordPress Proxy mode (default)**: HTTP-only cookies immune to XSS, tokens not stored client-side
 
 Fix:
-typescript
-// Use secure HTTP-only cookies instead
-this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-// Remove localStorage.setItem()
+- **Production**: Use WordPress Proxy mode (default) - No fix needed
+- **Standalone mode**: Implement strict CSP, input sanitization, short token expiry
+
+See: [AUTHENTICATION.md](AUTHENTICATION.md) for detailed security comparison
+
+**Status:** ✅ **No action needed for production** (WordPress Proxy mode is secure by default)
 
 
 #### 6. Generic Exception Handling
