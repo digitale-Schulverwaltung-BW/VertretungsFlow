@@ -213,7 +213,7 @@ class AbsenceService:
             db.commit()
 
             # Audit log for rejection
-            audit_log(
+            audit_log(  # type: ignore[arg-type]
                 action="absence_rejected",
                 user_id=current_user.id,
                 resource_type="absence",

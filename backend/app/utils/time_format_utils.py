@@ -155,9 +155,9 @@ def get_time_for_period(
     for lesson in lessons:
         if lesson.period == period:
             if time_type == "start" and lesson.start_time:
-                return format_webuntis_time(lesson.start_time)
+                return format_webuntis_time(lesson.start_time)  # type: ignore[arg-type]
             elif time_type == "end" and lesson.end_time:
-                return format_webuntis_time(lesson.end_time)
+                return format_webuntis_time(lesson.end_time)  # type: ignore[arg-type]
 
     # Fallback to timegrid reverse lookup
     return get_time_from_period(timegrid, period, time_type, config_path)

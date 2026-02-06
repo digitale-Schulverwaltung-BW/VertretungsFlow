@@ -222,7 +222,7 @@ def _create_wordpress_user(
     db.refresh(user)
 
     # Audit log for user creation
-    audit_log(
+    audit_log(  # type: ignore[arg-type]
         action="user_created",
         user_id=user.id,
         resource_type="user",
@@ -335,7 +335,7 @@ def _create_ldap_user(
     db.refresh(user)
 
     # Audit log for LDAP user creation
-    audit_log(
+    audit_log(  # type: ignore[arg-type]
         action="user_created",
         user_id=user.id,
         resource_type="user",
@@ -493,7 +493,7 @@ def _handle_wordpress_proxy_user(
             db.refresh(user)
 
             # Audit log for user update
-            audit_log(
+            audit_log(  # type: ignore[arg-type]
                 action="user_updated",
                 user_id=user.id,
                 resource_type="user",
