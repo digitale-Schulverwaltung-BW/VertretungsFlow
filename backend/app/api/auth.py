@@ -274,33 +274,33 @@ def _update_wordpress_user_fields(
     if user.email != email:
         update_details["old_email"] = user.email
         update_details["new_email"] = email
-        user.email = email
+        user.email = email  # type: ignore[assignment]
         needs_update = True
 
     if user.full_name != full_name:
         update_details["old_name"] = user.full_name
         update_details["new_name"] = full_name
-        user.full_name = full_name
+        user.full_name = full_name  # type: ignore[assignment]
         needs_update = True
 
     if user.first_name != first_name:
-        user.first_name = first_name
+        user.first_name = first_name  # type: ignore[assignment]
         needs_update = True
 
     if user.last_name != last_name:
-        user.last_name = last_name
+        user.last_name = last_name  # type: ignore[assignment]
         needs_update = True
 
     if user.role != role:
         update_details["old_role"] = user.role.value
         update_details["new_role"] = role.value
-        user.role = role
+        user.role = role  # type: ignore[assignment]
         needs_update = True
 
     if user.webuntis_teacher_code != webuntis_code:
         update_details["old_webuntis_code"] = user.webuntis_teacher_code
         update_details["new_webuntis_code"] = webuntis_code
-        user.webuntis_teacher_code = webuntis_code
+        user.webuntis_teacher_code = webuntis_code  # type: ignore[assignment]
         needs_update = True
 
     return needs_update, update_details
@@ -488,7 +488,7 @@ def _handle_wordpress_proxy_user(
         )
 
         if needs_update:
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.utcnow()  # type: ignore[assignment]
             db.commit()
             db.refresh(user)
 
