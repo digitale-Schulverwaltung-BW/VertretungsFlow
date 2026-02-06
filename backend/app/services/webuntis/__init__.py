@@ -33,5 +33,5 @@ __all__ = [
     "WebUntisService",
     "webuntis_service",
     "parse_timetable",
-    "merge_consecutive_lessons"
+    "merge_consecutive_lessons",
 ]

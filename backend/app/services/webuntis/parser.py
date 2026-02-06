@@ -2,6 +2,7 @@
 WebUntis Parser
 Pure parsing and transformation functions for WebUntis timetable data
 """
+
 import logging
 from datetime import datetime
 from typing import List, Dict
@@ -17,7 +18,7 @@ def parse_timetable(
     subjects: Dict,
     classes: Dict,
     rooms: Dict,
-    timegrid: Dict
+    timegrid: Dict,
 ) -> List[WebUntisLesson]:
     """
     Parsed Stundenplan-Daten von WebUntis
@@ -44,7 +45,9 @@ def parse_timetable(
             # Filter: Nur Stunden wo der Lehrer tatsächlich dabei ist
             teacher_ids = [t.get("id") for t in entry.get("te", [])]
             if teacher_id not in teacher_ids:
-                logger.info(f"⏭️ Überspringe Entry {i+1}: Lehrer {teacher_id} nicht in {teacher_ids}")
+                logger.info(
+                    f"⏭️ Überspringe Entry {i+1}: Lehrer {teacher_id} nicht in {teacher_ids}"
+                )
                 continue
 
             # Datum parsen (Format: YYYYMMDD)
@@ -56,14 +59,18 @@ def parse_timetable(
             subject_ids = [s.get("id") for s in entry.get("su", [])]
             if subject_ids:
                 subject_id = subject_ids[0]
-                subject = subjects.get(subject_id) or subjects.get(str(subject_id), "Unbekannt")
+                subject = subjects.get(subject_id) or subjects.get(
+                    str(subject_id), "Unbekannt"
+                )
             else:
                 subject = "Unbekannt"
 
             class_ids = [c.get("id") for c in entry.get("kl", [])]
             if class_ids:
                 class_id = class_ids[0]
-                class_name = classes.get(class_id) or classes.get(str(class_id), "Unbekannt")
+                class_name = classes.get(class_id) or classes.get(
+                    str(class_id), "Unbekannt"
+                )
             else:
                 class_name = "Unbekannt"
 
@@ -78,7 +85,9 @@ def parse_timetable(
             start_time = entry.get("startTime", 0)
             end_time = entry.get("endTime", 0)
             # JSONB konvertiert auch hier Keys zu Strings
-            period = timegrid.get(start_time) or timegrid.get(str(start_time), start_time // 100)
+            period = timegrid.get(start_time) or timegrid.get(
+                str(start_time), start_time // 100
+            )
 
             lesson = WebUntisLesson(
                 date=date,
@@ -87,10 +96,12 @@ def parse_timetable(
                 end_time=end_time if end_time else None,
                 subject=subject,
                 class_name=class_name,
-                room=room
+                room=room,
             )
 
-            logger.info(f"✅ Stunde geparst: {date.date()} #{period} - {subject} ({class_name}) in {room}")
+            logger.info(
+                f"✅ Stunde geparst: {date.date()} #{period} - {subject} ({class_name}) in {room}"
+            )
             lessons.append(lesson)
 
         except Exception as e:
@@ -98,7 +109,9 @@ def parse_timetable(
             logger.error(f"Problematischer Entry: {entry}")
             continue
 
-    logger.info(f"Parsing abgeschlossen: {len(lessons)}/{len(timetable_data)} Stunden erfolgreich geparst")
+    logger.info(
+        f"Parsing abgeschlossen: {len(lessons)}/{len(timetable_data)} Stunden erfolgreich geparst"
+    )
 
     # Doppelstunden zusammenfassen
     merged_lessons = merge_consecutive_lessons(lessons)
@@ -132,7 +145,7 @@ def merge_consecutive_lessons(lessons: List[WebUntisLesson]) -> List[WebUntisLes
             current_block = {
                 "lesson": lesson,
                 "start_period": lesson.period,
-                "end_period": lesson.period
+                "end_period": lesson.period,
             }
         elif (
             lesson.date == current_block["lesson"].date
@@ -143,15 +156,17 @@ def merge_consecutive_lessons(lessons: List[WebUntisLesson]) -> List[WebUntisLes
         ):
             # Aufeinanderfolgende Stunde mit gleicher Klasse/Fach -> erweitern
             current_block["end_period"] = lesson.period
-            logger.debug(f"🔗 Erweitere Block: {lesson.class_name} {lesson.subject} "
-                       f"({current_block['start_period']}-{current_block['end_period']})")
+            logger.debug(
+                f"🔗 Erweitere Block: {lesson.class_name} {lesson.subject} "
+                f"({current_block['start_period']}-{current_block['end_period']})"
+            )
         else:
             # Neuer Block beginnt
             merged.append(current_block)
             current_block = {
                 "lesson": lesson,
                 "start_period": lesson.period,
-                "end_period": lesson.period
+                "end_period": lesson.period,
             }
 
     # Letzten Block hinzufügen
@@ -171,10 +186,12 @@ def merge_consecutive_lessons(lessons: List[WebUntisLesson]) -> List[WebUntisLes
                 end_period=block["end_period"],
                 subject=lesson.subject,
                 class_name=lesson.class_name,
-                room=lesson.room
+                room=lesson.room,
             )
-            logger.info(f"📚 Stundenblock: {block['start_period']}.{block['end_period']}. Stunde - "
-                      f"{lesson.subject} ({lesson.class_name})")
+            logger.info(
+                f"📚 Stundenblock: {block['start_period']}.{block['end_period']}. Stunde - "
+                f"{lesson.subject} ({lesson.class_name})"
+            )
             result.append(merged_lesson)
         else:
             # Einzelstunde

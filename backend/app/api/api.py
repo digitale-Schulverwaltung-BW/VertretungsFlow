@@ -1,6 +1,7 @@
 """
 Main API router
 """
+
 from fastapi import APIRouter
 
 from app.api.endpoints import auth, absences, users

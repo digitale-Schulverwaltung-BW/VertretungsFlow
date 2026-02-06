@@ -2,6 +2,7 @@
 Absence Utilities
 Pure functions for absence validation and lesson filtering
 """
+
 from datetime import datetime
 from fastapi import HTTPException, status
 
@@ -9,10 +10,7 @@ from app.schemas.schemas import WebUntisLesson
 
 
 def validate_date_range(
-    start_date: datetime,
-    end_date: datetime,
-    start_period: int,
-    end_period: int
+    start_date: datetime, end_date: datetime, start_period: int, end_period: int
 ) -> None:
     """
     Validates date range and periods
@@ -38,7 +36,7 @@ def validate_date_range(
     if end_date < start_date:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="End date must be after or equal to start date"
+            detail="End date must be after or equal to start date",
         )
 
     # Validierung: end_period >= start_period bei gleichen Tagen
@@ -46,7 +44,7 @@ def validate_date_range(
         if end_period < start_period:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="End period must be after or equal to start period"
+                detail="End period must be after or equal to start period",
             )
 
 
@@ -55,7 +53,7 @@ def is_lesson_in_period(
     start_date: datetime,
     end_date: datetime,
     start_period: int,
-    end_period: int
+    end_period: int,
 ) -> bool:
     """
     Checks if lesson is within the specified period

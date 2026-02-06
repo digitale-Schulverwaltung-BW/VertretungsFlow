@@ -71,7 +71,7 @@ def fill_pdf_with_field_names(input_pdf: str, output_pdf: str):
 
     # Write output
     print(f"💾 Writing output to: {output_pdf}")
-    with open(output_pdf, 'wb') as f:
+    with open(output_pdf, "wb") as f:
         writer.write(f)
 
     output_size = Path(output_pdf).stat().st_size
@@ -85,8 +85,12 @@ def main():
         print("Usage: python fill_pdf_with_field_names.py <input_pdf> <output_pdf>")
         print()
         print("Examples:")
-        print("  python fill_pdf_with_field_names.py ../assets/1211.pdf 1211_labeled.pdf")
-        print("  python fill_pdf_with_field_names.py ../assets/1201.pdf 1201_labeled.pdf")
+        print(
+            "  python fill_pdf_with_field_names.py ../assets/1211.pdf 1211_labeled.pdf"
+        )
+        print(
+            "  python fill_pdf_with_field_names.py ../assets/1201.pdf 1201_labeled.pdf"
+        )
         sys.exit(1)
 
     input_pdf = sys.argv[1]
@@ -97,9 +101,10 @@ def main():
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

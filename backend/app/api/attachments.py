@@ -2,6 +2,7 @@
 Attachments API Routes
 File upload/download/delete operations for absences
 """
+
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, File, UploadFile
 from fastapi.responses import FileResponse
@@ -32,7 +33,7 @@ async def upload_attachment(
     absence_id: int,
     file: UploadFile = File(...),
     current_user: User = Depends(get_wordpress_proxy_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Lädt Datei-Anhang zu Abwesenheit hoch
@@ -50,7 +51,9 @@ async def upload_attachment(
 
     # Berechtigung prüfen (delegiert an Service)
     if not permission_service.can_edit_absence(current_user, absence):
-        raise HTTPException(status_code=403, detail="Not authorized to edit this absence")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to edit this absence"
+        )
 
     # Dateivalidierung (delegiert an Service)
     file_size, file_content = await attachment_service.validate_file(file)
@@ -65,7 +68,7 @@ async def upload_attachment(
         stored_filename=saved_file.stored_filename,
         file_path=str(saved_file.file_path),
         mime_type=file.content_type,
-        file_size=saved_file.file_size
+        file_size=saved_file.file_size,
     )
 
     db.add(attachment)
@@ -80,9 +83,9 @@ async def upload_attachment(
             "absence_id": absence_id,
             "filename": file.filename,
             "mime_type": file.content_type,
-            "file_size": file_size
+            "file_size": file_size,
         },
-        request=request
+        request=request,
     )
 
     return attachment
@@ -95,7 +98,7 @@ async def download_attachment(
     absence_id: int,
     attachment_id: int,
     current_user: User = Depends(get_wordpress_proxy_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Lädt Anhang herunter (auth-geschützt)
@@ -106,10 +109,14 @@ async def download_attachment(
     - Streaming für große Dateien
     """
     # Attachment laden
-    attachment = db.query(AbsenceAttachment).filter(
-        AbsenceAttachment.id == attachment_id,
-        AbsenceAttachment.absence_id == absence_id
-    ).first()
+    attachment = (
+        db.query(AbsenceAttachment)
+        .filter(
+            AbsenceAttachment.id == attachment_id,
+            AbsenceAttachment.absence_id == absence_id,
+        )
+        .first()
+    )
 
     if not attachment:
         raise HTTPException(status_code=404, detail="Attachment not found")
@@ -119,16 +126,16 @@ async def download_attachment(
 
     # Berechtigung prüfen (delegiert an Service)
     if not permission_service.can_view_absence(current_user, absence):
-        raise HTTPException(status_code=403, detail="Not authorized to view this absence")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to view this absence"
+        )
 
     # Path Resolution & Validation (delegiert an Service)
     file_path = attachment_service.get_file_path(attachment.file_path)
 
     # Streaming-Response
     return FileResponse(
-        path=file_path,
-        media_type=attachment.mime_type,
-        filename=attachment.filename
+        path=file_path, media_type=attachment.mime_type, filename=attachment.filename
     )
 
 
@@ -139,7 +146,7 @@ async def delete_attachment(
     absence_id: int,
     attachment_id: int,
     current_user: User = Depends(get_wordpress_proxy_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Löscht Anhang
@@ -147,10 +154,14 @@ async def delete_attachment(
     Erlaubt: Eigentümer (wenn nicht completed), Admin, Planner
     """
     # Attachment laden
-    attachment = db.query(AbsenceAttachment).filter(
-        AbsenceAttachment.id == attachment_id,
-        AbsenceAttachment.absence_id == absence_id
-    ).first()
+    attachment = (
+        db.query(AbsenceAttachment)
+        .filter(
+            AbsenceAttachment.id == attachment_id,
+            AbsenceAttachment.absence_id == absence_id,
+        )
+        .first()
+    )
 
     if not attachment:
         raise HTTPException(status_code=404, detail="Attachment not found")
@@ -159,7 +170,9 @@ async def delete_attachment(
 
     # Berechtigung prüfen (delegiert an Service)
     if not permission_service.can_edit_absence(current_user, absence):
-        raise HTTPException(status_code=403, detail="Not authorized to edit this absence")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to edit this absence"
+        )
 
     # Datei von Disk löschen (delegiert an Service)
     attachment_service.delete_file(attachment.file_path)
@@ -172,9 +185,9 @@ async def delete_attachment(
             "absence_id": absence_id,
             "filename": attachment.filename,
             "mime_type": attachment.mime_type,
-            "file_size": attachment.file_size
+            "file_size": attachment.file_size,
         },
-        request=request
+        request=request,
     )
 
     # DB-Eintrag löschen

@@ -48,14 +48,14 @@ def analyze_pdf_fields(pdf_path: str) -> Dict[str, List[int]]:
 
     # Iterate through all pages and their annotations
     for page_num, page in enumerate(reader.pages, start=1):
-        if '/Annots' in page:
-            annots = page['/Annots']
+        if "/Annots" in page:
+            annots = page["/Annots"]
             if annots:
                 for annot_ref in annots:
                     annot = annot_ref.get_object()
                     # Check if this is a form field (has /T key for field name)
-                    if '/T' in annot:
-                        field_name = str(annot['/T'])
+                    if "/T" in annot:
+                        field_name = str(annot["/T"])
                         field_pages[field_name].append(page_num)
 
     return field_pages
@@ -111,24 +111,26 @@ def sanitize_pdf_fields(input_path: str, output_path: str):
 
     # Rename duplicate fields on each page
     for page_num, page in enumerate(writer.pages, start=1):
-        if '/Annots' in page:
-            annots = page['/Annots']
+        if "/Annots" in page:
+            annots = page["/Annots"]
             if annots:
                 for annot_ref in annots:
                     annot = annot_ref.get_object()
-                    if '/T' in annot:
-                        field_name = str(annot['/T'])
+                    if "/T" in annot:
+                        field_name = str(annot["/T"])
 
                         # If this field has duplicates, rename it
                         if field_name in duplicates:
                             new_name = f"{field_name}_p{page_num}"
-                            annot.update({'/T': TextStringObject(new_name)})
+                            annot.update({"/T": TextStringObject(new_name)})
                             renames.append((field_name, new_name, page_num))
-                            print(f"   Renamed: '{field_name}' → '{new_name}' (page {page_num})")
+                            print(
+                                f"   Renamed: '{field_name}' → '{new_name}' (page {page_num})"
+                            )
 
     # Write sanitized PDF
     print(f"\n💾 Writing sanitized PDF to: {output_path}")
-    with open(output_path, 'wb') as f:
+    with open(output_path, "wb") as f:
         writer.write(f)
 
     print(f"\n{'='*70}")
@@ -156,7 +158,9 @@ def main():
         print()
         print("Examples:")
         print("  python sanitize_pdf_fields.py ../assets/1201.pdf")
-        print("  python sanitize_pdf_fields.py ../assets/1201.pdf ../assets/1201-sanitized.pdf")
+        print(
+            "  python sanitize_pdf_fields.py ../assets/1201.pdf ../assets/1201-sanitized.pdf"
+        )
         print()
         print("If output_pdf is not specified, it defaults to <input>-sanitized.pdf")
         sys.exit(1)
@@ -168,7 +172,9 @@ def main():
         output_path = sys.argv[2]
     else:
         input_file = Path(input_path)
-        output_path = str(input_file.parent / f"{input_file.stem}-sanitized{input_file.suffix}")
+        output_path = str(
+            input_file.parent / f"{input_file.stem}-sanitized{input_file.suffix}"
+        )
 
     try:
         sanitize_pdf_fields(input_path, output_path)
@@ -178,9 +184,10 @@ def main():
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -2,6 +2,7 @@
 Time Formatting Utilities
 Pure functions for WebUntis time format conversions and period calculations
 """
+
 import json
 import logging
 from pathlib import Path
@@ -37,7 +38,7 @@ def get_time_from_period(
     timegrid: Dict[int, int],
     period: int,
     time_type: str,
-    config_path: Optional[Path] = None
+    config_path: Optional[Path] = None,
 ) -> str:
     """
     Reverse lookup: Find time for a given period from timegrid
@@ -74,7 +75,9 @@ def get_time_from_period(
                 return f"{end_hours:02d}:{end_minutes:02d}"
 
     # Fallback to config if period not found in timegrid
-    logger.warning(f"Period {period} nicht im WebUntis Timegrid gefunden, nutze Config Fallback")
+    logger.warning(
+        f"Period {period} nicht im WebUntis Timegrid gefunden, nutze Config Fallback"
+    )
 
     if config_path and config_path.exists():
         try:
@@ -99,7 +102,7 @@ def get_time_for_period(
     period: int,
     time_type: str,
     timegrid: Dict[int, int],
-    config_path: Optional[Path] = None
+    config_path: Optional[Path] = None,
 ) -> str:
     """
     Get time for a specific period, preferring WebUntis lesson data over timegrid

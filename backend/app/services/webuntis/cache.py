@@ -2,6 +2,7 @@
 WebUntis Cache
 3-layer caching infrastructure (memory → DB → API)
 """
+
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Callable, Optional, Any
@@ -56,7 +57,7 @@ class WebUntisCache:
         cache_key: str,
         memory_cache_attr: str,
         fetch_func: Callable,
-        force_refresh: bool = False
+        force_refresh: bool = False,
     ) -> Dict:
         """
         Generische Cache-Lookup-Methode mit 3-Layer-Cache
@@ -83,13 +84,18 @@ class WebUntisCache:
 
         # Layer 2: DB Cache
         if not force_refresh:
-            db_entry = db.query(WebUnitisCacheModel).filter(
-                WebUnitisCacheModel.cache_key == cache_key
-            ).first()
+            db_entry = (
+                db.query(WebUnitisCacheModel)
+                .filter(WebUnitisCacheModel.cache_key == cache_key)
+                .first()
+            )
 
             if db_entry:
                 # Check if expired
-                if db_entry.expires_at is None or db_entry.expires_at > datetime.utcnow():
+                if (
+                    db_entry.expires_at is None
+                    or db_entry.expires_at > datetime.utcnow()
+                ):
                     logger.info(f"WebUntis cache hit (DB): {cache_key}")
                     # JSONB konvertiert numerische Keys zu Strings - zurückkonvertieren
                     cached_data = self.convert_jsonb_keys(db_entry.cache_data)
@@ -103,11 +109,15 @@ class WebUntisCache:
         data = await fetch_func()
 
         # Store in DB
-        expires_at = datetime.utcnow() + timedelta(hours=settings.WEBUNTIS_CACHE_TTL_HOURS)
+        expires_at = datetime.utcnow() + timedelta(
+            hours=settings.WEBUNTIS_CACHE_TTL_HOURS
+        )
 
-        db_entry = db.query(WebUnitisCacheModel).filter(
-            WebUnitisCacheModel.cache_key == cache_key
-        ).first()
+        db_entry = (
+            db.query(WebUnitisCacheModel)
+            .filter(WebUnitisCacheModel.cache_key == cache_key)
+            .first()
+        )
 
         if db_entry:
             db_entry.cache_data = data
@@ -115,9 +125,7 @@ class WebUntisCache:
             db_entry.updated_at = datetime.utcnow()
         else:
             db_entry = WebUnitisCacheModel(
-                cache_key=cache_key,
-                cache_data=data,
-                expires_at=expires_at
+                cache_key=cache_key, cache_data=data, expires_at=expires_at
             )
             db.add(db_entry)
 

@@ -1,6 +1,7 @@
 """
 AbsenzFlow - Hauptanwendung
 """
+
 import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,8 +25,8 @@ if not root_logger.handlers:
     handler = logging.StreamHandler()
     handler.setLevel(log_level)
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     handler.setFormatter(formatter)
     root_logger.addHandler(handler)
@@ -41,7 +42,7 @@ app = FastAPI(
     description="API für Abwesenheitsmanagement mit WebUntis-Integration",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # Rate Limiter an App binden
@@ -60,6 +61,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     - Referrer-Policy: Controls referrer information
     - Strict-Transport-Security (HSTS): Only in production (DEBUG=False)
     """
+
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
 
@@ -70,7 +72,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # HSTS only in production (requires HTTPS)
         if not settings.DEBUG:
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
 
         return response
 
@@ -94,7 +98,7 @@ async def limit_request_size(request: Request, call_next):
     Limits request body size to prevent DoS attacks
     Max size: 10 MB (excluding multipart/form-data which is handled separately)
     """
-    content_length = request.headers.get('content-length')
+    content_length = request.headers.get("content-length")
 
     if content_length:
         try:
@@ -102,17 +106,20 @@ async def limit_request_size(request: Request, call_next):
             max_size = 10 * 1024 * 1024  # 10 MB
 
             if size > max_size:
-                logger.warning(f"Request too large: {size} bytes from {request.client.host}")
+                logger.warning(
+                    f"Request too large: {size} bytes from {request.client.host}"
+                )
                 return JSONResponse(
                     status_code=413,
-                    content={"detail": f"Request too large. Maximum size: {max_size / 1024 / 1024} MB"}
+                    content={
+                        "detail": f"Request too large. Maximum size: {max_size / 1024 / 1024} MB"
+                    },
                 )
         except ValueError:
             # Invalid Content-Length header
             logger.warning(f"Invalid Content-Length header from {request.client.host}")
             return JSONResponse(
-                status_code=400,
-                content={"detail": "Invalid Content-Length header"}
+                status_code=400, content={"detail": "Invalid Content-Length header"}
             )
 
     return await call_next(request)
@@ -131,18 +138,14 @@ app.include_router(pdf_forms.router, prefix="/api", tags=["PDF Forms"])
 @limiter.limit("100/minute")
 async def root(request: Request):
     """Health check endpoint"""
-    return {
-        "status": "online",
-        "app": "AbsenzFlow",
-        "version": "1.0.0"
-    }
+    return {"status": "online", "app": "AbsenzFlow", "version": "1.0.0"}
 
 
 @app.get("/health")
 @limiter.limit("100/minute")
 async def health_check(request: Request):
     """Detaillierter Health Check"""
-    return { "status": "ok" }
+    return {"status": "ok"}
 
 
 @app.on_event("startup")
@@ -155,7 +158,6 @@ async def startup_event():
     logger.info(f"📝 API Dokumentation: {settings.API_URL}/docs")
     logger.info(f"🔍 Debug Mode: {settings.DEBUG}")
     logger.info(f"🔐 Auth Mode: {settings.AUTH_MODE}")
-    
 
 
 @app.on_event("shutdown")

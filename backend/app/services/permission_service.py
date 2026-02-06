@@ -2,6 +2,7 @@
 Permission Service
 Centralized authorization logic for absence management
 """
+
 import logging
 from typing import Optional
 
@@ -53,7 +54,9 @@ class PermissionService:
         # Admins and Planners can edit all absences
         return user.role in [UserRole.ADMIN, UserRole.PLANNER]
 
-    def can_approve_absence(self, user: User, absence: Optional[Absence] = None) -> bool:
+    def can_approve_absence(
+        self, user: User, absence: Optional[Absence] = None
+    ) -> bool:
         """
         Check if user can approve absences
 
@@ -81,9 +84,7 @@ class PermissionService:
         return True
 
     def can_complete_absence(
-        self,
-        user: User,
-        dept_heads_can_complete: bool = False
+        self, user: User, dept_heads_can_complete: bool = False
     ) -> bool:
         """
         Check if user can mark absences as completed

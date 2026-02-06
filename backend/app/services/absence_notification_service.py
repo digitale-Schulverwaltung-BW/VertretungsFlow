@@ -2,6 +2,7 @@
 Absence Notification Service
 Business logic for sending absence-related email notifications
 """
+
 import logging
 from sqlalchemy.orm import Session
 
@@ -16,10 +17,7 @@ class AbsenceNotificationService:
     """Service for absence email notifications"""
 
     async def send_submitted_notification(
-        self,
-        absence: Absence,
-        current_user: User,
-        db: Session
+        self, absence: Absence, current_user: User, db: Session
     ) -> None:
         """
         Sends email notification when absence is submitted
@@ -45,20 +43,19 @@ class AbsenceNotificationService:
                 absence_id=absence.id,
                 reason=reason_label,
                 start_date=start_date_str,
-                end_date=end_date_str
+                end_date=end_date_str,
             )
 
             if not success:
-                logger.warning(f"Some email notifications failed for absence {absence.id}")
+                logger.warning(
+                    f"Some email notifications failed for absence {absence.id}"
+                )
         except Exception as e:
             logger.error(f"Email notification error for absence {absence.id}: {e}")
             # Continue - don't fail the request
 
     async def send_approved_notification(
-        self,
-        absence: Absence,
-        current_user: User,
-        db: Session
+        self, absence: Absence, current_user: User, db: Session
     ) -> None:
         """
         Sends email notification when absence is approved
@@ -76,21 +73,23 @@ class AbsenceNotificationService:
                     teacher_email=absence.teacher.email,
                     planner_emails=planner_emails,
                     absence_id=absence.id,
-                    approver_name=current_user.full_name or current_user.username
+                    approver_name=current_user.full_name or current_user.username,
                 )
 
                 if not success:
-                    logger.warning(f"Email notification failed for approved absence {absence.id}")
+                    logger.warning(
+                        f"Email notification failed for approved absence {absence.id}"
+                    )
             else:
-                logger.warning(f"Cannot send approval email: teacher has no email address")
+                logger.warning(
+                    f"Cannot send approval email: teacher has no email address"
+                )
         except Exception as e:
-            logger.error(f"Email notification error for approved absence {absence.id}: {e}")
+            logger.error(
+                f"Email notification error for approved absence {absence.id}: {e}"
+            )
 
-    async def send_completed_notification(
-        self,
-        absence: Absence,
-        db: Session
-    ) -> None:
+    async def send_completed_notification(self, absence: Absence, db: Session) -> None:
         """
         Sends email notification when absence is completed
 
@@ -101,16 +100,21 @@ class AbsenceNotificationService:
         try:
             if absence.teacher and absence.teacher.email:
                 success = await email_service.send_absence_completed_notification(
-                    teacher_email=absence.teacher.email,
-                    absence_id=absence.id
+                    teacher_email=absence.teacher.email, absence_id=absence.id
                 )
 
                 if not success:
-                    logger.warning(f"Email notification failed for completed absence {absence.id}")
+                    logger.warning(
+                        f"Email notification failed for completed absence {absence.id}"
+                    )
             else:
-                logger.warning(f"Cannot send completion email: teacher has no email address")
+                logger.warning(
+                    f"Cannot send completion email: teacher has no email address"
+                )
         except Exception as e:
-            logger.error(f"Email notification error for completed absence {absence.id}: {e}")
+            logger.error(
+                f"Email notification error for completed absence {absence.id}: {e}"
+            )
 
 
 # Singleton instance

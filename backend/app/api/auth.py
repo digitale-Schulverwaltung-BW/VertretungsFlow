@@ -2,6 +2,7 @@
 Authentication API Routes
 Login, JWT Token Management
 """
+
 import hmac
 from datetime import datetime, timedelta
 from typing import Optional
@@ -56,41 +57,44 @@ def map_wordpress_role(wp_role: str) -> UserRole:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """
     Erstellt JWT Access Token
-    
+
     Args:
         data: Payload-Daten
         expires_delta: Ablaufzeit
-        
+
     Returns:
         JWT Token String
     """
     to_encode = data.copy()
-    
+
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+        expire = datetime.utcnow() + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+
     return encoded_jwt
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
     """
     Holt aktuellen User aus JWT Token
-    
+
     Args:
         token: JWT Token
         db: Database Session
-        
+
     Returns:
         User Objekt
-        
+
     Raises:
         HTTPException: Wenn Token ungültig
     """
@@ -99,43 +103,47 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         username: str = payload.get("sub")
-        
+
         if username is None:
             raise credentials_exception
-        
+
         token_data = TokenData(username=username)
-        
+
     except JWTError:
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.username == token_data.username).first()
-    
+
     if user is None:
         raise credentials_exception
-    
+
     return user
 
 
-async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
     """
     Prüft ob User aktiv ist
-    
+
     Args:
         current_user: Current User
-        
+
     Returns:
         User Objekt
-        
+
     Raises:
         HTTPException: Wenn User inaktiv
     """
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
-    
+
     return current_user
 
 
@@ -149,11 +157,11 @@ def require_role(allowed_roles: list[UserRole]):
     Returns:
         Dependency Function
     """
+
     async def role_checker(current_user: User = Depends(get_current_active_user)):
         if current_user.role not in allowed_roles:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
             )
         return current_user
 
@@ -169,7 +177,7 @@ async def get_wordpress_proxy_user(
     x_wordpress_last_name: Optional[str] = Header(None),
     x_wordpress_role: Optional[str] = Header(None),
     x_wordpress_webuntis_code: Optional[str] = Header(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> User:
     """
     WordPress Proxy Authentication
@@ -196,15 +204,13 @@ async def get_wordpress_proxy_user(
     """
     if not x_wordpress_secret or not x_wordpress_user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
         )
 
     # Shared Secret validieren (constant-time comparison to prevent timing attacks)
     if not hmac.compare_digest(x_wordpress_secret, settings.WORDPRESS_PROXY_SECRET):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid proxy secret"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid proxy secret"
         )
 
     # User aus DB laden
@@ -215,14 +221,28 @@ async def get_wordpress_proxy_user(
         # WordPress-Modus: Daten aus Headers
         user_email = x_wordpress_email
         user_name = x_wordpress_name or x_wordpress_user
-        user_role = map_wordpress_role(x_wordpress_role) if x_wordpress_role else UserRole.TEACHER
-        webuntis_code = x_wordpress_webuntis_code.strip() if x_wordpress_webuntis_code else None
+        user_role = (
+            map_wordpress_role(x_wordpress_role)
+            if x_wordpress_role
+            else UserRole.TEACHER
+        )
+        webuntis_code = (
+            x_wordpress_webuntis_code.strip() if x_wordpress_webuntis_code else None
+        )
 
         if not user:
             # Neuer User - aus WordPress-Headers anlegen
             # URL-decode first/last name (PHP sends them URL-encoded for UTF-8 support)
-            first_name_decoded = unquote(x_wordpress_first_name).strip() if x_wordpress_first_name else None
-            last_name_decoded = unquote(x_wordpress_last_name).strip() if x_wordpress_last_name else None
+            first_name_decoded = (
+                unquote(x_wordpress_first_name).strip()
+                if x_wordpress_first_name
+                else None
+            )
+            last_name_decoded = (
+                unquote(x_wordpress_last_name).strip()
+                if x_wordpress_last_name
+                else None
+            )
 
             user = User(
                 username=x_wordpress_user,
@@ -232,7 +252,7 @@ async def get_wordpress_proxy_user(
                 last_name=last_name_decoded,
                 role=user_role,
                 webuntis_teacher_code=webuntis_code,
-                is_active=True
+                is_active=True,
             )
             db.add(user)
             db.commit()
@@ -249,9 +269,9 @@ async def get_wordpress_proxy_user(
                     "email": user_email,
                     "role": user_role.value,
                     "webuntis_code": webuntis_code,
-                    "source": "wordpress_proxy"
+                    "source": "wordpress_proxy",
                 },
-                ip_address="wordpress-proxy"  # Server-to-server, no client IP
+                ip_address="wordpress-proxy",  # Server-to-server, no client IP
             )
         else:
             # Smart Update: Nur aktualisieren wenn sich Daten geändert haben
@@ -272,8 +292,16 @@ async def get_wordpress_proxy_user(
 
             # Update first_name and last_name if provided
             # URL-decode first/last name (PHP sends them URL-encoded for UTF-8 support)
-            first_name = unquote(x_wordpress_first_name).strip() if x_wordpress_first_name else None
-            last_name = unquote(x_wordpress_last_name).strip() if x_wordpress_last_name else None
+            first_name = (
+                unquote(x_wordpress_first_name).strip()
+                if x_wordpress_first_name
+                else None
+            )
+            last_name = (
+                unquote(x_wordpress_last_name).strip()
+                if x_wordpress_last_name
+                else None
+            )
 
             if user.first_name != first_name:
                 user.first_name = first_name
@@ -310,9 +338,9 @@ async def get_wordpress_proxy_user(
                     details={
                         "username": x_wordpress_user,
                         "changes": update_details,
-                        "source": "wordpress_proxy"
+                        "source": "wordpress_proxy",
                     },
-                    ip_address="wordpress-proxy"
+                    ip_address="wordpress-proxy",
                 )
 
     else:
@@ -322,7 +350,7 @@ async def get_wordpress_proxy_user(
             if ldap_service is None:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="LDAP service not available"
+                    detail="LDAP service not available",
                 )
 
             ldap_info = ldap_service.get_user_info(x_wordpress_user)
@@ -330,7 +358,7 @@ async def get_wordpress_proxy_user(
             if not ldap_info:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found in LDAP"
+                    detail="User not found in LDAP",
                 )
 
             user = User(
@@ -338,7 +366,7 @@ async def get_wordpress_proxy_user(
                 email=ldap_info.get("email"),
                 full_name=ldap_info.get("full_name", x_wordpress_user),
                 role=UserRole.TEACHER,
-                is_active=True
+                is_active=True,
             )
 
             db.add(user)
@@ -355,15 +383,14 @@ async def get_wordpress_proxy_user(
                     "username": x_wordpress_user,
                     "email": ldap_info.get("email"),
                     "role": UserRole.TEACHER.value,
-                    "source": "ldap"
+                    "source": "ldap",
                 },
-                ip_address="wordpress-proxy"
+                ip_address="wordpress-proxy",
             )
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
 
     return user
@@ -371,12 +398,11 @@ async def get_wordpress_proxy_user(
 
 # Login-Endpoint nur im Standalone-Modus verfügbar
 if settings.AUTH_MODE == "standalone":
+
     @router.post("/login", response_model=Token)
     @limiter.limit("5/minute")
     async def login(
-        request: Request,
-        login_data: LoginRequest,
-        db: Session = Depends(get_db)
+        request: Request, login_data: LoginRequest, db: Session = Depends(get_db)
     ):
         """
         Login Endpoint - Authentifiziert User gegen LDAP
@@ -397,11 +423,13 @@ if settings.AUTH_MODE == "standalone":
         if ldap_service is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="LDAP service not available"
+                detail="LDAP service not available",
             )
 
         # LDAP Authentifizierung
-        is_authenticated = ldap_service.authenticate(login_data.username, login_data.password)
+        is_authenticated = ldap_service.authenticate(
+            login_data.username, login_data.password
+        )
 
         if not is_authenticated:
             raise HTTPException(
@@ -420,9 +448,11 @@ if settings.AUTH_MODE == "standalone":
             user = User(
                 username=login_data.username,
                 email=ldap_info.get("email") if ldap_info else None,
-                full_name=ldap_info.get("full_name") if ldap_info else login_data.username,
+                full_name=(
+                    ldap_info.get("full_name") if ldap_info else login_data.username
+                ),
                 role=UserRole.TEACHER,  # Standard-Rolle
-                is_active=True
+                is_active=True,
             )
 
             db.add(user)
@@ -432,8 +462,7 @@ if settings.AUTH_MODE == "standalone":
         # JWT Token erstellen
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.username},
-            expires_delta=access_token_expires
+            data={"sub": user.username}, expires_delta=access_token_expires
         )
 
         return {"access_token": access_token, "token_type": "bearer"}
@@ -441,7 +470,9 @@ if settings.AUTH_MODE == "standalone":
 
 @router.get("/me", response_model=UserResponse)
 @limiter.limit("30/minute")
-async def read_users_me(request: Request, current_user: User = Depends(get_wordpress_proxy_user)):
+async def read_users_me(
+    request: Request, current_user: User = Depends(get_wordpress_proxy_user)
+):
     """
     Gibt Informationen über aktuellen User zurück
 
@@ -459,16 +490,18 @@ async def read_users_me(request: Request, current_user: User = Depends(get_wordp
 
 @router.post("/logout")
 @limiter.limit("10/minute")
-async def logout(request: Request, current_user: User = Depends(get_current_active_user)):
+async def logout(
+    request: Request, current_user: User = Depends(get_current_active_user)
+):
     """
     Logout Endpoint
-    
+
     Note: JWT Tokens können nicht server-seitig invalidiert werden.
     Client muss Token löschen.
-    
+
     Args:
         current_user: Current User
-        
+
     Returns:
         Success Message
     """

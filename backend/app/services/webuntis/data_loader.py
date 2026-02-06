@@ -2,6 +2,7 @@
 WebUntis Data Loader
 Master data loading with generic patterns and caching
 """
+
 import logging
 from typing import Dict, Callable
 from sqlalchemy.orm import Session
@@ -36,7 +37,7 @@ class WebUntisDataLoader:
         memory_cache_attr: str,
         api_method: Callable,
         transform_func: Callable[[list], Dict],
-        force_refresh: bool = False
+        force_refresh: bool = False,
     ) -> Dict:
         """
         Generic master data loader - eliminates duplication across 4 load methods
@@ -52,6 +53,7 @@ class WebUntisDataLoader:
         Returns:
             Dictionary with transformed master data
         """
+
         async def fetch_from_api():
             # Call client API method
             raw_data = await api_method()
@@ -66,7 +68,7 @@ class WebUntisDataLoader:
             cache_key=cache_key,
             memory_cache_attr=memory_cache_attr,
             fetch_func=fetch_from_api,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
 
     async def load_subjects(self, db: Session, force_refresh: bool = False) -> Dict:
@@ -80,6 +82,7 @@ class WebUntisDataLoader:
         Returns:
             Dictionary mit subject_id -> subject_name
         """
+
         def transform_subjects(subjects: list) -> Dict:
             # Verwende Kurzname (name) statt Langname (longName) wegen sehr langer Fachnamen
             return {
@@ -89,11 +92,11 @@ class WebUntisDataLoader:
 
         return await self._load_master_data(
             db=db,
-            cache_key='webuntis:subjects',
-            memory_cache_attr='_subjects_cache',
+            cache_key="webuntis:subjects",
+            memory_cache_attr="_subjects_cache",
             api_method=self.client.get_subjects,
             transform_func=transform_subjects,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
 
     async def load_classes(self, db: Session, force_refresh: bool = False) -> Dict:
@@ -107,6 +110,7 @@ class WebUntisDataLoader:
         Returns:
             Dictionary mit class_id -> class_name
         """
+
         def transform_classes(classes: list) -> Dict:
             # Verwende Kurzname (name) statt Langname (longName)
             return {
@@ -116,11 +120,11 @@ class WebUntisDataLoader:
 
         return await self._load_master_data(
             db=db,
-            cache_key='webuntis:classes',
-            memory_cache_attr='_classes_cache',
+            cache_key="webuntis:classes",
+            memory_cache_attr="_classes_cache",
             api_method=self.client.get_classes,
             transform_func=transform_classes,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
 
     async def load_rooms(self, db: Session, force_refresh: bool = False) -> Dict:
@@ -134,6 +138,7 @@ class WebUntisDataLoader:
         Returns:
             Dictionary mit room_id -> room_name
         """
+
         def transform_rooms(rooms: list) -> Dict:
             # Verwende Kurzname (name) statt Langname (longName)
             return {
@@ -143,11 +148,11 @@ class WebUntisDataLoader:
 
         return await self._load_master_data(
             db=db,
-            cache_key='webuntis:rooms',
-            memory_cache_attr='_rooms_cache',
+            cache_key="webuntis:rooms",
+            memory_cache_attr="_rooms_cache",
             api_method=self.client.get_rooms,
             transform_func=transform_rooms,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )
 
     async def load_timegrid(self, db: Session, force_refresh: bool = False) -> Dict:
@@ -162,6 +167,7 @@ class WebUntisDataLoader:
         Returns:
             Dictionary mit startTime -> period_number
         """
+
         def transform_timegrid(timegrid_raw: list) -> Dict:
             """
             Transform timegrid from WebUntis format to startTime -> period mapping
@@ -185,7 +191,9 @@ class WebUntisDataLoader:
                             period_number = int(period_name)
                             timegrid[start_time] = period_number
                         except (ValueError, TypeError):
-                            logger.warning(f"Could not parse period number from: {period_name}")
+                            logger.warning(
+                                f"Could not parse period number from: {period_name}"
+                            )
                             # Fallback: use startTime // 100 as approximation
                             timegrid[start_time] = start_time // 100
 
@@ -194,9 +202,9 @@ class WebUntisDataLoader:
 
         return await self._load_master_data(
             db=db,
-            cache_key='webuntis:timegrid',
-            memory_cache_attr='_timegrid_cache',
+            cache_key="webuntis:timegrid",
+            memory_cache_attr="_timegrid_cache",
             api_method=self.client.get_timegrid,
             transform_func=transform_timegrid,
-            force_refresh=force_refresh
+            force_refresh=force_refresh,
         )

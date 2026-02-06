@@ -2,6 +2,7 @@
 Konfiguration für AbsenzFlow
 Lädt Umgebungsvariablen aus .env
 """
+
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from typing import List, Union
@@ -15,27 +16,29 @@ class Settings(BaseSettings):
     # Application
     APP_NAME: str = "AbsenzFlow"
     API_URL: str = "http://localhost:8000"
-    FRONTEND_URL: str = "http://localhost:3000"  # WordPress page with [absenzflow] shortcode
+    FRONTEND_URL: str = (
+        "http://localhost:3000"  # WordPress page with [absenzflow] shortcode
+    )
     DEBUG: bool = False
     SECRET_KEY: str = "your-secret-key-change-in-production"
 
     # CORS
     CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:3000",
-        "http://localhost:8080"
+        "http://localhost:8080",
     ]
 
-    @field_validator('CORS_ORIGINS', mode='before')
+    @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
         """Parse CORS_ORIGINS from comma-separated string or list"""
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(',')]
+            return [origin.strip() for origin in v.split(",")]
         return v
-    
+
     # Database
     DATABASE_URL: str = "postgresql://absenzflow:changeme@localhost:5432/absenzflow"
-    
+
     # LDAP Configuration
     LDAP_SERVER: str = "ldap.schule.local"
     LDAP_PORT: int = 389
@@ -43,13 +46,13 @@ class Settings(BaseSettings):
     LDAP_BIND_DN: str = "cn=absenzflow,ou=services,dc=schule,dc=local"
     LDAP_BIND_PASSWORD: str = ""
     LDAP_USE_SSL: bool = False
-    
+
     # WebUntis API
     WEBUNTIS_SCHOOL: str = ""
     WEBUNTIS_USERNAME: str = ""
     WEBUNTIS_PASSWORD: str = ""
     WEBUNTIS_SERVER: str = "neilo.webuntis.com"
-    
+
     # SMTP Configuration
     SMTP_HOST: str = "smtp.schule.local"
     SMTP_PORT: int = 587
@@ -106,7 +109,10 @@ def validate_production_secrets(settings_instance: Settings) -> None:
 
     # Check WORDPRESS_PROXY_SECRET (only if WordPress auth mode)
     if settings_instance.AUTH_MODE == "wordpress":
-        if settings_instance.WORDPRESS_PROXY_SECRET == "change-this-shared-secret-in-production":
+        if (
+            settings_instance.WORDPRESS_PROXY_SECRET
+            == "change-this-shared-secret-in-production"
+        ):
             errors.append(
                 "❌ WORDPRESS_PROXY_SECRET is still set to default value!\n"
                 "   Generate a secure secret: openssl rand -hex 32\n"
@@ -142,14 +148,15 @@ def validate_production_secrets(settings_instance: Settings) -> None:
 
         # Convert to list if string
         if isinstance(cors_origins, str):
-            origins_list = [origin.strip() for origin in cors_origins.split(',')]
+            origins_list = [origin.strip() for origin in cors_origins.split(",")]
         else:
             origins_list = cors_origins
 
         # Check for localhost origins in production
         localhost_origins = [
-            origin for origin in origins_list
-            if 'localhost' in origin.lower() or '127.0.0.1' in origin
+            origin
+            for origin in origins_list
+            if "localhost" in origin.lower() or "127.0.0.1" in origin
         ]
         if localhost_origins:
             errors.append(
@@ -160,7 +167,7 @@ def validate_production_secrets(settings_instance: Settings) -> None:
             )
 
         # Check for wildcard origin in production
-        if '*' in origins_list:
+        if "*" in origins_list:
             errors.append(
                 "❌ CORS_ORIGINS contains wildcard '*' in PRODUCTION!\n"
                 "   This allows requests from ANY domain - major security risk!\n"
@@ -168,7 +175,7 @@ def validate_production_secrets(settings_instance: Settings) -> None:
             )
 
         # Warn if CORS is empty in production (might be intentional)
-        if not origins_list or origins_list == ['']:
+        if not origins_list or origins_list == [""]:
             errors.append(
                 "⚠️  CORS_ORIGINS is empty in PRODUCTION!\n"
                 "   This will block all cross-origin requests.\n"
@@ -179,14 +186,16 @@ def validate_production_secrets(settings_instance: Settings) -> None:
     # If any errors found, raise exception with all details
     if errors:
         error_message = (
-            "\n\n" + "="*70 + "\n"
+            "\n\n" + "=" * 70 + "\n"
             "🚨 SECURITY CONFIGURATION ERROR - STARTUP ABORTED 🚨\n"
-            + "="*70 + "\n\n"
-            + "\n\n".join(errors) + "\n\n"
-            + "="*70 + "\n"
+            + "=" * 70
+            + "\n\n"
+            + "\n\n".join(errors)
+            + "\n\n"
+            + "=" * 70
+            + "\n"
             "Fix these issues in your .env file before starting the application.\n"
-            "See .env.example for reference.\n"
-            + "="*70 + "\n"
+            "See .env.example for reference.\n" + "=" * 70 + "\n"
         )
         raise ValueError(error_message)
 

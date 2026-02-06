@@ -2,6 +2,7 @@
 WebUntis API Service
 Integration mit WebUntis für Stundenplan-Abfragen
 """
+
 import logging
 import httpx
 from datetime import datetime, timedelta
@@ -37,7 +38,7 @@ class WebUntisService:
     @session_id.setter
     def session_id(self, value: Optional[str]):
         """Backwards compatibility: set client session_id"""
-        if hasattr(self, 'client'):
+        if hasattr(self, "client"):
             self.client.session_id = value
         else:
             self._session_id = value
@@ -75,7 +76,6 @@ class WebUntisService:
     def _timegrid_cache(self, value: Optional[Dict]):
         self.cache._timegrid_cache = value
 
-
     async def authenticate(self) -> bool:
         """
         Authentifiziert gegen WebUntis API
@@ -91,18 +91,18 @@ class WebUntisService:
             # Clear caches on new session
             self.cache.clear_memory_cache()
         return result
-    
+
     async def logout(self) -> bool:
         """Beendet WebUntis Session - Delegates to client"""
         return await self.client.logout()
-    
+
     async def get_timetable_for_teacher(
         self,
         teacher_username: str,
         start_date: datetime,
         end_date: datetime,
         db,
-        webuntis_code: Optional[str] = None
+        webuntis_code: Optional[str] = None,
     ) -> List[WebUntisLesson]:
         """
         Holt Stundenplan für Lehrkraft im angegebenen Zeitraum
@@ -120,31 +120,41 @@ class WebUntisService:
         # Verwende WebUntis-Code wenn vorhanden, sonst Username
         teacher_lookup = webuntis_code if webuntis_code else teacher_username
 
-        logger.info(f"📅 Stundenplan abrufen für {teacher_username} (WebUntis-Lookup: {teacher_lookup}) ({start_date.date()} - {end_date.date()})")
+        logger.info(
+            f"📅 Stundenplan abrufen für {teacher_username} (WebUntis-Lookup: {teacher_lookup}) ({start_date.date()} - {end_date.date()})"
+        )
 
         # Authentifizieren wenn noch keine Session
         if not self.session_id:
             logger.info("Keine aktive Session, authentifiziere...")
             auth_success = await self.authenticate()
             if not auth_success:
-                logger.error("❌ Authentifizierung fehlgeschlagen, kann Stundenplan nicht abrufen")
+                logger.error(
+                    "❌ Authentifizierung fehlgeschlagen, kann Stundenplan nicht abrufen"
+                )
                 return []
 
         try:
             # Zuerst: Teacher ID finden (mit WebUntis Code oder Username)
             teacher_id = await self._get_teacher_id(teacher_lookup)
             if not teacher_id:
-                logger.warning(f"⚠️ Keine Teacher ID gefunden für {teacher_lookup}, gebe leere Liste zurück")
+                logger.warning(
+                    f"⚠️ Keine Teacher ID gefunden für {teacher_lookup}, gebe leere Liste zurück"
+                )
                 return []
 
             # Dann: Stundenplan abrufen via client (handles session expiration automatically)
             start_date_int = int(start_date.strftime("%Y%m%d"))
             end_date_int = int(end_date.strftime("%Y%m%d"))
 
-            raw_lessons = await self.client.get_timetable(teacher_id, start_date_int, end_date_int)
+            raw_lessons = await self.client.get_timetable(
+                teacher_id, start_date_int, end_date_int
+            )
 
             if len(raw_lessons) == 0:
-                logger.warning(f"⚠️ WebUntis lieferte keine Stunden für den Zeitraum {start_date.date()} - {end_date.date()}")
+                logger.warning(
+                    f"⚠️ WebUntis lieferte keine Stunden für den Zeitraum {start_date.date()} - {end_date.date()}"
+                )
                 return []
 
             # Parse and return lessons
@@ -153,31 +163,43 @@ class WebUntisService:
             return parsed_lessons
 
         except httpx.TimeoutException as e:
-            logger.error(f"❌ WebUntis Timeout: Request took too long for {teacher_lookup}")
+            logger.error(
+                f"❌ WebUntis Timeout: Request took too long for {teacher_lookup}"
+            )
             logger.debug(f"Timeout details: {e}")
             return []
         except httpx.ConnectError as e:
-            logger.error(f"❌ WebUntis Connection Error: Cannot reach WebUntis server for {teacher_lookup}")
+            logger.error(
+                f"❌ WebUntis Connection Error: Cannot reach WebUntis server for {teacher_lookup}"
+            )
             logger.debug(f"Connection error details: {e}")
             return []
         except httpx.HTTPStatusError as e:
-            logger.error(f"❌ WebUntis HTTP Error: Server returned status {e.response.status_code} for {teacher_lookup}")
+            logger.error(
+                f"❌ WebUntis HTTP Error: Server returned status {e.response.status_code} for {teacher_lookup}"
+            )
             logger.debug(f"HTTP error details: {e}")
             return []
         except KeyError as e:
-            logger.error(f"❌ WebUntis Data Error: Missing expected field in response for {teacher_lookup}")
+            logger.error(
+                f"❌ WebUntis Data Error: Missing expected field in response for {teacher_lookup}"
+            )
             logger.debug(f"Missing key: {e}", exc_info=True)
             return []
         except ValueError as e:
-            logger.error(f"❌ WebUntis Data Error: Invalid data format in response for {teacher_lookup}")
+            logger.error(
+                f"❌ WebUntis Data Error: Invalid data format in response for {teacher_lookup}"
+            )
             logger.debug(f"Value error: {e}", exc_info=True)
             return []
         except Exception as e:
             # Catch-all for unexpected errors - log with full trace for debugging
-            logger.error(f"❌ WebUntis Unexpected Error for {teacher_lookup}: {type(e).__name__}")
+            logger.error(
+                f"❌ WebUntis Unexpected Error for {teacher_lookup}: {type(e).__name__}"
+            )
             logger.debug(f"Unexpected error details: {e}", exc_info=True)
             return []
-    
+
     async def _get_teacher_id(self, username: str) -> Optional[int]:
         """
         Findet Teacher ID für Username - Delegates to client
@@ -206,8 +228,9 @@ class WebUntisService:
         """Lädt Stundenraster - Delegates to data_loader (PUBLIC: used by pdf_service)"""
         return await self.data_loader.load_timegrid(db, force_refresh)
 
-
-    async def _parse_timetable(self, timetable_data: List[dict], teacher_id: int, db) -> List[WebUntisLesson]:
+    async def _parse_timetable(
+        self, timetable_data: List[dict], teacher_id: int, db
+    ) -> List[WebUntisLesson]:
         """
         Parsed Stundenplan-Daten von WebUntis
 
@@ -226,8 +249,9 @@ class WebUntisService:
         timegrid = await self._load_timegrid(db)
 
         # Delegate to pure parser function
-        return parse_timetable(timetable_data, teacher_id, subjects, classes, rooms, timegrid)
-
+        return parse_timetable(
+            timetable_data, teacher_id, subjects, classes, rooms, timegrid
+        )
 
 
 # Singleton Instance

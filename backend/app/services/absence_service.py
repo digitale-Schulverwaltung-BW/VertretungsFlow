@@ -2,6 +2,7 @@
 Absence Service
 Business logic for absence management
 """
+
 import logging
 from datetime import datetime
 from typing import List, Dict, Any
@@ -9,16 +10,18 @@ from fastapi import HTTPException, Request, status
 from sqlalchemy.orm import Session, selectinload, joinedload
 
 from app.models.models import (
-    User, Absence, AffectedLesson, AbsenceStatus, AbsenceAttachment
+    User,
+    Absence,
+    AffectedLesson,
+    AbsenceStatus,
+    AbsenceAttachment,
 )
 from app.schemas.schemas import AbsenceCreate
 from app.services.webuntis_service import webuntis_service
 from app.services.attachment_service import attachment_service
 from app.services.absence_notification_service import absence_notification_service
 from app.utils.absence_utils import validate_date_range, is_lesson_in_period
-from app.core.audit import (
-    audit_absence_approved, audit_absence_completed, audit_log
-)
+from app.core.audit import audit_absence_approved, audit_absence_completed, audit_log
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +30,7 @@ class AbsenceService:
     """Service for absence business logic"""
 
     async def create_absence(
-        self,
-        absence_data: AbsenceCreate,
-        current_user: User,
-        db: Session
+        self, absence_data: AbsenceCreate, current_user: User, db: Session
     ) -> Absence:
         """
         Creates a new absence with affected lessons
@@ -53,7 +53,7 @@ class AbsenceService:
             absence_data.start_date,
             absence_data.end_date,
             absence_data.start_period,
-            absence_data.end_period
+            absence_data.end_period,
         )
 
         # Abwesenheit in DB erstellen
@@ -67,7 +67,7 @@ class AbsenceService:
             status=AbsenceStatus.SUBMITTED,
             excursion_classes=absence_data.excursion_classes,
             personal_reason=absence_data.personal_reason,
-            admin_notes=absence_data.admin_notes
+            admin_notes=absence_data.admin_notes,
         )
 
         db.add(db_absence)
@@ -75,11 +75,16 @@ class AbsenceService:
         db.refresh(db_absence)
 
         # Eager load relationships nach refresh
-        db_absence = db.query(Absence).options(
-            selectinload(Absence.affected_lessons),
-            selectinload(Absence.attachments),
-            joinedload(Absence.teacher)
-        ).filter(Absence.id == db_absence.id).first()
+        db_absence = (
+            db.query(Absence)
+            .options(
+                selectinload(Absence.affected_lessons),
+                selectinload(Absence.attachments),
+                joinedload(Absence.teacher),
+            )
+            .filter(Absence.id == db_absence.id)
+            .first()
+        )
 
         # Betroffene Stunden aus WebUntis abrufen
         lessons = await webuntis_service.get_timetable_for_teacher(
@@ -87,7 +92,7 @@ class AbsenceService:
             absence_data.start_date,
             absence_data.end_date,
             db=db,
-            webuntis_code=current_user.webuntis_teacher_code
+            webuntis_code=current_user.webuntis_teacher_code,
         )
 
         # Erstelle Lookup-Dictionary für Lehrkraft-Inputs (notes, can_be_canceled)
@@ -97,8 +102,8 @@ class AbsenceService:
                 # Key: (date, period) für eindeutige Identifikation
                 key = (input_lesson.date.date(), input_lesson.period)
                 lesson_inputs[key] = {
-                    'notes': input_lesson.notes,
-                    'can_be_canceled': input_lesson.can_be_canceled or False
+                    "notes": input_lesson.notes,
+                    "can_be_canceled": input_lesson.can_be_canceled or False,
                 }
 
         # Betroffene Stunden in DB speichern
@@ -108,7 +113,7 @@ class AbsenceService:
                 absence_data.start_date,
                 absence_data.end_date,
                 absence_data.start_period,
-                absence_data.end_period
+                absence_data.end_period,
             ):
                 # Suche nach Lehrkraft-Inputs für diese Stunde
                 key = (lesson.date.date(), lesson.period)
@@ -120,12 +125,12 @@ class AbsenceService:
                     period=lesson.period,
                     end_period=lesson.end_period,  # Für Doppelstunden
                     start_time=lesson.start_time,  # WebUntis startTime (e.g., 730 = 07:30)
-                    end_time=lesson.end_time,      # WebUntis endTime (e.g., 815 = 08:15)
+                    end_time=lesson.end_time,  # WebUntis endTime (e.g., 815 = 08:15)
                     subject=lesson.subject,
                     class_name=lesson.class_name,
                     room=lesson.room,
-                    notes=inputs.get('notes'),
-                    can_be_canceled=inputs.get('can_be_canceled', False)
+                    notes=inputs.get("notes"),
+                    can_be_canceled=inputs.get("can_be_canceled", False),
                 )
                 db.add(affected_lesson)
 
@@ -133,7 +138,9 @@ class AbsenceService:
         db.refresh(db_absence)
 
         # Send email notifications
-        await absence_notification_service.send_submitted_notification(db_absence, current_user, db)
+        await absence_notification_service.send_submitted_notification(
+            db_absence, current_user, db
+        )
 
         return db_absence
 
@@ -143,7 +150,7 @@ class AbsenceService:
         approved: bool,
         current_user: User,
         db: Session,
-        request: Request
+        request: Request,
     ) -> str:
         """
         Approves or rejects an absence
@@ -161,14 +168,16 @@ class AbsenceService:
         Raises:
             HTTPException: If absence not found
         """
-        absence = db.query(Absence).options(
-            joinedload(Absence.teacher)
-        ).filter(Absence.id == absence_id).first()
+        absence = (
+            db.query(Absence)
+            .options(joinedload(Absence.teacher))
+            .filter(Absence.id == absence_id)
+            .first()
+        )
 
         if not absence:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Absence not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Absence not found"
             )
 
         if approved:
@@ -187,13 +196,15 @@ class AbsenceService:
                     "old_status": old_status,
                     "new_status": "approved",
                     "teacher_id": absence.teacher_id,
-                    "approver_role": current_user.role.value
+                    "approver_role": current_user.role.value,
                 },
-                request=request
+                request=request,
             )
 
             # Send email notifications
-            await absence_notification_service.send_approved_notification(absence, current_user, db)
+            await absence_notification_service.send_approved_notification(
+                absence, current_user, db
+            )
 
             return "Absence approved"
         else:
@@ -211,19 +222,15 @@ class AbsenceService:
                     "old_status": old_status,
                     "new_status": "rejected",
                     "teacher_id": absence.teacher_id,
-                    "rejector_role": current_user.role.value
+                    "rejector_role": current_user.role.value,
                 },
-                request=request
+                request=request,
             )
 
             return "Absence rejected"
 
     async def complete_absence(
-        self,
-        absence_id: int,
-        current_user: User,
-        db: Session,
-        request: Request
+        self, absence_id: int, current_user: User, db: Session, request: Request
     ) -> str:
         """
         Marks absence as completed/entered
@@ -240,15 +247,16 @@ class AbsenceService:
         Raises:
             HTTPException: If absence not found
         """
-        absence = db.query(Absence).options(
-            joinedload(Absence.teacher),
-            selectinload(Absence.attachments)
-        ).filter(Absence.id == absence_id).first()
+        absence = (
+            db.query(Absence)
+            .options(joinedload(Absence.teacher), selectinload(Absence.attachments))
+            .filter(Absence.id == absence_id)
+            .first()
+        )
 
         if not absence:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Absence not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Absence not found"
             )
 
         # Status aktualisieren
@@ -265,14 +273,18 @@ class AbsenceService:
                 "new_status": "completed",
                 "teacher_id": absence.teacher_id,
                 "completer_role": current_user.role.value,
-                "attachments_count": len(absence.attachments) if absence.attachments else 0
+                "attachments_count": (
+                    len(absence.attachments) if absence.attachments else 0
+                ),
             },
-            request=request
+            request=request,
         )
 
         # Attachments automatisch löschen
         if absence.attachments:
-            logger.info(f"Deleting {len(absence.attachments)} attachments for completed absence {absence_id}")
+            logger.info(
+                f"Deleting {len(absence.attachments)} attachments for completed absence {absence_id}"
+            )
 
             for attachment in absence.attachments:
                 # Datei von Disk löschen (delegiert an Service)
@@ -287,11 +299,7 @@ class AbsenceService:
 
         return "Absence marked as completed, attachments deleted"
 
-    def delete_absence(
-        self,
-        absence_id: int,
-        db: Session
-    ) -> str:
+    def delete_absence(self, absence_id: int, db: Session) -> str:
         """
         Deletes an absence
 
@@ -309,8 +317,7 @@ class AbsenceService:
 
         if not absence:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Absence not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Absence not found"
             )
 
         db.delete(absence)

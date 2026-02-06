@@ -2,6 +2,7 @@
 Audit Logging Module
 Provides structured audit trail for security-critical operations
 """
+
 import json
 import logging
 from datetime import datetime
@@ -41,7 +42,7 @@ def audit_log(
     resource_id: Optional[int] = None,
     details: Optional[Dict[str, Any]] = None,
     ip_address: Optional[str] = None,
-    request: Optional[Request] = None
+    request: Optional[Request] = None,
 ):
     """
     Log security-critical actions in structured format
@@ -78,7 +79,7 @@ def audit_log(
         "resource_type": resource_type,
         "resource_id": resource_id,
         "details": details or {},
-        "ip_address": ip_address
+        "ip_address": ip_address,
     }
 
     # Log as JSON for easy parsing/ingestion into SIEM systems
@@ -87,42 +88,74 @@ def audit_log(
 
 # Convenience functions for common audit events
 
-def audit_user_created(user_id: int, created_by: int, details: Dict[str, Any], request: Request):
+
+def audit_user_created(
+    user_id: int, created_by: int, details: Dict[str, Any], request: Request
+):
     """Audit log for user creation"""
     audit_log("user_created", created_by, "user", user_id, details, request=request)
 
 
-def audit_user_updated(user_id: int, updated_by: int, details: Dict[str, Any], request: Request):
+def audit_user_updated(
+    user_id: int, updated_by: int, details: Dict[str, Any], request: Request
+):
     """Audit log for user updates (including role changes)"""
     audit_log("user_updated", updated_by, "user", user_id, details, request=request)
 
 
-def audit_absence_created(absence_id: int, user_id: int, details: Dict[str, Any], request: Request):
+def audit_absence_created(
+    absence_id: int, user_id: int, details: Dict[str, Any], request: Request
+):
     """Audit log for absence creation"""
-    audit_log("absence_created", user_id, "absence", absence_id, details, request=request)
+    audit_log(
+        "absence_created", user_id, "absence", absence_id, details, request=request
+    )
 
 
-def audit_absence_approved(absence_id: int, approver_id: int, details: Dict[str, Any], request: Request):
+def audit_absence_approved(
+    absence_id: int, approver_id: int, details: Dict[str, Any], request: Request
+):
     """Audit log for absence approval"""
-    audit_log("absence_approved", approver_id, "absence", absence_id, details, request=request)
+    audit_log(
+        "absence_approved", approver_id, "absence", absence_id, details, request=request
+    )
 
 
-def audit_absence_completed(absence_id: int, completer_id: int, details: Dict[str, Any], request: Request):
+def audit_absence_completed(
+    absence_id: int, completer_id: int, details: Dict[str, Any], request: Request
+):
     """Audit log for absence completion"""
-    audit_log("absence_completed", completer_id, "absence", absence_id, details, request=request)
+    audit_log(
+        "absence_completed",
+        completer_id,
+        "absence",
+        absence_id,
+        details,
+        request=request,
+    )
 
 
-def audit_file_uploaded(attachment_id: int, user_id: int, details: Dict[str, Any], request: Request):
+def audit_file_uploaded(
+    attachment_id: int, user_id: int, details: Dict[str, Any], request: Request
+):
     """Audit log for file upload"""
-    audit_log("file_uploaded", user_id, "attachment", attachment_id, details, request=request)
+    audit_log(
+        "file_uploaded", user_id, "attachment", attachment_id, details, request=request
+    )
 
 
-def audit_file_deleted(attachment_id: int, user_id: int, details: Dict[str, Any], request: Request):
+def audit_file_deleted(
+    attachment_id: int, user_id: int, details: Dict[str, Any], request: Request
+):
     """Audit log for file deletion"""
-    audit_log("file_deleted", user_id, "attachment", attachment_id, details, request=request)
+    audit_log(
+        "file_deleted", user_id, "attachment", attachment_id, details, request=request
+    )
 
 
-def audit_role_changed(user_id: int, changed_by: int, old_role: str, new_role: str, request: Request):
+def audit_role_changed(
+    user_id: int, changed_by: int, old_role: str, new_role: str, request: Request
+):
     """Audit log for role changes (critical security event)"""
     audit_log(
         "role_changed",
@@ -130,5 +163,5 @@ def audit_role_changed(user_id: int, changed_by: int, old_role: str, new_role: s
         "user",
         user_id,
         {"old_role": old_role, "new_role": new_role},
-        request=request
+        request=request,
     )

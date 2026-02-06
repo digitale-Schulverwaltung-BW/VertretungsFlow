@@ -2,6 +2,7 @@
 WebUntis API Routes
 Integration with WebUntis timetable system
 """
+
 import logging
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -30,7 +31,7 @@ async def fetch_lessons_from_webuntis(
     request: Request,
     fetch_request: FetchLessonsRequest,
     current_user: User = Depends(get_wordpress_proxy_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Lädt Stunden aus WebUntis für Vorschau (ohne DB-Speicherung)
@@ -52,7 +53,7 @@ async def fetch_lessons_from_webuntis(
         fetch_request.start_date,
         fetch_request.end_date,
         fetch_request.start_period,
-        fetch_request.end_period
+        fetch_request.end_period,
     )
 
     # Stunden aus WebUntis abrufen
@@ -61,7 +62,7 @@ async def fetch_lessons_from_webuntis(
         fetch_request.start_date,
         fetch_request.end_date,
         db=db,
-        webuntis_code=current_user.webuntis_teacher_code
+        webuntis_code=current_user.webuntis_teacher_code,
     )
 
     # Filtern nach Perioden (delegiert an Utils)
@@ -72,7 +73,7 @@ async def fetch_lessons_from_webuntis(
             fetch_request.start_date,
             fetch_request.end_date,
             fetch_request.start_period,
-            fetch_request.end_period
+            fetch_request.end_period,
         ):
             filtered_lessons.append(lesson)
 

@@ -2,6 +2,7 @@
 PDF Service
 Business logic for PDF form generation and filling
 """
+
 import json
 import logging
 import re
@@ -18,7 +19,7 @@ from app.services.template_service import template_service
 from app.utils.time_format_utils import (
     format_webuntis_time,
     get_time_from_period,
-    get_time_for_period
+    get_time_for_period,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,11 +31,14 @@ class PDFService:
     def __init__(self):
         """Initialize PDF service"""
         self.config: Optional[Dict[str, Any]] = None
-        self.config_path = Path(__file__).parent.parent.parent / "config" / "pdf_form_mappings.json"
+        self.config_path = (
+            Path(__file__).parent.parent.parent / "config" / "pdf_form_mappings.json"
+        )
         self.pdf_dir = Path(__file__).parent.parent.parent / "assets"
 
         # Import here to avoid circular imports
         from app.services.webuntis_service import WebUntisService
+
         self.webuntis_service = WebUntisService()
 
     def _load_pdf_config(self) -> Dict[str, Any]:
@@ -55,26 +59,28 @@ class PDFService:
                 logger.error(f"PDF config not found: {self.config_path}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="PDF configuration not found"
+                    detail="PDF configuration not found",
                 )
 
             with open(self.config_path, "r", encoding="utf-8") as f:
                 self.config = json.load(f)
 
-            logger.info(f"✅ PDF config loaded: {len(self.config.get('forms', {}))} forms")
+            logger.info(
+                f"✅ PDF config loaded: {len(self.config.get('forms', {}))} forms"
+            )
             return self.config
 
         except json.JSONDecodeError as e:
             logger.error(f"Invalid PDF config JSON: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Invalid PDF configuration"
+                detail="Invalid PDF configuration",
             )
         except Exception as e:
             logger.error(f"Error loading PDF config: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to load PDF configuration"
+                detail="Failed to load PDF configuration",
             )
 
     def get_available_forms(self, absence: Absence) -> List[Dict[str, str]]:
@@ -94,21 +100,21 @@ class PDFService:
         for form_type, form_config in forms.items():
             applicable_reasons = form_config.get("applicable_reasons", [])
             if absence.reason in applicable_reasons:
-                available.append({
-                    "type": form_type,
-                    "label": form_config.get("display_name", form_type),
-                    "pdf_filename": form_config.get("pdf_filename", "")
-                })
+                available.append(
+                    {
+                        "type": form_type,
+                        "label": form_config.get("display_name", form_type),
+                        "pdf_filename": form_config.get("pdf_filename", ""),
+                    }
+                )
 
-        logger.info(f"Available forms for absence {absence.id} (reason={absence.reason}): {len(available)}")
+        logger.info(
+            f"Available forms for absence {absence.id} (reason={absence.reason}): {len(available)}"
+        )
         return available
 
-
     async def _build_template_context(
-        self,
-        absence: Absence,
-        lessons: List[AffectedLesson],
-        db: Session
+        self, absence: Absence, lessons: List[AffectedLesson], db: Session
     ) -> Dict[str, Any]:
         """
         Build context dictionary for template variable substitution
@@ -125,7 +131,9 @@ class PDFService:
 
         # Get timegrid from WebUntis (cached)
         try:
-            timegrid = await self.webuntis_service._load_timegrid(db, force_refresh=False)
+            timegrid = await self.webuntis_service._load_timegrid(
+                db, force_refresh=False
+            )
             if not timegrid:
                 logger.warning("⚠️ WebUntis Timegrid leer, nutze Config Fallback")
                 timegrid = {}
@@ -177,29 +185,25 @@ class PDFService:
                     "full_name": full_name,
                     "first_name": first_name,
                     "last_name": last_name,
-                    "email": absence.teacher.email if absence.teacher else ""
+                    "email": absence.teacher.email if absence.teacher else "",
                 },
                 "start_date": absence.start_date,
                 "end_date": absence.end_date,
                 "duration_days": duration_days,
                 "excursion_classes": absence.excursion_classes or "",
-                "admin_notes": absence.admin_notes or ""
+                "admin_notes": absence.admin_notes or "",
             },
             "lessons_time_start": lessons_time_start or "",
             "lessons_time_end": lessons_time_end or "",
             "lessons_subjects_combined": lessons_subjects_combined,
             "lessons_rooms_combined": lessons_rooms_combined,
-            "config": defaults
+            "config": defaults,
         }
 
         return context
 
-
     async def generate_filled_pdf(
-        self,
-        absence: Absence,
-        form_type: str,
-        db: Session
+        self, absence: Absence, form_type: str, db: Session
     ) -> bytes:
         """
         Generate filled PDF form
@@ -224,7 +228,7 @@ class PDFService:
         if form_type not in forms:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Form type '{form_type}' not found"
+                detail=f"Form type '{form_type}' not found",
             )
 
         form_config = forms[form_type]
@@ -237,7 +241,7 @@ class PDFService:
             logger.error(f"PDF template not found: {pdf_path}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"PDF template '{pdf_filename}' not found"
+                detail=f"PDF template '{pdf_filename}' not found",
             )
 
         # Get affected lessons
@@ -260,7 +264,7 @@ class PDFService:
             logger.error(f"PDF generation failed: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"PDF generation failed: {str(e)}"
+                detail=f"PDF generation failed: {str(e)}",
             )
 
     def _fix_pdf_encoding(self, text: str) -> str:
@@ -283,9 +287,9 @@ class PDFService:
         # If it's bytes, decode first
         if isinstance(text, bytes):
             try:
-                text = text.decode('utf-8')
+                text = text.decode("utf-8")
             except UnicodeDecodeError:
-                text = text.decode('latin-1', errors='replace')
+                text = text.decode("latin-1", errors="replace")
 
         # Ensure it's a string
         if not isinstance(text, str):
@@ -295,7 +299,7 @@ class PDFService:
         # The issue is that PyPDF2 might be double-encoding strings
         try:
             # Try to encode as Latin-1 to see if it's compatible
-            text.encode('latin-1')
+            text.encode("latin-1")
             # If it works, return as-is (it's Latin-1 compatible)
             return text
         except UnicodeEncodeError:
@@ -304,7 +308,9 @@ class PDFService:
             logger.debug(f"Text contains non-Latin-1 characters: {text}")
             return text
 
-    def _merge_fdf_with_pdf(self, pdf_path: Path, filled_fields: Dict[str, str]) -> bytes:
+    def _merge_fdf_with_pdf(
+        self, pdf_path: Path, filled_fields: Dict[str, str]
+    ) -> bytes:
         """
         Fill PDF form fields with data
 
@@ -321,7 +327,7 @@ class PDFService:
             logger.error(f"PDF libraries not available: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="PDF processing libraries not installed"
+                detail="PDF processing libraries not installed",
             )
 
         # Read original PDF
@@ -344,10 +350,7 @@ class PDFService:
         # Update form fields for each page
         for page_num, page in enumerate(writer.pages):
             try:
-                writer.update_page_form_field_values(
-                    page,
-                    fixed_fields
-                )
+                writer.update_page_form_field_values(page, fixed_fields)
                 logger.debug(f"Updated form fields on page {page_num + 1}")
             except Exception as e:
                 logger.warning(f"Could not update fields on page {page_num + 1}: {e}")

@@ -51,24 +51,24 @@ def extract_pdf_fields(pdf_path: str) -> Dict[str, Any]:
     if reader.get_fields():
         for field_name, field_obj in reader.get_fields().items():
             # Extract field type
-            field_type = field_obj.get('/FT', 'Unknown')
+            field_type = field_obj.get("/FT", "Unknown")
             if field_type:
                 # Decode PDF name objects (e.g., /Tx -> Text field)
                 type_map = {
-                    '/Tx': 'Text',
-                    '/Btn': 'Button/Checkbox',
-                    '/Ch': 'Choice/Dropdown',
-                    '/Sig': 'Signature'
+                    "/Tx": "Text",
+                    "/Btn": "Button/Checkbox",
+                    "/Ch": "Choice/Dropdown",
+                    "/Sig": "Signature",
                 }
                 field_type = type_map.get(str(field_type), str(field_type))
 
             # Extract current value
-            field_value = field_obj.get('/V', '')
-            if hasattr(field_value, 'get_object'):
+            field_value = field_obj.get("/V", "")
+            if hasattr(field_value, "get_object"):
                 field_value = field_value.get_object()
 
             # Extract flags (for additional info)
-            flags = field_obj.get('/Ff', 0)
+            flags = field_obj.get("/Ff", 0)
 
             # Determine if field is required (bit 1 in flags)
             is_required = bool(flags & 2)
@@ -77,11 +77,11 @@ def extract_pdf_fields(pdf_path: str) -> Dict[str, Any]:
             is_readonly = bool(flags & 1)
 
             fields[field_name] = {
-                'type': field_type,
-                'value': str(field_value) if field_value else '',
-                'flags': flags,
-                'required': is_required,
-                'readonly': is_readonly
+                "type": field_type,
+                "value": str(field_value) if field_value else "",
+                "flags": flags,
+                "required": is_required,
+                "readonly": is_readonly,
             }
 
     return fields
@@ -110,16 +110,16 @@ def print_fields(fields: Dict[str, Any], pdf_path: str):
         print(f"📄 Field: {field_name}")
         print(f"   Type:     {info['type']}")
 
-        if info['value']:
+        if info["value"]:
             print(f"   Value:    {info['value']}")
         else:
             print(f"   Value:    (empty)")
 
         attributes = []
-        if info['required']:
-            attributes.append('REQUIRED')
-        if info['readonly']:
-            attributes.append('READ-ONLY')
+        if info["required"]:
+            attributes.append("REQUIRED")
+        if info["readonly"]:
+            attributes.append("READ-ONLY")
 
         if attributes:
             print(f"   Attrs:    {', '.join(attributes)}")
@@ -140,7 +140,7 @@ def generate_config_template(fields: Dict[str, Any], pdf_filename: str):
         comma = "," if i < len(fields) - 1 else ""
         print(f'  "{field_name}": "{{{{ absence.FIELD_NAME_HERE }}}}{comma}"')
 
-    print(f'}}\n')
+    print(f"}}\n")
 
     print("Available template variables:")
     print("  {{ absence.teacher.full_name }}")
@@ -192,9 +192,10 @@ def main():
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

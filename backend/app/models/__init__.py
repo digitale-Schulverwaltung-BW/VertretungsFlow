@@ -1,6 +1,7 @@
 """
 Models package
 """
+
 from app.models.models import (
     User,
     UserRole,

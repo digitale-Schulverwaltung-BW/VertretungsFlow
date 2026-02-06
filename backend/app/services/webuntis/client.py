@@ -2,6 +2,7 @@
 WebUntis API Client
 Low-level HTTP communication layer for WebUntis JSON-RPC API
 """
+
 import logging
 import httpx
 from typing import List, Dict, Optional, Callable, Any
@@ -21,7 +22,7 @@ class WebUntisAPIClient:
         server: str = None,
         school: str = None,
         username: str = None,
-        password: str = None
+        password: str = None,
     ):
         """
         Initialize WebUntis API client
@@ -49,7 +50,9 @@ class WebUntisAPIClient:
         Returns:
             True wenn erfolgreich, sonst False
         """
-        logger.info(f"🔐 Authentifizierung gegen WebUntis: {self.server} (Schule: {self.school})")
+        logger.info(
+            f"🔐 Authentifizierung gegen WebUntis: {self.server} (Schule: {self.school})"
+        )
 
         try:
             async with httpx.AsyncClient() as client:
@@ -59,9 +62,9 @@ class WebUntisAPIClient:
                     "params": {
                         "user": self.username,
                         "password": "***",  # Password in Logs nicht anzeigen
-                        "client": "AbsenzFlow"
+                        "client": "AbsenzFlow",
                     },
-                    "jsonrpc": "2.0"
+                    "jsonrpc": "2.0",
                 }
 
                 logger.debug(f"Auth Request URL: {self.base_url}")
@@ -72,10 +75,7 @@ class WebUntisAPIClient:
                 actual_payload["params"] = payload["params"].copy()
                 actual_payload["params"]["password"] = self.password
 
-                response = await client.post(
-                    f"{self.base_url}",
-                    json=actual_payload
-                )
+                response = await client.post(f"{self.base_url}", json=actual_payload)
 
                 logger.debug(f"Auth Response Status: {response.status_code}")
                 logger.debug(f"Auth Response Headers: {dict(response.headers)}")
@@ -87,13 +87,17 @@ class WebUntisAPIClient:
                     if "result" in data:
                         self.session_id = data["result"]["sessionId"]
                         self.person_id = data["result"]["personId"]
-                        logger.info(f"✅ Authentifizierung erfolgreich (PersonID: {self.person_id})")
+                        logger.info(
+                            f"✅ Authentifizierung erfolgreich (PersonID: {self.person_id})"
+                        )
                         return True
                     elif "error" in data:
                         logger.error(f"❌ WebUntis API Error: {data['error']}")
                         return False
 
-                logger.error(f"❌ Authentifizierung fehlgeschlagen (Status: {response.status_code})")
+                logger.error(
+                    f"❌ Authentifizierung fehlgeschlagen (Status: {response.status_code})"
+                )
                 logger.error(f"Response Body: {response.text}")
                 return False
 
@@ -115,13 +119,13 @@ class WebUntisAPIClient:
                     "id": "logout",
                     "method": "logout",
                     "params": {},
-                    "jsonrpc": "2.0"
+                    "jsonrpc": "2.0",
                 }
 
                 response = await client.post(
                     f"{self.base_url}",
                     json=payload,
-                    cookies={"JSESSIONID": self.session_id}
+                    cookies={"JSESSIONID": self.session_id},
                 )
 
                 logger.debug(f"Logout Response Status: {response.status_code}")
@@ -131,7 +135,9 @@ class WebUntisAPIClient:
                     logger.info("✅ Logout erfolgreich")
                     return True
                 else:
-                    logger.warning(f"⚠️ Logout fehlgeschlagen (Status: {response.status_code})")
+                    logger.warning(
+                        f"⚠️ Logout fehlgeschlagen (Status: {response.status_code})"
+                    )
                     return False
 
         except Exception as e:
@@ -139,10 +145,7 @@ class WebUntisAPIClient:
             return False
 
     async def _call_api(
-        self,
-        method: str,
-        params: Dict = None,
-        handle_session_expiration: bool = True
+        self, method: str, params: Dict = None, handle_session_expiration: bool = True
     ) -> Optional[Dict]:
         """
         Generic WebUntis JSON-RPC API call
@@ -164,7 +167,7 @@ class WebUntisAPIClient:
                     "id": method,
                     "method": method,
                     "params": params,
-                    "jsonrpc": "2.0"
+                    "jsonrpc": "2.0",
                 }
 
                 logger.debug(f"{method} Request: {payload}")
@@ -172,7 +175,7 @@ class WebUntisAPIClient:
                 response = await client.post(
                     f"{self.base_url}",
                     json=payload,
-                    cookies={"JSESSIONID": self.session_id}
+                    cookies={"JSESSIONID": self.session_id},
                 )
 
                 logger.debug(f"{method} Response Status: {response.status_code}")
@@ -181,11 +184,19 @@ class WebUntisAPIClient:
                     data = response.json()
 
                     # Check for session expiration
-                    if handle_session_expiration and "error" in data and data["error"].get("code") == -8520:
-                        logger.warning(f"⚠️ WebUntis Session abgelaufen, authentifiziere neu...")
+                    if (
+                        handle_session_expiration
+                        and "error" in data
+                        and data["error"].get("code") == -8520
+                    ):
+                        logger.warning(
+                            f"⚠️ WebUntis Session abgelaufen, authentifiziere neu..."
+                        )
                         if await self._handle_expired_session():
                             # Retry the call with new session
-                            return await self._call_api(method, params, handle_session_expiration=False)
+                            return await self._call_api(
+                                method, params, handle_session_expiration=False
+                            )
                         else:
                             logger.error("❌ Re-Authentifizierung fehlgeschlagen")
                             return None
@@ -193,10 +204,14 @@ class WebUntisAPIClient:
                     if "result" in data:
                         return data["result"]
                     elif "error" in data:
-                        logger.error(f"❌ WebUntis API Error in {method}: {data['error']}")
+                        logger.error(
+                            f"❌ WebUntis API Error in {method}: {data['error']}"
+                        )
                         return None
 
-                logger.error(f"❌ {method} fehlgeschlagen (Status: {response.status_code})")
+                logger.error(
+                    f"❌ {method} fehlgeschlagen (Status: {response.status_code})"
+                )
                 logger.error(f"Response: {response.text}")
                 return None
 
@@ -231,10 +246,7 @@ class WebUntisAPIClient:
         return []
 
     async def get_timetable(
-        self,
-        teacher_id: int,
-        start_date: int,
-        end_date: int
+        self, teacher_id: int, start_date: int, end_date: int
     ) -> List[Dict]:
         """
         Get timetable for a teacher
@@ -247,19 +259,18 @@ class WebUntisAPIClient:
         Returns:
             List of lesson entries
         """
-        logger.info(f"📚 Lade Stundenplan für Lehrer-ID {teacher_id} ({start_date} - {end_date})...")
+        logger.info(
+            f"📚 Lade Stundenplan für Lehrer-ID {teacher_id} ({start_date} - {end_date})..."
+        )
 
         params = {
             "options": {
-                "element": {
-                    "id": teacher_id,
-                    "type": 2  # 2 = teacher
-                },
+                "element": {"id": teacher_id, "type": 2},  # 2 = teacher
                 "startDate": start_date,
                 "endDate": end_date,
                 "showSubstText": True,
                 "showInfo": True,
-                "showLsText": True
+                "showLsText": True,
             }
         }
 

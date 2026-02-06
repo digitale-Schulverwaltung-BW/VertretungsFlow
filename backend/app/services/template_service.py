@@ -2,6 +2,7 @@
 Template Service
 Business logic for template variable processing and substitution
 """
+
 import logging
 import re
 from datetime import datetime
@@ -99,16 +100,16 @@ class TemplateService:
             if isinstance(value, datetime):
                 return value.strftime(filter_args)
             else:
-                logger.warning(f"format_date filter requires datetime, got {type(value)}")
+                logger.warning(
+                    f"format_date filter requires datetime, got {type(value)}"
+                )
                 return str(value) if value is not None else ""
         else:
             logger.warning(f"Unknown filter: {filter_name}")
             return str(value) if value is not None else ""
 
     def process_field_mappings(
-        self,
-        field_mappings: Dict[str, str],
-        context: Dict[str, Any]
+        self, field_mappings: Dict[str, str], context: Dict[str, Any]
     ) -> Dict[str, str]:
         """
         Process all field mappings with template variables

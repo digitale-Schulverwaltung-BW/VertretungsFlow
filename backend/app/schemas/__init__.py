@@ -1,6 +1,7 @@
 """
 Schemas package
 """
+
 from app.schemas.schemas import (
     # User
     UserBase,

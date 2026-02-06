@@ -2,6 +2,7 @@
 Admin API Routes
 Verwaltung von Benutzerrollen, Dashboard, WebUntis Cache
 """
+
 import logging
 from typing import List
 from datetime import datetime
@@ -12,12 +13,19 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.core.database import get_db
-from app.models.models import User, Absence, AffectedLesson, UserRole, AbsenceStatus, WebUntisCache
+from app.models.models import (
+    User,
+    Absence,
+    AffectedLesson,
+    UserRole,
+    AbsenceStatus,
+    WebUntisCache,
+)
 from app.schemas.schemas import (
     UserResponse,
     RoleAssignment,
     DashboardStats,
-    AbsenceResponse
+    AbsenceResponse,
 )
 from app.api.auth import get_current_active_user, require_role
 
@@ -34,20 +42,22 @@ async def list_users(
     request: Request,
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.DEPARTMENT_HEAD])),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(
+        require_role([UserRole.ADMIN, UserRole.DEPARTMENT_HEAD])
+    ),
+    db: Session = Depends(get_db),
 ):
     """
     Listet alle Benutzer auf
-    
+
     Nur für Admins und Abteilungsleiter
-    
+
     Args:
         skip: Anzahl zu überspringen
         limit: Maximale Anzahl
         current_user: Aktueller User
         db: Database Session
-        
+
     Returns:
         Liste von Benutzern
     """
@@ -62,34 +72,33 @@ async def assign_role(
     user_id: int,
     role_assignment: RoleAssignment,
     current_user: User = Depends(require_role([UserRole.ADMIN])),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Weist einem Benutzer eine Rolle zu
-    
+
     Nur für Admins
-    
+
     Args:
         user_id: ID des Benutzers
         role_assignment: Rollen-Zuweisung
         current_user: Aktueller User (muss Admin sein)
         db: Database Session
-        
+
     Returns:
         Aktualisierter Benutzer
     """
     user = db.query(User).filter(User.id == user_id).first()
-    
+
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    
+
     user.role = role_assignment.role
     db.commit()
     db.refresh(user)
-    
+
     return user
 
 
@@ -97,44 +106,53 @@ async def assign_role(
 @limiter.limit("60/minute")
 async def get_dashboard_stats(
     request: Request,
-    current_user: User = Depends(require_role([UserRole.PLANNER, UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(
+        require_role([UserRole.PLANNER, UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])
+    ),
+    db: Session = Depends(get_db),
 ):
     """
     Dashboard Statistiken für Vertretungsplaner
-    
+
     Args:
         current_user: Aktueller User
         db: Database Session
-        
+
     Returns:
         Dashboard Statistiken
     """
     # Zähle Abwesenheiten nach Status
-    pending = db.query(func.count(Absence.id)).filter(
-        Absence.status == AbsenceStatus.SUBMITTED
-    ).scalar()
-    
-    approved = db.query(func.count(Absence.id)).filter(
-        Absence.status == AbsenceStatus.APPROVED
-    ).scalar()
-    
-    completed = db.query(func.count(Absence.id)).filter(
-        Absence.status == AbsenceStatus.COMPLETED
-    ).scalar()
-    
+    pending = (
+        db.query(func.count(Absence.id))
+        .filter(Absence.status == AbsenceStatus.SUBMITTED)
+        .scalar()
+    )
+
+    approved = (
+        db.query(func.count(Absence.id))
+        .filter(Absence.status == AbsenceStatus.APPROVED)
+        .scalar()
+    )
+
+    completed = (
+        db.query(func.count(Absence.id))
+        .filter(Absence.status == AbsenceStatus.COMPLETED)
+        .scalar()
+    )
+
     # Zähle betroffene Stunden (nur für genehmigte Abwesenheiten)
-    total_lessons = db.query(func.count(AffectedLesson.id)).join(
-        Absence
-    ).filter(
-        Absence.status.in_([AbsenceStatus.APPROVED, AbsenceStatus.COMPLETED])
-    ).scalar()
-    
+    total_lessons = (
+        db.query(func.count(AffectedLesson.id))
+        .join(Absence)
+        .filter(Absence.status.in_([AbsenceStatus.APPROVED, AbsenceStatus.COMPLETED]))
+        .scalar()
+    )
+
     return DashboardStats(
         pending_absences=pending,
         approved_absences=approved,
         completed_absences=completed,
-        total_affected_lessons=total_lessons
+        total_affected_lessons=total_lessons,
     )
 
 
@@ -144,29 +162,34 @@ async def list_pending_absences(
     request: Request,
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(require_role([UserRole.PLANNER, UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(
+        require_role([UserRole.PLANNER, UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])
+    ),
+    db: Session = Depends(get_db),
 ):
     """
     Listet ausstehende Abwesenheiten für Vertretungsplaner
-    
+
     Sortiert nach Fälligkeitsdatum (start_date)
-    
+
     Args:
         skip: Anzahl zu überspringen
         limit: Maximale Anzahl
         current_user: Aktueller User
         db: Database Session
-        
+
     Returns:
         Liste von Abwesenheiten
     """
-    absences = db.query(Absence).filter(
-        Absence.status.in_([AbsenceStatus.SUBMITTED, AbsenceStatus.APPROVED])
-    ).order_by(
-        Absence.start_date.asc()  # Sortiert nach Datum aufsteigend
-    ).offset(skip).limit(limit).all()
-    
+    absences = (
+        db.query(Absence)
+        .filter(Absence.status.in_([AbsenceStatus.SUBMITTED, AbsenceStatus.APPROVED]))
+        .order_by(Absence.start_date.asc())  # Sortiert nach Datum aufsteigend
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
     return absences
 
 
@@ -176,49 +199,57 @@ async def list_absences_by_date(
     request: Request,
     from_date: str,
     to_date: str,
-    current_user: User = Depends(require_role([UserRole.PLANNER, UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(
+        require_role([UserRole.PLANNER, UserRole.DEPARTMENT_HEAD, UserRole.ADMIN])
+    ),
+    db: Session = Depends(get_db),
 ):
     """
     Listet Abwesenheiten in einem Datumsbereich
-    
+
     Args:
         from_date: Startdatum (YYYY-MM-DD)
         to_date: Enddatum (YYYY-MM-DD)
         current_user: Aktueller User
         db: Database Session
-        
+
     Returns:
         Liste von Abwesenheiten
     """
     from datetime import datetime
-    
+
     try:
         start = datetime.strptime(from_date, "%Y-%m-%d")
         end = datetime.strptime(to_date, "%Y-%m-%d")
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid date format. Use YYYY-MM-DD"
+            detail="Invalid date format. Use YYYY-MM-DD",
         )
-    
-    absences = db.query(Absence).filter(
-        Absence.start_date >= start,
-        Absence.end_date <= end,
-        Absence.status != AbsenceStatus.REJECTED
-    ).order_by(Absence.start_date.asc()).all()
+
+    absences = (
+        db.query(Absence)
+        .filter(
+            Absence.start_date >= start,
+            Absence.end_date <= end,
+            Absence.status != AbsenceStatus.REJECTED,
+        )
+        .order_by(Absence.start_date.asc())
+        .all()
+    )
 
     return absences
 
 
 # ============ WebUntis Cache Management ============
 
+
 @router.post("/webuntis-cache/refresh")
 @limiter.limit("5/minute")
 async def refresh_webuntis_cache(
     request: Request,
     current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.PLANNER])),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Manuelles Refresh der WebUntis Stammdaten
@@ -241,7 +272,7 @@ async def refresh_webuntis_cache(
 
     return {
         "message": "WebUntis cache cleared. Next absence will refresh data.",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
@@ -250,7 +281,7 @@ async def refresh_webuntis_cache(
 async def get_cache_status(
     request: Request,
     current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.PLANNER])),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Cache-Status anzeigen
@@ -266,9 +297,15 @@ async def get_cache_status(
             {
                 "key": entry.cache_key,
                 "created_at": entry.created_at.isoformat(),
-                "expires_at": entry.expires_at.isoformat() if entry.expires_at else None,
-                "is_expired": entry.expires_at < datetime.utcnow() if entry.expires_at else False,
-                "items_count": len(entry.cache_data) if isinstance(entry.cache_data, dict) else 0
+                "expires_at": (
+                    entry.expires_at.isoformat() if entry.expires_at else None
+                ),
+                "is_expired": (
+                    entry.expires_at < datetime.utcnow() if entry.expires_at else False
+                ),
+                "items_count": (
+                    len(entry.cache_data) if isinstance(entry.cache_data, dict) else 0
+                ),
             }
             for entry in cache_entries
         ],
@@ -276,6 +313,6 @@ async def get_cache_status(
             "subjects": webuntis_service._subjects_cache is not None,
             "classes": webuntis_service._classes_cache is not None,
             "rooms": webuntis_service._rooms_cache is not None,
-            "timegrid": webuntis_service._timegrid_cache is not None
-        }
+            "timegrid": webuntis_service._timegrid_cache is not None,
+        },
     }
