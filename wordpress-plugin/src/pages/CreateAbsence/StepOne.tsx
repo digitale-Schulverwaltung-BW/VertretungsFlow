@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { DayPicker, DateRange } from 'react-day-picker';
-import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import 'react-day-picker/dist/style.css';
 import type { AbsenceReason } from '../../types';

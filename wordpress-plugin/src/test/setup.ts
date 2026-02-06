@@ -12,15 +12,17 @@ afterEach(() => {
 })
 
 // Mock window.absenzflowConfig for tests
-global.window.absenzflowConfig = {
-  apiUrl: 'http://localhost:8000/api',
-  nonce: 'test-nonce',
-  useProxy: false,
-  currentUser: {
-    id: 1,
-    username: 'testuser',
-    email: 'test@example.com',
-    role: 'teacher',
-    webuntis_code: 'TEST'
+if (typeof window !== 'undefined') {
+  window.absenzflowConfig = {
+    apiUrl: 'http://localhost:8000/api',
+    nonce: 'test-nonce',
+    useProxy: false,
+    user: {
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+      displayName: 'Test User',
+      role: 'teacher'
+    }
   }
 }

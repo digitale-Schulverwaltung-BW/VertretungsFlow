@@ -12,8 +12,9 @@ Comprehensive testing checklist for AbsenzFlow frontend. Check off items as you 
 - [x] Update GitLab CI to run tests
 - [x] Fix React Router v7 future flag warnings
 - [x] Create API Client tests (26 tests) - Integration/Contract tests
+- [x] Set up ESLint for code quality
 
-**Current Status:** 41 tests passing ✨
+**Current Status:** 41 tests passing ✨ + ESLint configured
 
 ---
 

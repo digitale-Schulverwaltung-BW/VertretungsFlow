@@ -8,7 +8,7 @@ interface TeacherViewProps {
   user: User;
 }
 
-const TeacherView: React.FC<TeacherViewProps> = ({ user }) => {
+const TeacherView: React.FC<TeacherViewProps> = ({ _user }) => {
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
