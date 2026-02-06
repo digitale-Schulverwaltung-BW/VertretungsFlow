@@ -18,6 +18,29 @@ Comprehensive testing checklist for AbsenzFlow frontend. Check off items as you 
 
 ---
 
+## ⚠️ Known Linting Warnings (Technical Debt)
+
+**Status:** ESLint passes but with 18 warnings (0 errors) - all non-blocking
+
+### React Hook Dependencies (2 warnings)
+- [ ] `App.tsx:60` - `useEffect` missing `initializeApp` dependency (design choice)
+- [ ] `CreateAbsence/StepTwo.tsx:32` - `useEffect` missing `fetchLessons` dependency (design choice)
+
+### Console Statements (6 warnings)
+- [ ] `components/FormDownloadButton.tsx:51` - `console.log` (change to `console.warn`)
+- [ ] `pages/CreateAbsence/StepTwo.tsx:112, 141, 143, 226, 227, 231` - `console.log` statements (convert to `console.warn/error`)
+
+### `any` Type Warnings (10 warnings) - Technical Debt
+- [ ] `components/FormDownloadButton.tsx:52, 67` - Define proper types instead of `any`
+- [ ] `pages/AbsenceDetail/index.tsx:41, 60, 76, 152` - Replace `any` with specific types
+- [ ] `pages/Dashboard/PlannerView.tsx:33` - Type the response data
+- [ ] `pages/Dashboard/TeacherView.tsx:22` - Type the response data
+- [ ] `pages/Dashboard/index.tsx:17` - Type the response data
+
+**Recommendation:** Address incrementally as features are refactored. Console warnings can be fixed quickly. `any` types require more investigation to determine proper types.
+
+---
+
 ## 🎯 High Priority - Core Components
 
 ### API Client (`src/api/client.ts`)
