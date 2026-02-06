@@ -1,4 +1,5 @@
 import pytest
+import asyncio
 
 def test_example():
     """Simple example test to verify pytest is working"""
