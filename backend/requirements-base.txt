@@ -38,3 +38,6 @@ pytest-asyncio==0.23.3
 black==23.12.1
 flake8==7.0.0
 mypy==1.8.0
+types-python-jose==3.5.0.20250531
+types-passlib==1.7.7.20250602
+types-aiofiles==25.1.0.20251011
