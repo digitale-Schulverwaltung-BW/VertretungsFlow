@@ -34,6 +34,57 @@ def format_webuntis_time(webuntis_time: int) -> str:
     return f"{hours:02d}:{minutes:02d}"
 
 
+def _calculate_end_time(start_time: int) -> str:
+    """
+    Calculate end time by adding 45 minutes to start time
+
+    Args:
+        start_time: WebUntis start time (e.g., 730 = 07:30)
+
+    Returns:
+        End time in format "HH:MM"
+    """
+    hours = start_time // 100
+    minutes = start_time % 100
+    end_minutes = minutes + 45
+    end_hours = hours
+    if end_minutes >= 60:
+        end_minutes -= 60
+        end_hours += 1
+    return f"{end_hours:02d}:{end_minutes:02d}"
+
+
+def _load_time_from_config(
+    config_path: Path,
+    period: int,
+    time_type: str,
+) -> Optional[str]:
+    """
+    Load period time from config file fallback
+
+    Args:
+        config_path: Path to PDF config JSON
+        period: Period number
+        time_type: "start" or "end"
+
+    Returns:
+        Time string or None if config load fails
+    """
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        if time_type == "end":
+            period_mapping = config.get("period_end_time_mapping", {})
+        else:
+            period_mapping = config.get("period_time_mapping", {})
+
+        return period_mapping.get(str(period))
+    except Exception as e:
+        logger.error(f"Error loading config for fallback: {e}")
+        return None
+
+
 def get_time_from_period(
     timegrid: Dict[int, int],
     period: int,
@@ -52,7 +103,7 @@ def get_time_from_period(
     Returns:
         Time string in format "HH:MM"
     """
-    # Reverse search: find start_time where period matches
+    # Try timegrid lookup first
     for start_time, p in timegrid.items():
         # Handle both int and str keys (JSONB conversion)
         try:
@@ -64,34 +115,17 @@ def get_time_from_period(
             if time_type == "start":
                 return format_webuntis_time(start_time)
             else:
-                # Calculate end time: add 45 minutes (German school periods)
-                hours = start_time // 100
-                minutes = start_time % 100
-                end_minutes = minutes + 45
-                end_hours = hours
-                if end_minutes >= 60:
-                    end_minutes -= 60
-                    end_hours += 1
-                return f"{end_hours:02d}:{end_minutes:02d}"
+                return _calculate_end_time(start_time)
 
-    # Fallback to config if period not found in timegrid
+    # Timegrid lookup failed - try config fallback
     logger.warning(
         f"Period {period} nicht im WebUntis Timegrid gefunden, nutze Config Fallback"
     )
 
     if config_path and config_path.exists():
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = json.load(f)
-
-            if time_type == "end":
-                period_mapping = config.get("period_end_time_mapping", {})
-                return period_mapping.get(str(period), "15:45")
-            else:
-                period_mapping = config.get("period_time_mapping", {})
-                return period_mapping.get(str(period), "08:00")
-        except Exception as e:
-            logger.error(f"Error loading config for fallback: {e}")
+        time_from_config = _load_time_from_config(config_path, period, time_type)
+        if time_from_config:
+            return time_from_config
 
     # Ultimate fallback
     return "15:45" if time_type == "end" else "08:00"

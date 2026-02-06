@@ -61,78 +61,57 @@ def analyze_pdf_fields(pdf_path: str) -> Dict[str, List[int]]:
     return field_pages
 
 
-def sanitize_pdf_fields(input_path: str, output_path: str):
+def _rename_fields_on_page(page, page_num: int, duplicates: Dict[str, List[int]]) -> List[Tuple[str, str, int]]:
     """
-    Sanitize PDF by renaming duplicate field names
+    Rename duplicate fields on a single PDF page
 
     Args:
-        input_path: Path to input PDF
-        output_path: Path to output sanitized PDF
+        page: PDF page object
+        page_num: Page number (1-indexed)
+        duplicates: Dict of duplicate field names
+
+    Returns:
+        List of (old_name, new_name, page_num) tuples
     """
-    try:
-        from pypdf import PdfReader, PdfWriter
-        from pypdf.generic import TextStringObject
-    except ImportError:
-        print("❌ Error: pypdf is not installed")
-        print("Please install it: pip install pypdf")
-        sys.exit(1)
-
-    print(f"\n{'='*70}")
-    print(f"Sanitizing PDF: {Path(input_path).name}")
-    print(f"{'='*70}\n")
-
-    # First, analyze to find duplicates
-    print("🔍 Analyzing PDF fields...")
-    field_pages = analyze_pdf_fields(input_path)
-
-    duplicates = {name: pages for name, pages in field_pages.items() if len(pages) > 1}
-
-    if not duplicates:
-        print("✅ No duplicate field names found!")
-        print("   All field names are already unique.")
-        print(f"\n   Total fields: {len(field_pages)}")
-        return
-
-    print(f"⚠️  Found {len(duplicates)} duplicate field names:\n")
-    for field_name, pages in sorted(duplicates.items()):
-        print(f"   '{field_name}' appears on pages: {', '.join(map(str, pages))}")
-
-    print(f"\n📝 Renaming {len(duplicates)} fields to make them unique...")
-
-    # Read PDF and create writer
-    reader = PdfReader(input_path)
-    writer = PdfWriter()
-
-    # Clone the document
-    writer.clone_reader_document_root(reader)
-
-    # Track renames for summary
     renames = []
 
-    # Rename duplicate fields on each page
-    for page_num, page in enumerate(writer.pages, start=1):
-        if "/Annots" in page:
-            annots = page["/Annots"]
-            if annots:
-                for annot_ref in annots:
-                    annot = annot_ref.get_object()
-                    if "/T" in annot:
-                        field_name = str(annot["/T"])
+    if "/Annots" not in page:
+        return renames
 
-                        # If this field has duplicates, rename it
-                        if field_name in duplicates:
-                            new_name = f"{field_name}_p{page_num}"
-                            annot.update({"/T": TextStringObject(new_name)})
-                            renames.append((field_name, new_name, page_num))
-                            print(
-                                f"   Renamed: '{field_name}' → '{new_name}' (page {page_num})"
-                            )
+    annots = page["/Annots"]
+    if not annots:
+        return renames
 
-    # Write sanitized PDF
-    print(f"\n💾 Writing sanitized PDF to: {output_path}")
-    with open(output_path, "wb") as f:
-        writer.write(f)
+    for annot_ref in annots:
+        annot = annot_ref.get_object()
+        if "/T" not in annot:
+            continue
 
+        field_name = str(annot["/T"])
+        if field_name not in duplicates:
+            continue
+
+        # Rename field
+        from pypdf.generic import TextStringObject
+
+        new_name = f"{field_name}_p{page_num}"
+        annot.update({"/T": TextStringObject(new_name)})
+        renames.append((field_name, new_name, page_num))
+        print(f"   Renamed: '{field_name}' → '{new_name}' (page {page_num})")
+
+    return renames
+
+
+def _print_summary(field_pages: Dict, duplicates: Dict, renames: List, output_path: str):
+    """
+    Print sanitization summary
+
+    Args:
+        field_pages: All field pages dict
+        duplicates: Duplicate fields dict
+        renames: List of renames performed
+        output_path: Output file path
+    """
     print(f"\n{'='*70}")
     print("✅ Sanitization Complete!")
     print(f"{'='*70}\n")
@@ -149,6 +128,66 @@ def sanitize_pdf_fields(input_path: str, output_path: str):
     print(f"  2. Update pdf_form_mappings.json with the new field names")
     print(f"  3. Use the sanitized PDF as your template")
     print()
+
+
+def sanitize_pdf_fields(input_path: str, output_path: str):
+    """
+    Sanitize PDF by renaming duplicate field names
+
+    Args:
+        input_path: Path to input PDF
+        output_path: Path to output sanitized PDF
+    """
+    # Import check
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError:
+        print("❌ Error: pypdf is not installed")
+        print("Please install it: pip install pypdf")
+        sys.exit(1)
+
+    # Header
+    print(f"\n{'='*70}")
+    print(f"Sanitizing PDF: {Path(input_path).name}")
+    print(f"{'='*70}\n")
+
+    # Analyze for duplicates
+    print("🔍 Analyzing PDF fields...")
+    field_pages = analyze_pdf_fields(input_path)
+    duplicates = {name: pages for name, pages in field_pages.items() if len(pages) > 1}
+
+    # Early return if no duplicates
+    if not duplicates:
+        print("✅ No duplicate field names found!")
+        print("   All field names are already unique.")
+        print(f"\n   Total fields: {len(field_pages)}")
+        return
+
+    # Print duplicates found
+    print(f"⚠️  Found {len(duplicates)} duplicate field names:\n")
+    for field_name, pages in sorted(duplicates.items()):
+        print(f"   '{field_name}' appears on pages: {', '.join(map(str, pages))}")
+
+    print(f"\n📝 Renaming {len(duplicates)} fields to make them unique...")
+
+    # Setup PDF writer
+    reader = PdfReader(input_path)
+    writer = PdfWriter()
+    writer.clone_reader_document_root(reader)
+
+    # Rename fields on each page
+    all_renames = []
+    for page_num, page in enumerate(writer.pages, start=1):
+        renames = _rename_fields_on_page(page, page_num, duplicates)
+        all_renames.extend(renames)
+
+    # Write output
+    print(f"\n💾 Writing sanitized PDF to: {output_path}")
+    with open(output_path, "wb") as f:
+        writer.write(f)
+
+    # Print summary
+    _print_summary(field_pages, duplicates, all_renames, output_path)
 
 
 def main():
