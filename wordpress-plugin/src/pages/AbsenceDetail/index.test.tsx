@@ -32,6 +32,8 @@ const mockTeacher: User = {
   created_at: '2024-01-01T00:00:00Z',
 }
 
+// Test fixtures for Phase 2-7 (will be used in future tests)
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const mockAdmin: User = {
   id: 2,
   username: 'admin',
@@ -131,6 +133,7 @@ const mockCompletedAbsence: Absence = {
   approved_at: '2024-02-11T14:00:00Z',
   completed_at: '2024-02-12T16:00:00Z',
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 // Helper function to render component with router
 const renderWithRouter = (absenceId: string = '1') => {
