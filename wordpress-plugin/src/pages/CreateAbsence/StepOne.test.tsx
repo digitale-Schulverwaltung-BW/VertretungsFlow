@@ -1,7 +1,7 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import StepOne, { StepOneData } from './StepOne'
+import StepOne from './StepOne'
 
 describe('StepOne - Absence Wizard Step 1', () => {
   let mockOnNext: ReturnType<typeof vi.fn>
