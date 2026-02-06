@@ -32,9 +32,7 @@ def get_recipients_by_roles(db: Session, roles: List[UserRole]) -> List[str]:
     """
     users = (
         db.query(User)
-        .filter(
-            User.role.in_(roles), User.is_active.is_(True), User.email.isnot(None)
-        )
+        .filter(User.role.in_(roles), User.is_active.is_(True), User.email.isnot(None))
         .all()
     )
 
