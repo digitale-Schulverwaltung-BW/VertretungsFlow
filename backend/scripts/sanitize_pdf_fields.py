@@ -19,7 +19,7 @@ Author: Claude Sonnet 4.5
 import sys
 from pathlib import Path
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 
 def analyze_pdf_fields(pdf_path: str) -> Dict[str, List[int]]:
