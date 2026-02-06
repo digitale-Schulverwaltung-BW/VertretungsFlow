@@ -1,0 +1,85 @@
+stages:
+  - test
+  - build
+  - quality
+
+variables:
+  POSTGRES_DB: absenzflow_test
+  POSTGRES_USER: absenzflow
+  POSTGRES_PASSWORD: password
+
+.test_template: &test_definition
+  image: python:3.11
+  services:
+    - postgres:15
+  before_script:
+    - cd backend
+    - pip install -r requirements-dev.txt
+    - cd ..
+
+.test_backend:
+  <<: *test_definition
+  stage: test
+  script:
+    - cd backend
+    - pytest tests/ -v --cov=app --cov-report=xml
+  artifacts:
+    reports:
+      cobertura: backend/coverage.xml
+
+.test_frontend:
+  image: node:18
+  stage: test
+  script:
+    - cd wordpress-plugin
+    - npm ci
+    - npm run test
+
+.build_frontend:
+  image: node:18
+  stage: build
+  script:
+    - cd wordpress-plugin
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - wordpress-plugin/build/
+
+.lint_backend:
+  <<: *test_definition
+  stage: quality
+  script:
+    - cd backend
+    - black . --check
+    - flake8 .
+    - mypy .
+
+.lint_frontend:
+  image: node:18
+  stage: quality
+  script:
+    - cd wordpress-plugin
+    - npm ci
+    - npm run lint
+
+.quality_gate:
+  image: alpine:latest
+  stage: quality
+  script:
+    - echo "Quality gate passed"
+  dependencies:
+    - test_backend
+    - test_frontend
+    - lint_backend
+    - lint_frontend
+  only:
+    - merge_requests
+
+.deploy:
+  image: alpine:latest
+  stage: deploy
+  script:
+    - echo "Deploy to staging environment"
+  only:
+    - main
