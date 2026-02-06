@@ -20,9 +20,7 @@ test_backend:
   script:
     - cd backend
     - pytest tests/ -v --cov=app --cov-report=xml
-  artifacts:
-    reports:
-      cobertura: backend/coverage.xml
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
 
 test_frontend:
   image: node:18
