@@ -19,6 +19,7 @@
   /* Layout */
   width: 100%;
   min-height: 400px;
+  min-width: 960px;
 
   /* Typography Reset - Only the most critical inherited properties */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
