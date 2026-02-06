@@ -10,29 +10,133 @@
   font-weight: 400;
 }
 
+/*
+ * CSS Isolation Layer for AbsenzFlow
+ * Protects against WordPress theme style interference
+ * Uses a minimal, targeted approach to avoid breaking Tailwind styling
+ */
 #absenzflow-root {
+  /* Layout */
   width: 100%;
   min-height: 400px;
+
+  /* Typography Reset - Only the most critical inherited properties */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif !important;
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  color: #1f2937;
+
+  /* Box Model - Ensure consistent box-sizing */
+  box-sizing: border-box;
+
+  /* Text Rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure all children use border-box (critical for layout) */
+#absenzflow-root *,
+#absenzflow-root *::before,
+#absenzflow-root *::after {
+  box-sizing: border-box;
+}
+
+/* Only reset font inheritance on headings - don't override Tailwind size classes */
+#absenzflow-root h1,
+#absenzflow-root h2,
+#absenzflow-root h3,
+#absenzflow-root h4,
+#absenzflow-root h5,
+#absenzflow-root h6 {
+  font-family: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+/* Only reset problematic inherited properties on text elements */
+#absenzflow-root p,
+#absenzflow-root a,
+#absenzflow-root span {
+  font-family: inherit;
+  line-height: inherit;
+}
+
+/* Reset form element font inheritance only */
+#absenzflow-root input,
+#absenzflow-root select,
+#absenzflow-root textarea,
+#absenzflow-root button {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
 }
 
 /* Prevent SVG icons from becoming too large in WordPress themes */
 #absenzflow-root svg {
   max-width: 100%;
   max-height: 100%;
+  vertical-align: middle !important;
 }
 
 /* React Day Picker SVG icons size constraints */
 #absenzflow-root .rdp svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
 }
 
 #absenzflow-root .rdp-button svg {
-  width: 1rem;
-  height: 1rem;
+  width: 1rem !important;
+  height: 1rem !important;
 }
 
 /* Prevent calendar wobble by keeping consistent font-size */
 #absenzflow-root .rdp-selected {
   font-size: inherit !important;
+}
+
+/* Date picker protection - ensure consistent styling */
+#absenzflow-root .rdp {
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+}
+
+#absenzflow-root .rdp-day {
+  font-size: 14px !important;
+}
+
+/*
+ * Minimal targeted fixes for common WordPress theme interference
+ * Only override properties that commonly cause layout issues
+ */
+
+/* Prevent WordPress themes from adding unexpected margins to form inputs */
+#absenzflow-root input[type="text"],
+#absenzflow-root input[type="email"],
+#absenzflow-root input[type="number"],
+#absenzflow-root input[type="date"],
+#absenzflow-root select,
+#absenzflow-root textarea {
+  max-width: 100%;
+  /* Let Tailwind classes handle the rest */
+}
+
+/* Ensure buttons can be styled by Tailwind without theme interference */
+#absenzflow-root button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Fix common table inheritance issues */
+#absenzflow-root table {
+  border-collapse: collapse;
+  font-size: inherit;
+}
+
+/* Prevent WordPress from adding list styles to unstyled lists */
+#absenzflow-root ul,
+#absenzflow-root ol {
+  list-style: none;
 }

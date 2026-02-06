@@ -1,9 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Scope all Tailwind styles to #absenzflow-root for isolation
+  important: '#absenzflow-root',
+
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+
   theme: {
     extend: {
       maxWidth: {
@@ -30,5 +34,11 @@ export default {
       }
     },
   },
+
   plugins: [],
+
+  // Ensure consistent base styles
+  corePlugins: {
+    preflight: true,
+  },
 }
