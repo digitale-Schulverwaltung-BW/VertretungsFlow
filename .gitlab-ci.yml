@@ -28,15 +28,15 @@ test_frontend:
   stage: test
   script:
     - cd wordpress-plugin
-    - npm install
-    - npm run test
+    - npm install --legacy-peer-deps
+    - npm run test -- --run
 
 build_frontend:
   image: node:18
   stage: build
   script:
     - cd wordpress-plugin
-    - npm install
+    - npm install --legacy-peer-deps
     - npm run build
   artifacts:
     paths:
@@ -62,7 +62,7 @@ lint_frontend:
   stage: quality
   script:
     - cd wordpress-plugin
-    - npm install
+    - npm install --legacy-peer-deps
     - npm run lint
 
 quality_gate:
