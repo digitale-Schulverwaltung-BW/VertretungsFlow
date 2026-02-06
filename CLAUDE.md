@@ -65,14 +65,17 @@ AbsenzFlow/
 │   │   │   ├── auth.py        # WordPress Proxy Auth
 │   │   │   └── admin.py       # Admin Endpoints
 │   │   ├── services/          # Business Logic (neu seit 2026-02-03)
-│   │   │   ├── absence_service.py      # Absence Business Logic (417 LOC)
+│   │   │   ├── absence_service.py      # Absence Business Logic (479 LOC)
 │   │   │   ├── attachment_service.py   # File Management Logic (235 LOC)
 │   │   │   ├── permission_service.py   # Centralized Authorization (134 LOC)
+│   │   │   ├── pdf_service.py          # PDF Form Generation (364 LOC)
+│   │   │   ├── template_service.py     # Template Processing (138 LOC)
 │   │   │   ├── email_service.py        # Email Notifications
 │   │   │   ├── webuntis_service.py     # WebUntis API Integration
 │   │   │   └── ldap_service.py         # LDAP Authentication (optional)
 │   │   ├── utils/             # Helper Functions (neu seit 2026-02-03)
-│   │   │   ├── email_utils.py # get_recipients_by_roles, REASON_LABELS
+│   │   │   ├── email_utils.py       # get_recipients_by_roles, REASON_LABELS
+│   │   │   ├── time_format_utils.py # WebUntis time formatting (126 LOC)
 │   │   │   └── __init__.py
 │   │   ├── core/
 │   │   │   ├── config.py      # Settings (Pydantic BaseSettings)
@@ -125,9 +128,11 @@ AbsenzFlow/
 
 | Datei | Beschreibung | Wichtige Funktionen |
 |-------|--------------|---------------------|
-| `backend/app/services/absence_service.py` | Absence Business Logic (417 LOC) | `create_absence()`, `approve_absence()`, `complete_absence()`, `validate_date_range()` |
+| `backend/app/services/absence_service.py` | Absence Business Logic (479 LOC) | `create_absence()`, `approve_absence()`, `complete_absence()`, `validate_date_range()` |
 | `backend/app/services/attachment_service.py` | File Management (235 LOC) | `validate_file()`, `save_file()`, `delete_file()`, `get_file_path()` |
 | `backend/app/services/permission_service.py` | Authorization (134 LOC) | `can_view_absence()`, `can_edit_absence()`, `can_approve_absence()`, `can_complete_absence()` |
+| `backend/app/services/pdf_service.py` | PDF Form Generation (364 LOC) | `get_available_forms()`, `generate_filled_pdf()` |
+| `backend/app/services/template_service.py` | Template Processing (138 LOC) | `process_template_variable()`, `get_nested_value()`, `apply_filter()`, `process_field_mappings()` |
 | `backend/app/services/email_service.py` | Email Notifications | `send_absence_submitted_notification()`, etc. |
 | `backend/app/services/webuntis_service.py` | WebUntis API | `get_timetable_for_teacher()` |
 
@@ -136,6 +141,7 @@ AbsenzFlow/
 | Datei | Beschreibung | Funktionen |
 |-------|--------------|-----------|
 | `backend/app/utils/email_utils.py` | Email Helpers | `get_recipients_by_roles()`, `REASON_LABELS` |
+| `backend/app/utils/time_format_utils.py` | Time Formatting (126 LOC) | `format_webuntis_time()`, `get_time_from_period()`, `get_time_for_period()` |
 
 **Core:**
 
@@ -580,6 +586,30 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 ## Refactoring-Historie
 
+### 2026-02-06: PDF Service Refactoring - Separation of Concerns
+
+**Problem:** `backend/app/services/pdf_service.py` war mit 564 LOC zu groß und hatte drei gemischte Verantwortlichkeiten (Template Processing, Time Calculations, PDF Generation).
+
+**Lösung:** Aufspaltung in fokussierte Module
+1. **Template Service extrahiert** (Template Variable Processing)
+   - `template_service.py` (138 LOC) - Template Processing Service
+   - Methoden: `process_template_variable()`, `get_nested_value()`, `apply_filter()`, `process_field_mappings()`
+2. **Time Utils extrahiert** (Pure Functions für Zeit-Formatierung)
+   - `time_format_utils.py` (126 LOC) - WebUntis Time Formatting Utils
+   - Funktionen: `format_webuntis_time()`, `get_time_from_period()`, `get_time_for_period()`
+3. **PDF Service geschrumpft** (Fokus auf PDF Generation)
+   - `pdf_service.py` von 564 LOC → 364 LOC (35% Reduktion)
+   - Behält: Config Loading, Form Selection, PDF Merging mit pypdf
+
+**Ergebnis:**
+- ✅ `pdf_service.py` von 564 LOC → 364 LOC (35% Reduktion)
+- ✅ Separation of Concerns (Template, Time, PDF getrennt)
+- ✅ Wiederverwendbarkeit (Template Service für andere Features nutzbar)
+- ✅ Testbarkeit (Pure Functions in utils leichter testbar)
+- ✅ Folgt Codebase-Patterns (Service + Utils wie email_service/email_utils)
+
+**Von:** Claude Sonnet 4.5 (mit User Seyfried)
+
 ### 2026-02-03: Backend-Refactoring - Services & Routes-Aufteilung
 
 **Problem:** `backend/app/api/absences.py` war mit 993 LOC zu groß und schwer wartbar.
@@ -607,8 +637,8 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 ## Letzte Aktualisierung
 
-- Datum: 2026-02-03
-- Version: Nach Backend-Refactoring (Services & Routes-Aufteilung)
+- Datum: 2026-02-06
+- Version: Nach PDF Service Refactoring (Template Service + Time Utils extrahiert)
 - Von: Claude Sonnet 4.5 (mit User Seyfried)
 
 ---
