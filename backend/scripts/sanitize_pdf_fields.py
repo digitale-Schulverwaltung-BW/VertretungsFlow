@@ -61,7 +61,9 @@ def analyze_pdf_fields(pdf_path: str) -> Dict[str, List[int]]:
     return field_pages
 
 
-def _rename_fields_on_page(page, page_num: int, duplicates: Dict[str, List[int]]) -> List[Tuple[str, str, int]]:
+def _rename_fields_on_page(
+    page, page_num: int, duplicates: Dict[str, List[int]]
+) -> List[Tuple[str, str, int]]:
     """
     Rename duplicate fields on a single PDF page
 
@@ -102,7 +104,9 @@ def _rename_fields_on_page(page, page_num: int, duplicates: Dict[str, List[int]]
     return renames
 
 
-def _print_summary(field_pages: Dict, duplicates: Dict, renames: List, output_path: str):
+def _print_summary(
+    field_pages: Dict, duplicates: Dict, renames: List, output_path: str
+):
     """
     Print sanitization summary
 
