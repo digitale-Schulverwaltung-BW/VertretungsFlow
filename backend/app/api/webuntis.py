@@ -14,7 +14,7 @@ from app.models.models import User
 from app.schemas.schemas import FetchLessonsRequest, WebUntisLesson
 from app.api.auth import get_wordpress_proxy_user
 from app.services.webuntis_service import webuntis_service
-from app.services.absence_service import absence_service
+from app.utils.absence_utils import validate_date_range, is_lesson_in_period
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +47,8 @@ async def fetch_lessons_from_webuntis(
     Returns:
         Liste von WebUntis-Stunden im angegebenen Zeitraum
     """
-    # Validierung (delegiert an Service)
-    absence_service.validate_date_range(
+    # Validierung (delegiert an Utils)
+    validate_date_range(
         fetch_request.start_date,
         fetch_request.end_date,
         fetch_request.start_period,
@@ -64,10 +64,10 @@ async def fetch_lessons_from_webuntis(
         webuntis_code=current_user.webuntis_teacher_code
     )
 
-    # Filtern nach Perioden (delegiert an Service)
+    # Filtern nach Perioden (delegiert an Utils)
     filtered_lessons = []
     for lesson in lessons:
-        if absence_service.is_lesson_in_period(
+        if is_lesson_in_period(
             lesson,
             fetch_request.start_date,
             fetch_request.end_date,

@@ -5,6 +5,10 @@ from app.core.config import settings
 from app.services.email_service import EmailService, email_service
 from app.services.webuntis_service import WebUntisService, webuntis_service
 from app.services.template_service import TemplateService, template_service
+from app.services.absence_notification_service import (
+    AbsenceNotificationService,
+    absence_notification_service
+)
 
 # Conditional LDAP import - nur für Standalone-Modus
 if settings.AUTH_MODE == "standalone":
@@ -26,6 +30,8 @@ if settings.AUTH_MODE == "standalone":
         "webuntis_service",
         "TemplateService",
         "template_service",
+        "AbsenceNotificationService",
+        "absence_notification_service",
     ]
 else:
     # WordPress-Modus - LDAP nicht verfügbar
@@ -39,4 +45,6 @@ else:
         "webuntis_service",
         "TemplateService",
         "template_service",
+        "AbsenceNotificationService",
+        "absence_notification_service",
     ]

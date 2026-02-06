@@ -65,17 +65,19 @@ AbsenzFlow/
 │   │   │   ├── auth.py        # WordPress Proxy Auth
 │   │   │   └── admin.py       # Admin Endpoints
 │   │   ├── services/          # Business Logic (neu seit 2026-02-03)
-│   │   │   ├── absence_service.py      # Absence Business Logic (479 LOC)
-│   │   │   ├── attachment_service.py   # File Management Logic (235 LOC)
-│   │   │   ├── permission_service.py   # Centralized Authorization (134 LOC)
-│   │   │   ├── pdf_service.py          # PDF Form Generation (364 LOC)
-│   │   │   ├── template_service.py     # Template Processing (138 LOC)
-│   │   │   ├── email_service.py        # Email Notifications
-│   │   │   ├── webuntis_service.py     # WebUntis API Integration
-│   │   │   └── ldap_service.py         # LDAP Authentication (optional)
+│   │   │   ├── absence_service.py               # Absence CRUD Logic (323 LOC)
+│   │   │   ├── absence_notification_service.py  # Absence Notifications (117 LOC)
+│   │   │   ├── attachment_service.py            # File Management Logic (235 LOC)
+│   │   │   ├── permission_service.py            # Centralized Authorization (134 LOC)
+│   │   │   ├── pdf_service.py                   # PDF Form Generation (364 LOC)
+│   │   │   ├── template_service.py              # Template Processing (138 LOC)
+│   │   │   ├── email_service.py                 # Email Notifications
+│   │   │   ├── webuntis_service.py              # WebUntis API Integration
+│   │   │   └── ldap_service.py                  # LDAP Authentication (optional)
 │   │   ├── utils/             # Helper Functions (neu seit 2026-02-03)
 │   │   │   ├── email_utils.py       # get_recipients_by_roles, REASON_LABELS
 │   │   │   ├── time_format_utils.py # WebUntis time formatting (126 LOC)
+│   │   │   ├── absence_utils.py     # Absence validation/filtering (99 LOC)
 │   │   │   └── __init__.py
 │   │   ├── core/
 │   │   │   ├── config.py      # Settings (Pydantic BaseSettings)
@@ -128,7 +130,8 @@ AbsenzFlow/
 
 | Datei | Beschreibung | Wichtige Funktionen |
 |-------|--------------|---------------------|
-| `backend/app/services/absence_service.py` | Absence Business Logic (479 LOC) | `create_absence()`, `approve_absence()`, `complete_absence()`, `validate_date_range()` |
+| `backend/app/services/absence_service.py` | Absence CRUD Logic (323 LOC) | `create_absence()`, `approve_absence()`, `complete_absence()`, `delete_absence()` |
+| `backend/app/services/absence_notification_service.py` | Absence Notifications (117 LOC) | `send_submitted_notification()`, `send_approved_notification()`, `send_completed_notification()` |
 | `backend/app/services/attachment_service.py` | File Management (235 LOC) | `validate_file()`, `save_file()`, `delete_file()`, `get_file_path()` |
 | `backend/app/services/permission_service.py` | Authorization (134 LOC) | `can_view_absence()`, `can_edit_absence()`, `can_approve_absence()`, `can_complete_absence()` |
 | `backend/app/services/pdf_service.py` | PDF Form Generation (364 LOC) | `get_available_forms()`, `generate_filled_pdf()` |
@@ -142,6 +145,7 @@ AbsenzFlow/
 |-------|--------------|-----------|
 | `backend/app/utils/email_utils.py` | Email Helpers | `get_recipients_by_roles()`, `REASON_LABELS` |
 | `backend/app/utils/time_format_utils.py` | Time Formatting (126 LOC) | `format_webuntis_time()`, `get_time_from_period()`, `get_time_for_period()` |
+| `backend/app/utils/absence_utils.py` | Absence Validation (99 LOC) | `validate_date_range()`, `is_lesson_in_period()` |
 
 **Core:**
 
@@ -610,6 +614,30 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 **Von:** Claude Sonnet 4.5 (mit User Seyfried)
 
+### 2026-02-06: Absence Service Refactoring - Notification & Validation Extraction
+
+**Problem:** `backend/app/services/absence_service.py` war mit 479 LOC zu groß und hatte gemischte Verantwortlichkeiten (CRUD Logic, Email Notifications, Validation).
+
+**Lösung:** Extraktion in spezialisierte Module
+1. **Notification Service extrahiert** (Email-Benachrichtigungen)
+   - `absence_notification_service.py` (117 LOC) - Absence Notification Service
+   - Methoden: `send_submitted_notification()`, `send_approved_notification()`, `send_completed_notification()`
+2. **Validation Utils extrahiert** (Pure Functions für Validierung)
+   - `absence_utils.py` (99 LOC) - Absence Validation & Filtering Utils
+   - Funktionen: `validate_date_range()`, `is_lesson_in_period()`
+3. **Absence Service geschrumpft** (Fokus auf CRUD Logic)
+   - `absence_service.py` von 479 LOC → 323 LOC (33% Reduktion)
+   - Behält: `create_absence()`, `approve_absence()`, `complete_absence()`, `delete_absence()`
+
+**Ergebnis:**
+- ✅ `absence_service.py` von 479 LOC → 323 LOC (33% Reduktion)
+- ✅ Separation of Concerns (CRUD, Notifications, Validation getrennt)
+- ✅ Wiederverwendbarkeit (Notification Service für andere Absence-Events nutzbar)
+- ✅ Testbarkeit (Pure Validation-Functions leichter testbar)
+- ✅ Folgt etablierte Patterns (Service + Utils Struktur konsistent)
+
+**Von:** Claude Sonnet 4.5 (mit User Seyfried)
+
 ### 2026-02-03: Backend-Refactoring - Services & Routes-Aufteilung
 
 **Problem:** `backend/app/api/absences.py` war mit 993 LOC zu groß und schwer wartbar.
@@ -638,7 +666,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 ## Letzte Aktualisierung
 
 - Datum: 2026-02-06
-- Version: Nach PDF Service Refactoring (Template Service + Time Utils extrahiert)
+- Version: Nach Service Refactorings (PDF Service + Absence Service)
 - Von: Claude Sonnet 4.5 (mit User Seyfried)
 
 ---

@@ -9,13 +9,13 @@ from fastapi import HTTPException, Request, status
 from sqlalchemy.orm import Session, selectinload, joinedload
 
 from app.models.models import (
-    User, Absence, AffectedLesson, AbsenceStatus, UserRole,
-    AbsenceAttachment
+    User, Absence, AffectedLesson, AbsenceStatus, AbsenceAttachment
 )
-from app.schemas.schemas import AbsenceCreate, WebUntisLesson
+from app.schemas.schemas import AbsenceCreate
 from app.services.webuntis_service import webuntis_service
-from app.services.email_service import email_service
 from app.services.attachment_service import attachment_service
+from app.services.absence_notification_service import absence_notification_service
+from app.utils.absence_utils import validate_date_range, is_lesson_in_period
 from app.core.audit import (
     audit_absence_approved, audit_absence_completed, audit_log
 )
@@ -25,79 +25,6 @@ logger = logging.getLogger(__name__)
 
 class AbsenceService:
     """Service for absence business logic"""
-
-    def validate_date_range(
-        self,
-        start_date: datetime,
-        end_date: datetime,
-        start_period: int,
-        end_period: int
-    ) -> None:
-        """
-        Validates date range and periods
-
-        Args:
-            start_date: Start date
-            end_date: End date
-            start_period: Start period
-            end_period: End period
-
-        Raises:
-            HTTPException: If validation fails
-        """
-        # Validierung: end_date >= start_date
-        if end_date < start_date:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="End date must be after or equal to start date"
-            )
-
-        # Validierung: end_period >= start_period bei gleichen Tagen
-        if start_date.date() == end_date.date():
-            if end_period < start_period:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="End period must be after or equal to start period"
-                )
-
-    def is_lesson_in_period(
-        self,
-        lesson: WebUntisLesson,
-        start_date: datetime,
-        end_date: datetime,
-        start_period: int,
-        end_period: int
-    ) -> bool:
-        """
-        Checks if lesson is within the specified period
-
-        Args:
-            lesson: Lesson to check
-            start_date: Start date
-            end_date: End date
-            start_period: Start period
-            end_period: End period
-
-        Returns:
-            True if lesson is in period, False otherwise
-        """
-        # Check if lesson is within date range
-        if not (start_date.date() <= lesson.date.date() <= end_date.date()):
-            return False
-
-        # Filter nach Periode
-        if start_date.date() == end_date.date():
-            # Eintägige Abwesenheit
-            return start_period <= lesson.period <= end_period
-        elif lesson.date.date() == start_date.date():
-            # Erster Tag
-            return lesson.period >= start_period
-        elif lesson.date.date() == end_date.date():
-            # Letzter Tag
-            return lesson.period <= end_period
-        else:
-            # Tage dazwischen
-            return True
 
     async def create_absence(
         self,
@@ -122,7 +49,7 @@ class AbsenceService:
         logger.info(f"📝 Create absence request from user {current_user.username}")
 
         # Validierung
-        self.validate_date_range(
+        validate_date_range(
             absence_data.start_date,
             absence_data.end_date,
             absence_data.start_period,
@@ -176,7 +103,7 @@ class AbsenceService:
 
         # Betroffene Stunden in DB speichern
         for lesson in lessons:
-            if self.is_lesson_in_period(
+            if is_lesson_in_period(
                 lesson,
                 absence_data.start_date,
                 absence_data.end_date,
@@ -206,7 +133,7 @@ class AbsenceService:
         db.refresh(db_absence)
 
         # Send email notifications
-        await self._send_absence_submitted_notification(db_absence, current_user, db)
+        await absence_notification_service.send_submitted_notification(db_absence, current_user, db)
 
         return db_absence
 
@@ -266,7 +193,7 @@ class AbsenceService:
             )
 
             # Send email notifications
-            await self._send_absence_approved_notification(absence, current_user, db)
+            await absence_notification_service.send_approved_notification(absence, current_user, db)
 
             return "Absence approved"
         else:
@@ -356,7 +283,7 @@ class AbsenceService:
         db.commit()
 
         # Send email notification to teacher
-        await self._send_absence_completed_notification(absence, db)
+        await absence_notification_service.send_completed_notification(absence, db)
 
         return "Absence marked as completed, attachments deleted"
 
@@ -390,89 +317,6 @@ class AbsenceService:
         db.commit()
 
         return "Absence deleted"
-
-    # Private helper methods for email notifications
-
-    async def _send_absence_submitted_notification(
-        self,
-        absence: Absence,
-        current_user: User,
-        db: Session
-    ) -> None:
-        """Sends email notification when absence is submitted"""
-        try:
-            from app.utils.email_utils import get_recipients_by_roles, REASON_LABELS
-
-            dept_head_emails = get_recipients_by_roles(db, [UserRole.DEPARTMENT_HEAD])
-            planner_emails = get_recipients_by_roles(db, [UserRole.PLANNER])
-
-            start_date_str = absence.start_date.strftime("%d.%m.%Y")
-            end_date_str = absence.end_date.strftime("%d.%m.%Y")
-            reason_label = REASON_LABELS.get(absence.reason, absence.reason)
-
-            success = await email_service.send_absence_submitted_notification(
-                teacher_name=current_user.full_name or current_user.username,
-                teacher_email=current_user.email,
-                dept_head_emails=dept_head_emails,
-                planner_emails=planner_emails,
-                absence_id=absence.id,
-                reason=reason_label,
-                start_date=start_date_str,
-                end_date=end_date_str
-            )
-
-            if not success:
-                logger.warning(f"Some email notifications failed for absence {absence.id}")
-        except Exception as e:
-            logger.error(f"Email notification error for absence {absence.id}: {e}")
-            # Continue - don't fail the request
-
-    async def _send_absence_approved_notification(
-        self,
-        absence: Absence,
-        current_user: User,
-        db: Session
-    ) -> None:
-        """Sends email notification when absence is approved"""
-        try:
-            from app.utils.email_utils import get_recipients_by_roles
-
-            planner_emails = get_recipients_by_roles(db, [UserRole.PLANNER])
-
-            if absence.teacher and absence.teacher.email:
-                success = await email_service.send_absence_approved_notification(
-                    teacher_email=absence.teacher.email,
-                    planner_emails=planner_emails,
-                    absence_id=absence.id,
-                    approver_name=current_user.full_name or current_user.username
-                )
-
-                if not success:
-                    logger.warning(f"Email notification failed for approved absence {absence.id}")
-            else:
-                logger.warning(f"Cannot send approval email: teacher has no email address")
-        except Exception as e:
-            logger.error(f"Email notification error for approved absence {absence.id}: {e}")
-
-    async def _send_absence_completed_notification(
-        self,
-        absence: Absence,
-        db: Session
-    ) -> None:
-        """Sends email notification when absence is completed"""
-        try:
-            if absence.teacher and absence.teacher.email:
-                success = await email_service.send_absence_completed_notification(
-                    teacher_email=absence.teacher.email,
-                    absence_id=absence.id
-                )
-
-                if not success:
-                    logger.warning(f"Email notification failed for completed absence {absence.id}")
-            else:
-                logger.warning(f"Cannot send completion email: teacher has no email address")
-        except Exception as e:
-            logger.error(f"Email notification error for completed absence {absence.id}: {e}")
 
 
 # Singleton instance
