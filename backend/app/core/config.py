@@ -86,6 +86,203 @@ class Settings(BaseSettings):
     }
 
 
+def _parse_cors_origins(cors_origins: Union[List[str], str]) -> List[str]:
+    """
+    Parse CORS_ORIGINS from string or list format
+
+    Args:
+        cors_origins: CORS origins as list or comma-separated string
+
+    Returns:
+        List of origins
+    """
+    if isinstance(cors_origins, str):
+        return [origin.strip() for origin in cors_origins.split(",")]
+    return cors_origins
+
+
+def _validate_secret_key(settings_instance: Settings) -> Union[str, None]:
+    """
+    Validate SECRET_KEY is not default value
+
+    Args:
+        settings_instance: Settings to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if settings_instance.SECRET_KEY == "your-secret-key-change-in-production":
+        return (
+            "❌ SECRET_KEY is still set to default value!\n"
+            "   Generate a secure secret: openssl rand -hex 32\n"
+            "   Set it in .env: SECRET_KEY=<generated-secret>"
+        )
+    return None
+
+
+def _validate_wordpress_proxy_secret(settings_instance: Settings) -> Union[str, None]:
+    """
+    Validate WORDPRESS_PROXY_SECRET (only in WordPress auth mode)
+
+    Args:
+        settings_instance: Settings to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if settings_instance.AUTH_MODE == "wordpress":
+        if (
+            settings_instance.WORDPRESS_PROXY_SECRET
+            == "change-this-shared-secret-in-production"
+        ):
+            return (
+                "❌ WORDPRESS_PROXY_SECRET is still set to default value!\n"
+                "   Generate a secure secret: openssl rand -hex 32\n"
+                "   Set it in .env: WORDPRESS_PROXY_SECRET=<generated-secret>\n"
+                "   IMPORTANT: Also update this secret in WordPress Admin settings!"
+            )
+    return None
+
+
+def _validate_database_password(settings_instance: Settings) -> Union[str, None]:
+    """
+    Validate DATABASE_URL doesn't contain default password
+
+    Args:
+        settings_instance: Settings to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if "changeme" in settings_instance.DATABASE_URL.lower():
+        return (
+            "❌ DATABASE_URL contains default password 'changeme'!\n"
+            "   Set a secure password in .env: DATABASE_URL=postgresql://user:secure_password@host/db"
+        )
+    return None
+
+
+def _validate_debug_mode(settings_instance: Settings) -> Union[str, None]:
+    """
+    Warn if DEBUG mode is enabled in production
+
+    Args:
+        settings_instance: Settings to validate
+
+    Returns:
+        Warning message if DEBUG=true in production, None otherwise
+    """
+    if settings_instance.DEBUG and os.getenv("ENVIRONMENT", "").lower() == "production":
+        return (
+            "⚠️  DEBUG mode is enabled in PRODUCTION environment!\n"
+            "   Set DEBUG=false in .env for production deployment"
+        )
+    return None
+
+
+def _validate_secret_key_length(settings_instance: Settings) -> Union[str, None]:
+    """
+    Validate SECRET_KEY is long enough (minimum 32 chars)
+
+    Args:
+        settings_instance: Settings to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if len(settings_instance.SECRET_KEY) < 32:
+        return (
+            "❌ SECRET_KEY is too short (minimum 32 characters)!\n"
+            "   Generate a secure secret: openssl rand -hex 32"
+        )
+    return None
+
+
+def _validate_cors_localhost(settings_instance: Settings) -> Union[str, None]:
+    """
+    Validate CORS doesn't contain localhost in production
+
+    Args:
+        settings_instance: Settings to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    is_production = os.getenv("ENVIRONMENT", "").lower() == "production"
+    if not is_production:
+        return None
+
+    origins_list = _parse_cors_origins(settings_instance.CORS_ORIGINS)
+
+    # Check for localhost origins in production
+    localhost_origins = [
+        origin
+        for origin in origins_list
+        if "localhost" in origin.lower() or "127.0.0.1" in origin
+    ]
+    if localhost_origins:
+        return (
+            "❌ CORS_ORIGINS contains localhost URLs in PRODUCTION!\n"
+            f"   Found: {', '.join(localhost_origins)}\n"
+            "   Set CORS_ORIGINS to production domains only in .env:\n"
+            "   CORS_ORIGINS=https://your-domain.com"
+        )
+    return None
+
+
+def _validate_cors_wildcard(settings_instance: Settings) -> Union[str, None]:
+    """
+    Validate CORS doesn't contain wildcard in production
+
+    Args:
+        settings_instance: Settings to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    is_production = os.getenv("ENVIRONMENT", "").lower() == "production"
+    if not is_production:
+        return None
+
+    origins_list = _parse_cors_origins(settings_instance.CORS_ORIGINS)
+
+    # Check for wildcard origin in production
+    if "*" in origins_list:
+        return (
+            "❌ CORS_ORIGINS contains wildcard '*' in PRODUCTION!\n"
+            "   This allows requests from ANY domain - major security risk!\n"
+            "   Set CORS_ORIGINS to specific production domains only"
+        )
+    return None
+
+
+def _validate_cors_empty(settings_instance: Settings) -> Union[str, None]:
+    """
+    Warn if CORS is empty in production (might be intentional)
+
+    Args:
+        settings_instance: Settings to validate
+
+    Returns:
+        Warning message if CORS is empty, None otherwise
+    """
+    is_production = os.getenv("ENVIRONMENT", "").lower() == "production"
+    if not is_production:
+        return None
+
+    origins_list = _parse_cors_origins(settings_instance.CORS_ORIGINS)
+
+    # Warn if CORS is empty in production
+    if not origins_list or origins_list == [""]:
+        return (
+            "⚠️  CORS_ORIGINS is empty in PRODUCTION!\n"
+            "   This will block all cross-origin requests.\n"
+            "   If using WordPress integration, set:\n"
+            "   CORS_ORIGINS=https://your-wordpress-domain.com"
+        )
+    return None
+
+
 def validate_production_secrets(settings_instance: Settings) -> None:
     """
     Validates that production secrets have been changed from defaults.
@@ -97,91 +294,23 @@ def validate_production_secrets(settings_instance: Settings) -> None:
     Raises:
         ValueError: If any default/insecure secrets are detected
     """
+    # Run all validators
+    validators = [
+        _validate_secret_key,
+        _validate_wordpress_proxy_secret,
+        _validate_database_password,
+        _validate_debug_mode,
+        _validate_secret_key_length,
+        _validate_cors_localhost,
+        _validate_cors_wildcard,
+        _validate_cors_empty,
+    ]
+
     errors = []
-
-    # Check SECRET_KEY
-    if settings_instance.SECRET_KEY == "your-secret-key-change-in-production":
-        errors.append(
-            "❌ SECRET_KEY is still set to default value!\n"
-            "   Generate a secure secret: openssl rand -hex 32\n"
-            "   Set it in .env: SECRET_KEY=<generated-secret>"
-        )
-
-    # Check WORDPRESS_PROXY_SECRET (only if WordPress auth mode)
-    if settings_instance.AUTH_MODE == "wordpress":
-        if (
-            settings_instance.WORDPRESS_PROXY_SECRET
-            == "change-this-shared-secret-in-production"
-        ):
-            errors.append(
-                "❌ WORDPRESS_PROXY_SECRET is still set to default value!\n"
-                "   Generate a secure secret: openssl rand -hex 32\n"
-                "   Set it in .env: WORDPRESS_PROXY_SECRET=<generated-secret>\n"
-                "   IMPORTANT: Also update this secret in WordPress Admin settings!"
-            )
-
-    # Check DATABASE_URL for default password
-    if "changeme" in settings_instance.DATABASE_URL.lower():
-        errors.append(
-            "❌ DATABASE_URL contains default password 'changeme'!\n"
-            "   Set a secure password in .env: DATABASE_URL=postgresql://user:secure_password@host/db"
-        )
-
-    # Warning for DEBUG mode in production
-    if settings_instance.DEBUG and os.getenv("ENVIRONMENT", "").lower() == "production":
-        errors.append(
-            "⚠️  DEBUG mode is enabled in PRODUCTION environment!\n"
-            "   Set DEBUG=false in .env for production deployment"
-        )
-
-    # Check if SECRET_KEY is too short (less than 32 chars)
-    if len(settings_instance.SECRET_KEY) < 32:
-        errors.append(
-            "❌ SECRET_KEY is too short (minimum 32 characters)!\n"
-            "   Generate a secure secret: openssl rand -hex 32"
-        )
-
-    # Check CORS configuration in production
-    is_production = os.getenv("ENVIRONMENT", "").lower() == "production"
-    if is_production:
-        cors_origins = settings_instance.CORS_ORIGINS
-
-        # Convert to list if string
-        if isinstance(cors_origins, str):
-            origins_list = [origin.strip() for origin in cors_origins.split(",")]
-        else:
-            origins_list = cors_origins
-
-        # Check for localhost origins in production
-        localhost_origins = [
-            origin
-            for origin in origins_list
-            if "localhost" in origin.lower() or "127.0.0.1" in origin
-        ]
-        if localhost_origins:
-            errors.append(
-                "❌ CORS_ORIGINS contains localhost URLs in PRODUCTION!\n"
-                f"   Found: {', '.join(localhost_origins)}\n"
-                "   Set CORS_ORIGINS to production domains only in .env:\n"
-                "   CORS_ORIGINS=https://your-domain.com"
-            )
-
-        # Check for wildcard origin in production
-        if "*" in origins_list:
-            errors.append(
-                "❌ CORS_ORIGINS contains wildcard '*' in PRODUCTION!\n"
-                "   This allows requests from ANY domain - major security risk!\n"
-                "   Set CORS_ORIGINS to specific production domains only"
-            )
-
-        # Warn if CORS is empty in production (might be intentional)
-        if not origins_list or origins_list == [""]:
-            errors.append(
-                "⚠️  CORS_ORIGINS is empty in PRODUCTION!\n"
-                "   This will block all cross-origin requests.\n"
-                "   If using WordPress integration, set:\n"
-                "   CORS_ORIGINS=https://your-wordpress-domain.com"
-            )
+    for validator in validators:
+        error = validator(settings_instance)
+        if error:
+            errors.append(error)
 
     # If any errors found, raise exception with all details
     if errors:
