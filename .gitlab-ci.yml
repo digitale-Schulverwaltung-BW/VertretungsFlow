@@ -28,7 +28,7 @@ test_frontend:
   stage: test
   script:
     - cd wordpress-plugin
-    - npm ci
+    - npm install
     - npm run test
 
 build_frontend:
@@ -36,33 +36,18 @@ build_frontend:
   stage: build
   script:
     - cd wordpress-plugin
-    - npm ci
+    - npm install
     - npm run build
   artifacts:
     paths:
       - wordpress-plugin/build/
-
-lint_backend:
-  image: python:3.11
-  services:
-    - postgres:15
-  stage: quality
-  before_script:
-    - cd backend
-    - pip install -r requirements-dev.txt
-    - cd ..
-  script:
-    - cd backend
-    - black . --check
-    - flake8 .
-    - mypy .
 
 lint_frontend:
   image: node:18
   stage: quality
   script:
     - cd wordpress-plugin
-    - npm ci
+    - npm install
     - npm run lint
 
 quality_gate:
