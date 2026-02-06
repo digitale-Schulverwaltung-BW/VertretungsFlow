@@ -8,18 +8,15 @@ variables:
   POSTGRES_USER: absenzflow
   POSTGRES_PASSWORD: password
 
-test_template: &test_definition
+test_backend:
   image: python:3.11
   services:
     - postgres:15
+  stage: test
   before_script:
     - cd backend
     - pip install -r requirements-dev.txt
     - cd ..
-
-test_backend:
-  <<: *test_definition
-  stage: test
   script:
     - cd backend
     - pytest tests/ -v --cov=app --cov-report=xml
@@ -47,8 +44,14 @@ build_frontend:
       - wordpress-plugin/build/
 
 lint_backend:
-  <<: *test_definition
+  image: python:3.11
+  services:
+    - postgres:15
   stage: quality
+  before_script:
+    - cd backend
+    - pip install -r requirements-dev.txt
+    - cd ..
   script:
     - cd backend
     - black . --check
