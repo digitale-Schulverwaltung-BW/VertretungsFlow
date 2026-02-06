@@ -96,6 +96,80 @@ class WebUntisService:
         """Beendet WebUntis Session - Delegates to client"""
         return await self.client.logout()
 
+    def _log_webuntis_error(self, exception: Exception, teacher_lookup: str) -> None:
+        """
+        Log WebUntis error with appropriate message based on exception type
+
+        Args:
+            exception: The exception that occurred
+            teacher_lookup: Teacher username for logging
+        """
+        # Map exception types to error messages
+        error_messages = {
+            httpx.TimeoutException: "Request took too long",
+            httpx.ConnectError: "Cannot reach WebUntis server",
+            httpx.HTTPStatusError: lambda e: f"Server returned status {e.response.status_code}",
+            KeyError: "Missing expected field in response",
+            ValueError: "Invalid data format in response",
+        }
+
+        # Get error message
+        exc_type = type(exception)
+        if exc_type in error_messages:
+            msg_template = error_messages[exc_type]
+            msg = msg_template(exception) if callable(msg_template) else msg_template
+            logger.error(f"❌ WebUntis {msg} for {teacher_lookup}")
+        else:
+            logger.error(
+                f"❌ WebUntis Unexpected Error for {teacher_lookup}: {exc_type.__name__}"
+            )
+
+        # Log debug details (with traceback for data errors)
+        exc_info = isinstance(exception, (KeyError, ValueError))
+        logger.debug(f"Error details: {exception}", exc_info=exc_info)
+
+    async def _fetch_and_parse_timetable(
+        self,
+        teacher_id: int,
+        start_date: datetime,
+        end_date: datetime,
+        db,
+    ) -> List[WebUntisLesson]:
+        """
+        Fetch and parse timetable for teacher
+
+        Args:
+            teacher_id: WebUntis teacher ID
+            start_date: Start date
+            end_date: End date
+            db: Database session
+
+        Returns:
+            List of parsed lessons
+
+        Raises:
+            Various httpx and data exceptions (handled by caller)
+        """
+        # Convert dates to WebUntis format
+        start_date_int = int(start_date.strftime("%Y%m%d"))
+        end_date_int = int(end_date.strftime("%Y%m%d"))
+
+        # Fetch raw lessons from WebUntis
+        raw_lessons = await self.client.get_timetable(
+            teacher_id, start_date_int, end_date_int
+        )
+
+        if len(raw_lessons) == 0:
+            logger.warning(
+                f"⚠️ WebUntis lieferte keine Stunden für den Zeitraum {start_date.date()} - {end_date.date()}"
+            )
+            return []
+
+        # Parse and return lessons
+        parsed_lessons = await self._parse_timetable(raw_lessons, teacher_id, db)
+        logger.info(f"✅ {len(parsed_lessons)} Stunden erfolgreich geparst")
+        return parsed_lessons
+
     async def get_timetable_for_teacher(
         self,
         teacher_username: str,
@@ -135,7 +209,7 @@ class WebUntisService:
                 return []
 
         try:
-            # Zuerst: Teacher ID finden (mit WebUntis Code oder Username)
+            # Get teacher ID
             teacher_id = await self._get_teacher_id(teacher_lookup)
             if not teacher_id:
                 logger.warning(
@@ -143,61 +217,20 @@ class WebUntisService:
                 )
                 return []
 
-            # Dann: Stundenplan abrufen via client (handles session expiration automatically)
-            start_date_int = int(start_date.strftime("%Y%m%d"))
-            end_date_int = int(end_date.strftime("%Y%m%d"))
-
-            raw_lessons = await self.client.get_timetable(
-                teacher_id, start_date_int, end_date_int
+            # Fetch and parse timetable
+            return await self._fetch_and_parse_timetable(
+                teacher_id, start_date, end_date, db
             )
 
-            if len(raw_lessons) == 0:
-                logger.warning(
-                    f"⚠️ WebUntis lieferte keine Stunden für den Zeitraum {start_date.date()} - {end_date.date()}"
-                )
-                return []
-
-            # Parse and return lessons
-            parsed_lessons = await self._parse_timetable(raw_lessons, teacher_id, db)
-            logger.info(f"✅ {len(parsed_lessons)} Stunden erfolgreich geparst")
-            return parsed_lessons
-
-        except httpx.TimeoutException as e:
-            logger.error(
-                f"❌ WebUntis Timeout: Request took too long for {teacher_lookup}"
-            )
-            logger.debug(f"Timeout details: {e}")
-            return []
-        except httpx.ConnectError as e:
-            logger.error(
-                f"❌ WebUntis Connection Error: Cannot reach WebUntis server for {teacher_lookup}"
-            )
-            logger.debug(f"Connection error details: {e}")
-            return []
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                f"❌ WebUntis HTTP Error: Server returned status {e.response.status_code} for {teacher_lookup}"
-            )
-            logger.debug(f"HTTP error details: {e}")
-            return []
-        except KeyError as e:
-            logger.error(
-                f"❌ WebUntis Data Error: Missing expected field in response for {teacher_lookup}"
-            )
-            logger.debug(f"Missing key: {e}", exc_info=True)
-            return []
-        except ValueError as e:
-            logger.error(
-                f"❌ WebUntis Data Error: Invalid data format in response for {teacher_lookup}"
-            )
-            logger.debug(f"Value error: {e}", exc_info=True)
-            return []
-        except Exception as e:
-            # Catch-all for unexpected errors - log with full trace for debugging
-            logger.error(
-                f"❌ WebUntis Unexpected Error for {teacher_lookup}: {type(e).__name__}"
-            )
-            logger.debug(f"Unexpected error details: {e}", exc_info=True)
+        except (
+            httpx.TimeoutException,
+            httpx.ConnectError,
+            httpx.HTTPStatusError,
+            KeyError,
+            ValueError,
+            Exception,
+        ) as e:
+            self._log_webuntis_error(e, teacher_lookup)
             return []
 
     async def _get_teacher_id(self, username: str) -> Optional[int]:
