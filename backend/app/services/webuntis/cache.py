@@ -120,9 +120,9 @@ class WebUntisCache:
         )
 
         if db_entry:
-            db_entry.cache_data = data
-            db_entry.expires_at = expires_at
-            db_entry.updated_at = datetime.utcnow()
+            db_entry.cache_data = data  # type: ignore[assignment]
+            db_entry.expires_at = expires_at  # type: ignore[assignment]
+            db_entry.updated_at = datetime.utcnow()  # type: ignore[assignment]
         else:
             db_entry = WebUnitisCacheModel(
                 cache_key=cache_key, cache_data=data, expires_at=expires_at

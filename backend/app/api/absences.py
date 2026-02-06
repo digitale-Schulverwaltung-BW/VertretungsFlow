@@ -208,7 +208,7 @@ async def update_lesson_notes(
 
     # Update durchführen
     if lesson_update.notes is not None:
-        lesson.notes = lesson_update.notes
+        lesson.notes = lesson_update.notes  # type: ignore[assignment]
 
     db.commit()
     db.refresh(lesson)
