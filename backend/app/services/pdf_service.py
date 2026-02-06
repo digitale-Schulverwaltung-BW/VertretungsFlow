@@ -138,7 +138,9 @@ class PDFService:
                 logger.warning("⚠️ WebUntis Timegrid leer, nutze Config Fallback")
                 timegrid = {}
         except Exception as e:
-            logger.warning(f"⚠️ WebUntis Timegrid Exception: {e}, nutze Config Fallback")
+            logger.warning(
+                f"⚠️ WebUntis Timegrid Exception: {e}, nutze Config Fallback"
+            )
             timegrid = {}
 
         # Extract time from absence periods (from StepOne)

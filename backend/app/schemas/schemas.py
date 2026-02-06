@@ -334,9 +334,9 @@ class WebUntisLesson(BaseModel):
 
     date: datetime
     period: int  # Start-Stunde
-    end_period: Optional[int] = (
-        None  # End-Stunde (für Doppelstunden, None = Einzelstunde)
-    )
+    end_period: Optional[
+        int
+    ] = None  # End-Stunde (für Doppelstunden, None = Einzelstunde)
     start_time: Optional[int] = None  # WebUntis startTime format (e.g., 730 = 07:30)
     end_time: Optional[int] = None  # WebUntis endTime format (e.g., 815 = 08:15)
     subject: str
