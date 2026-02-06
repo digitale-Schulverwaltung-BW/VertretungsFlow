@@ -82,7 +82,7 @@ class AbsenceNotificationService:
                     )
             else:
                 logger.warning(
-                    f"Cannot send approval email: teacher has no email address"
+                    "Cannot send approval email: teacher has no email address"
                 )
         except Exception as e:
             logger.error(
@@ -109,7 +109,7 @@ class AbsenceNotificationService:
                     )
             else:
                 logger.warning(
-                    f"Cannot send completion email: teacher has no email address"
+                    "Cannot send completion email: teacher has no email address"
                 )
         except Exception as e:
             logger.error(

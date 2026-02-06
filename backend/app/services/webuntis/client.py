@@ -190,7 +190,7 @@ class WebUntisAPIClient:
                         and data["error"].get("code") == -8520
                     ):
                         logger.warning(
-                            f"⚠️ WebUntis Session abgelaufen, authentifiziere neu..."
+                            "⚠️ WebUntis Session abgelaufen, authentifiziere neu..."
                         )
                         if await self._handle_expired_session():
                             # Retry the call with new session
@@ -332,7 +332,7 @@ class WebUntisAPIClient:
         logger.info("⏰ Lade Stundenraster (Timegrid)...")
         result = await self._call_api("getTimegridUnits")
         if result is not None:
-            logger.info(f"✅ Stundenraster geladen")
+            logger.info("✅ Stundenraster geladen")
             return result
         return []
 

@@ -1,0 +1,42 @@
+[flake8]
+# Black compatibility: https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#flake8
+max-line-length = 88
+extend-ignore =
+    # E203: whitespace before ':' (conflicts with Black)
+    E203,
+    # E266: too many leading '#' for block comment
+    E266,
+    # E501: line too long (handled by Black)
+    E501,
+    # W503: line break before binary operator (conflicts with Black)
+    W503,
+    # E402: module level import not at top of file (sometimes needed for sys.path)
+    E402,
+    # F401: imported but unused (clean up incrementally)
+    F401,
+    # F541: f-string without placeholders (clean up incrementally)
+    F541
+
+# Stricter rules we still want to enforce
+per-file-ignores =
+    # Allow unused imports in __init__.py files (they're often re-exported)
+    __init__.py:F401,F403
+    # Allow module-level imports not at top in scripts (they often need path setup)
+    scripts/*.py:E402,F401
+
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    .eggs,
+    *.egg,
+    build,
+    dist,
+    .pytest_cache,
+    .mypy_cache,
+    migrations
+
+# Maximum complexity (cyclomatic complexity)
+max-complexity = 10

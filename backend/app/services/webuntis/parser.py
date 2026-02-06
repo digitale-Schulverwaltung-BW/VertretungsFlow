@@ -134,7 +134,7 @@ def merge_consecutive_lessons(lessons: List[WebUntisLesson]) -> List[WebUntisLes
         return lessons
 
     # Sortieren nach Datum und Periode
-    sorted_lessons = sorted(lessons, key=lambda l: (l.date, l.period))
+    sorted_lessons = sorted(lessons, key=lambda lesson: (lesson.date, lesson.period))
 
     merged = []
     current_block = None

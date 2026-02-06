@@ -153,8 +153,8 @@ class PDFService:
         )
 
         # Combine subjects and rooms
-        subjects = list(set([l.subject for l in lessons if l.subject]))
-        rooms = list(set([l.room for l in lessons if l.room]))
+        subjects = list(set([lesson.subject for lesson in lessons if lesson.subject]))
+        rooms = list(set([lesson.room for lesson in lessons if lesson.room]))
         lessons_subjects_combined = ", ".join(subjects) if subjects else ""
         lessons_rooms_combined = ", ".join(rooms) if rooms else ""
 
