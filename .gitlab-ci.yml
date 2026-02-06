@@ -2,6 +2,7 @@ stages:
   - test
   - build
   - quality
+  - deploy
 
 variables:
   POSTGRES_DB: absenzflow_test
