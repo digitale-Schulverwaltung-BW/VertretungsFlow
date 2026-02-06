@@ -5,7 +5,7 @@ Login, JWT Token Management
 
 import hmac
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Tuple, Dict, Any
 from urllib.parse import unquote
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -168,6 +168,190 @@ def require_role(allowed_roles: list[UserRole]):
     return role_checker
 
 
+def _decode_wordpress_name(header_value: Optional[str]) -> Optional[str]:
+    """
+    URL-decode WordPress header name
+
+    Args:
+        header_value: URL-encoded name from WordPress header
+
+    Returns:
+        Decoded and stripped name, or None
+    """
+    return unquote(header_value).strip() if header_value else None
+
+
+def _create_wordpress_user(
+    db: Session,
+    username: str,
+    email: str,
+    full_name: str,
+    first_name: Optional[str],
+    last_name: Optional[str],
+    role: UserRole,
+    webuntis_code: Optional[str],
+) -> User:
+    """
+    Create new user from WordPress proxy data
+
+    Args:
+        db: Database session
+        username: WordPress username
+        email: User email
+        full_name: User display name
+        first_name: User first name (URL-decoded)
+        last_name: User last name (URL-decoded)
+        role: User role
+        webuntis_code: WebUntis teacher code
+
+    Returns:
+        Created User object
+    """
+    user = User(
+        username=username,
+        email=email,
+        full_name=full_name,
+        first_name=first_name,
+        last_name=last_name,
+        role=role,
+        webuntis_teacher_code=webuntis_code,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    # Audit log for user creation
+    audit_log(
+        action="user_created",
+        user_id=user.id,
+        resource_type="user",
+        resource_id=user.id,
+        details={
+            "username": username,
+            "email": email,
+            "role": role.value,
+            "webuntis_code": webuntis_code,
+            "source": "wordpress_proxy",
+        },
+        ip_address="wordpress-proxy",
+    )
+
+    return user
+
+
+def _update_wordpress_user_fields(
+    user: User,
+    email: str,
+    full_name: str,
+    first_name: Optional[str],
+    last_name: Optional[str],
+    role: UserRole,
+    webuntis_code: Optional[str],
+) -> Tuple[bool, Dict[str, Any]]:
+    """
+    Update user fields from WordPress data (smart update)
+
+    Compares current user fields with new values and updates only what changed.
+
+    Args:
+        user: Existing user to update
+        email: New email
+        full_name: New display name
+        first_name: New first name
+        last_name: New last name
+        role: New role
+        webuntis_code: New WebUntis code
+
+    Returns:
+        Tuple of (needs_update, update_details):
+        - needs_update: True if any field changed
+        - update_details: Dict of changes (old/new values)
+    """
+    needs_update = False
+    update_details = {}
+
+    if user.email != email:
+        update_details["old_email"] = user.email
+        update_details["new_email"] = email
+        user.email = email
+        needs_update = True
+
+    if user.full_name != full_name:
+        update_details["old_name"] = user.full_name
+        update_details["new_name"] = full_name
+        user.full_name = full_name
+        needs_update = True
+
+    if user.first_name != first_name:
+        user.first_name = first_name
+        needs_update = True
+
+    if user.last_name != last_name:
+        user.last_name = last_name
+        needs_update = True
+
+    if user.role != role:
+        update_details["old_role"] = user.role.value
+        update_details["new_role"] = role.value
+        user.role = role
+        needs_update = True
+
+    if user.webuntis_teacher_code != webuntis_code:
+        update_details["old_webuntis_code"] = user.webuntis_teacher_code
+        update_details["new_webuntis_code"] = webuntis_code
+        user.webuntis_teacher_code = webuntis_code
+        needs_update = True
+
+    return needs_update, update_details
+
+
+def _create_ldap_user(
+    db: Session,
+    username: str,
+    ldap_info: dict,
+) -> User:
+    """
+    Create new user from LDAP data
+
+    Args:
+        db: Database session
+        username: LDAP username
+        ldap_info: User info from LDAP (email, full_name)
+
+    Returns:
+        Created User object
+    """
+    user = User(
+        username=username,
+        email=ldap_info.get("email"),
+        full_name=ldap_info.get("full_name", username),
+        role=UserRole.TEACHER,
+        is_active=True,
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    # Audit log for LDAP user creation
+    audit_log(
+        action="user_created",
+        user_id=user.id,
+        resource_type="user",
+        resource_id=user.id,
+        details={
+            "username": username,
+            "email": ldap_info.get("email"),
+            "role": UserRole.TEACHER.value,
+            "source": "ldap",
+        },
+        ip_address="wordpress-proxy",
+    )
+
+    return user
+
+
 async def get_wordpress_proxy_user(
     x_wordpress_secret: Optional[str] = Header(None),
     x_wordpress_user: Optional[str] = Header(None),
@@ -202,6 +386,7 @@ async def get_wordpress_proxy_user(
     Raises:
         HTTPException: Bei fehlerhaftem Secret oder User
     """
+    # Validate secret and username
     if not x_wordpress_secret or not x_wordpress_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
@@ -213,187 +398,152 @@ async def get_wordpress_proxy_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid proxy secret"
         )
 
-    # User aus DB laden
+    # Load existing user from database
     user = db.query(User).filter(User.username == x_wordpress_user).first()
 
-    # Benutzerdaten je nach Auth-Modus holen
+    # Route to appropriate handler based on auth mode
     if settings.AUTH_MODE == "wordpress":
-        # WordPress-Modus: Daten aus Headers
-        user_email = x_wordpress_email
-        user_name = x_wordpress_name or x_wordpress_user
-        user_role = (
-            map_wordpress_role(x_wordpress_role)
-            if x_wordpress_role
-            else UserRole.TEACHER
+        user = _handle_wordpress_proxy_user(
+            user,
+            db,
+            x_wordpress_user,
+            x_wordpress_email,
+            x_wordpress_name,
+            x_wordpress_first_name,
+            x_wordpress_last_name,
+            x_wordpress_role,
+            x_wordpress_webuntis_code,
         )
-        webuntis_code = (
-            x_wordpress_webuntis_code.strip() if x_wordpress_webuntis_code else None
-        )
-
-        if not user:
-            # Neuer User - aus WordPress-Headers anlegen
-            # URL-decode first/last name (PHP sends them URL-encoded for UTF-8 support)
-            first_name_decoded = (
-                unquote(x_wordpress_first_name).strip()
-                if x_wordpress_first_name
-                else None
-            )
-            last_name_decoded = (
-                unquote(x_wordpress_last_name).strip()
-                if x_wordpress_last_name
-                else None
-            )
-
-            user = User(
-                username=x_wordpress_user,
-                email=user_email,
-                full_name=user_name,
-                first_name=first_name_decoded,
-                last_name=last_name_decoded,
-                role=user_role,
-                webuntis_teacher_code=webuntis_code,
-                is_active=True,
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-
-            # Audit log for user creation
-            audit_log(
-                action="user_created",
-                user_id=user.id,
-                resource_type="user",
-                resource_id=user.id,
-                details={
-                    "username": x_wordpress_user,
-                    "email": user_email,
-                    "role": user_role.value,
-                    "webuntis_code": webuntis_code,
-                    "source": "wordpress_proxy",
-                },
-                ip_address="wordpress-proxy",  # Server-to-server, no client IP
-            )
-        else:
-            # Smart Update: Nur aktualisieren wenn sich Daten geändert haben
-            needs_update = False
-            update_details = {}
-
-            if user.email != user_email:
-                update_details["old_email"] = user.email
-                update_details["new_email"] = user_email
-                user.email = user_email
-                needs_update = True
-
-            if user.full_name != user_name:
-                update_details["old_name"] = user.full_name
-                update_details["new_name"] = user_name
-                user.full_name = user_name
-                needs_update = True
-
-            # Update first_name and last_name if provided
-            # URL-decode first/last name (PHP sends them URL-encoded for UTF-8 support)
-            first_name = (
-                unquote(x_wordpress_first_name).strip()
-                if x_wordpress_first_name
-                else None
-            )
-            last_name = (
-                unquote(x_wordpress_last_name).strip()
-                if x_wordpress_last_name
-                else None
-            )
-
-            if user.first_name != first_name:
-                user.first_name = first_name
-                needs_update = True
-
-            if user.last_name != last_name:
-                user.last_name = last_name
-                needs_update = True
-
-            if user.role != user_role:
-                # Role change is critical security event
-                update_details["old_role"] = user.role.value
-                update_details["new_role"] = user_role.value
-                user.role = user_role
-                needs_update = True
-
-            if user.webuntis_teacher_code != webuntis_code:
-                update_details["old_webuntis_code"] = user.webuntis_teacher_code
-                update_details["new_webuntis_code"] = webuntis_code
-                user.webuntis_teacher_code = webuntis_code
-                needs_update = True
-
-            if needs_update:
-                user.updated_at = datetime.utcnow()
-                db.commit()
-                db.refresh(user)
-
-                # Audit log for user update
-                audit_log(
-                    action="user_updated",
-                    user_id=user.id,
-                    resource_type="user",
-                    resource_id=user.id,
-                    details={
-                        "username": x_wordpress_user,
-                        "changes": update_details,
-                        "source": "wordpress_proxy",
-                    },
-                    ip_address="wordpress-proxy",
-                )
-
     else:
-        # Standalone-Modus: Daten aus LDAP
-        if not user:
-            # User existiert noch nicht - aus LDAP laden und anlegen
-            if ldap_service is None:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="LDAP service not available",
-                )
+        user = await _handle_ldap_proxy_user(user, db, x_wordpress_user)
 
-            ldap_info = ldap_service.get_user_info(x_wordpress_user)
-
-            if not ldap_info:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found in LDAP",
-                )
-
-            user = User(
-                username=x_wordpress_user,
-                email=ldap_info.get("email"),
-                full_name=ldap_info.get("full_name", x_wordpress_user),
-                role=UserRole.TEACHER,
-                is_active=True,
-            )
-
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-
-            # Audit log for LDAP user creation
-            audit_log(
-                action="user_created",
-                user_id=user.id,
-                resource_type="user",
-                resource_id=user.id,
-                details={
-                    "username": x_wordpress_user,
-                    "email": ldap_info.get("email"),
-                    "role": UserRole.TEACHER.value,
-                    "source": "ldap",
-                },
-                ip_address="wordpress-proxy",
-            )
-
+    # Validate user is active
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
 
     return user
+
+
+def _handle_wordpress_proxy_user(
+    user: Optional[User],
+    db: Session,
+    username: str,
+    email: Optional[str],
+    display_name: Optional[str],
+    first_name: Optional[str],
+    last_name: Optional[str],
+    role: Optional[str],
+    webuntis_code: Optional[str],
+) -> User:
+    """
+    Handle WordPress proxy authentication flow
+
+    Args:
+        user: Existing user or None
+        db: Database session
+        username: WordPress username
+        email: WordPress user email
+        display_name: WordPress user display name
+        first_name: WordPress user first name (URL-encoded)
+        last_name: WordPress user last name (URL-encoded)
+        role: WordPress user role
+        webuntis_code: WebUntis teacher code
+
+    Returns:
+        User object (created or updated)
+    """
+    user_email = email
+    user_name = display_name or username
+    user_role = map_wordpress_role(role) if role else UserRole.TEACHER
+    webuntis_code_clean = webuntis_code.strip() if webuntis_code else None
+
+    # Decode first and last names
+    first_name_decoded = _decode_wordpress_name(first_name)
+    last_name_decoded = _decode_wordpress_name(last_name)
+
+    if not user:
+        # Create new user from WordPress headers
+        user = _create_wordpress_user(
+            db,
+            username,
+            user_email,
+            user_name,
+            first_name_decoded,
+            last_name_decoded,
+            user_role,
+            webuntis_code_clean,
+        )
+    else:
+        # Update existing user if needed
+        needs_update, update_details = _update_wordpress_user_fields(
+            user,
+            user_email,
+            user_name,
+            first_name_decoded,
+            last_name_decoded,
+            user_role,
+            webuntis_code_clean,
+        )
+
+        if needs_update:
+            user.updated_at = datetime.utcnow()
+            db.commit()
+            db.refresh(user)
+
+            # Audit log for user update
+            audit_log(
+                action="user_updated",
+                user_id=user.id,
+                resource_type="user",
+                resource_id=user.id,
+                details={
+                    "username": username,
+                    "changes": update_details,
+                    "source": "wordpress_proxy",
+                },
+                ip_address="wordpress-proxy",
+            )
+
+    return user
+
+
+async def _handle_ldap_proxy_user(
+    user: Optional[User],
+    db: Session,
+    username: str,
+) -> User:
+    """
+    Handle LDAP proxy authentication flow
+
+    Args:
+        user: Existing user or None
+        db: Database session
+        username: LDAP username
+
+    Returns:
+        User object (created from LDAP)
+    """
+    if user:
+        return user
+
+    # User doesn't exist - try to create from LDAP
+    if ldap_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="LDAP service not available",
+        )
+
+    ldap_info = ldap_service.get_user_info(username)
+
+    if not ldap_info:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found in LDAP",
+        )
+
+    return _create_ldap_user(db, username, ldap_info)
 
 
 # Login-Endpoint nur im Standalone-Modus verfügbar
