@@ -13,8 +13,9 @@ Comprehensive testing checklist for AbsenzFlow frontend. Check off items as you 
 - [x] Fix React Router v7 future flag warnings
 - [x] Create API Client tests (26 tests) - Integration/Contract tests
 - [x] Set up ESLint for code quality
+- [x] Create Absence Wizard Step One tests (30 tests) - Form rendering, conditional fields, validation, submission
 
-**Current Status:** 41 tests passing ✨ + ESLint configured
+**Current Status:** 71 tests passing ✨ + ESLint configured + Absence Wizard Step One fully tested
 
 ---
 
@@ -73,6 +74,15 @@ Comprehensive testing checklist for AbsenzFlow frontend. Check off items as you 
 - [ ] Test navigation to Step Two on submit
 
 ### Create Absence Wizard - Step Two (`src/pages/CreateAbsence/StepTwo.tsx`)
+
+⚠️ **Testing Challenge:** This component has complex async loading states with artificial delays (setTimeout) that make synchronous testing difficult. Component needs refactoring to improve testability.
+
+**Recommended Approach for Future:**
+1. Extract loading logic into a custom hook (useAsyncLessons)
+2. Mock the hook in tests instead of trying to manage timers
+3. Or: Extract progress states into Context/state management for easier testing
+
+**Features to Test (when refactored):**
 - [ ] Test lesson table renders correctly
 - [ ] Test WebUntis lessons import
 - [ ] Test "Stunden importieren" button
@@ -85,8 +95,8 @@ Comprehensive testing checklist for AbsenzFlow frontend. Check off items as you 
 - [ ] Test file removal
 - [ ] Test admin notes textarea
 - [ ] Test "Zurück" button navigation
-- [ ] Test "Absenden" button disabled when no lessons selected
-- [ ] Test form submission
+- [ ] Test validation requiring notes OR "kann entfallen" for each lesson
+- [ ] Test form submission with duplicate absence detection
 - [ ] Test success modal display
 
 ### Dashboard (`src/pages/Dashboard/index.tsx`)
