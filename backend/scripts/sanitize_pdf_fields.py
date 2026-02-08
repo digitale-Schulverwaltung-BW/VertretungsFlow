@@ -75,7 +75,7 @@ def _rename_fields_on_page(
     Returns:
         List of (old_name, new_name, page_num) tuples
     """
-    renames = []
+    renames: List[Tuple[str, str, int]] = []
 
     if "/Annots" not in page:
         return renames

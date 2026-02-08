@@ -48,8 +48,9 @@ def extract_pdf_fields(pdf_path: str) -> Dict[str, Any]:
     reader = PdfReader(pdf_path)
 
     fields = {}
-    if reader.get_fields():
-        for field_name, field_obj in reader.get_fields().items():
+    pdf_fields = reader.get_fields()
+    if pdf_fields:
+        for field_name, field_obj in pdf_fields.items():
             # Extract field type
             field_type = field_obj.get("/FT", "Unknown")
             if field_type:
