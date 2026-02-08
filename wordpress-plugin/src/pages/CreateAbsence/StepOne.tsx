@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { de } from 'date-fns/locale';
+import { format } from 'date-fns';
 import 'react-day-picker/dist/style.css';
 import type { AbsenceReason } from '../../types';
 import { ABSENCE_REASONS } from '../../constants';
+import api from '../../api/client';
 
 interface StepOneProps {
   onNext: (data: StepOneData) => void;
@@ -31,6 +33,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   const [rightMonth, setRightMonth] = useState<Date>(new Date());
   const [excursionClasses, setExcursionClasses] = useState<string>('');
   const [personalReason, setPersonalReason] = useState<string>('');
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
 
   const handleStartDayClick = (day: Date) => {
     // Einzelklick im linken Picker: immer nur Start-Datum setzen
@@ -84,7 +87,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     // Bei Einzelklick wird onDayClick aufgerufen, nicht hier
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors: string[] = [];
@@ -118,15 +121,54 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
       return;
     }
 
-    onNext({
-      reason,
-      startDate: dateRange!.from!,
-      endDate: dateRange!.to!,
-      startLesson,
-      endLesson,
-      excursionClasses: reason === 'excursion' ? excursionClasses : undefined,
-      personalReason: reason === 'personal' || reason === 'other' ? personalReason : undefined,
-    });
+    // Check for duplicate absences
+    try {
+      setCheckingDuplicates(true);
+      setErrors([]);
+
+      const existingAbsences = await api.getAbsences();
+      const overlapping = existingAbsences.filter(absence => {
+        // Only check active absences (not rejected)
+        if (absence.status === 'rejected') return false;
+
+        const existingStart = new Date(absence.start_date);
+        const existingEnd = new Date(absence.end_date);
+        const newStart = dateRange!.from!;
+        const newEnd = dateRange!.to!;
+
+        // Check for overlap
+        return (
+          (newStart >= existingStart && newStart <= existingEnd) ||
+          (newEnd >= existingStart && newEnd <= existingEnd) ||
+          (newStart <= existingStart && newEnd >= existingEnd)
+        );
+      });
+
+      if (overlapping.length > 0) {
+        const firstOverlap = overlapping[0];
+        const overlapDate = format(new Date(firstOverlap.start_date), 'd.M.yyyy', { locale: de });
+        setErrors([
+          `Es existiert bereits eine Abwesenheit für diesen Zeitraum (ab ${overlapDate}). Bitte überprüfen Sie Ihre Eingabe oder kontaktieren Sie die Verwaltung, falls dies ein Fehler ist.`
+        ]);
+        return;
+      }
+
+      // No duplicates found, proceed to next step
+      onNext({
+        reason,
+        startDate: dateRange!.from!,
+        endDate: dateRange!.to!,
+        startLesson,
+        endLesson,
+        excursionClasses: reason === 'excursion' ? excursionClasses : undefined,
+        personalReason: reason === 'personal' || reason === 'other' ? personalReason : undefined,
+      });
+    } catch (err) {
+      console.error('Error checking for duplicates:', err);
+      setErrors(['Fehler beim Überprüfen auf bestehende Absenzen. Bitte versuchen Sie es erneut.']);
+    } finally {
+      setCheckingDuplicates(false);
+    }
   };
 
   const startPickerModifiers = {
@@ -347,9 +389,10 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
           <div className="flex justify-end pt-4">
             <button
               type="submit"
-              className="px-8 py-3 bg-black text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+              disabled={checkingDuplicates}
+              className="px-8 py-3 bg-black text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Weiter
+              {checkingDuplicates ? 'Wird überprüft...' : 'Weiter'}
             </button>
           </div>
         </form>

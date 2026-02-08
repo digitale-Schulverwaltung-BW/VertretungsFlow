@@ -104,28 +104,28 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
         <StatCard
           title="Eingereicht"
           value={stats.pending}
-          bgColor="bg-yellow-50"
+          bgColor="bg-yellow-100"
           textColor="text-yellow-900"
           onClick={() => handleStatCardClick('submitted', 'Eingereichte Abwesenheiten')}
         />
         <StatCard
           title="Genehmigt"
           value={stats.approved}
-          bgColor="bg-green-50"
+          bgColor="bg-green-100"
           textColor="text-green-900"
           onClick={() => handleStatCardClick('approved', 'Genehmigte Abwesenheiten')}
         />
         <StatCard
           title="Erledigt"
           value={stats.completed}
-          bgColor="bg-blue-50"
+          bgColor="bg-blue-100"
           textColor="text-blue-900"
           onClick={() => handleStatCardClick('completed', 'Erledigte Abwesenheiten')}
         />
         <StatCard
           title="Betroffene Stunden"
           value={stats.totalLessons}
-          bgColor="bg-purple-50"
+          bgColor="bg-[#fae0fa]"
           textColor="text-purple-900"
         />
       </div>

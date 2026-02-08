@@ -173,35 +173,6 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         return;
       }
 
-      // Duplikatsprüfung: Gibt es bereits eine Abwesenheit für diesen Zeitraum?
-      const existingAbsences = await api.getAbsences();
-      const overlapping = existingAbsences.filter(absence => {
-        // Nur aktive Absenzen prüfen (nicht rejected)
-        if (absence.status === 'rejected') return false;
-
-        const existingStart = new Date(absence.start_date);
-        const existingEnd = new Date(absence.end_date);
-        const newStart = stepOneData.startDate;
-        const newEnd = stepOneData.endDate;
-
-        // Prüfe auf Überschneidung
-        return (
-          (newStart >= existingStart && newStart <= existingEnd) ||
-          (newEnd >= existingStart && newEnd <= existingEnd) ||
-          (newStart <= existingStart && newEnd >= existingEnd)
-        );
-      });
-
-      if (overlapping.length > 0) {
-        const firstOverlap = overlapping[0];
-        const overlapDate = format(new Date(firstOverlap.start_date), 'd.M.yyyy', { locale: de });
-        setError(
-          `Es existiert bereits eine Abwesenheit für diesen Zeitraum (ab ${overlapDate}). Bitte überprüfen Sie Ihre Eingabe oder kontaktieren Sie die Verwaltung, falls dies ein Fehler ist.`
-        );
-        setSubmitting(false);
-        return;
-      }
-
       const createdAbsence = await api.createAbsence({
         reason: stepOneData.reason,
         start_date: format(stepOneData.startDate, 'yyyy-MM-dd'),
