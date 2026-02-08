@@ -95,7 +95,7 @@ async def assign_role(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    user.role = role_assignment.role  # type: ignore[assignment]
+    user.role = role_assignment.role
     db.commit()
     db.refresh(user)
 

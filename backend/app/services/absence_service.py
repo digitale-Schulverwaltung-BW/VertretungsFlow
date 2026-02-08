@@ -182,9 +182,9 @@ class AbsenceService:
 
         if approved:
             old_status = absence.status.value
-            absence.status = AbsenceStatus.APPROVED  # type: ignore[assignment]
+            absence.status = AbsenceStatus.APPROVED
             absence.approved_by = current_user.id
-            absence.approved_at = datetime.utcnow()  # type: ignore[assignment]
+            absence.approved_at = datetime.utcnow()
 
             db.commit()
 
@@ -209,11 +209,11 @@ class AbsenceService:
             return "Absence approved"
         else:
             old_status = absence.status.value
-            absence.status = AbsenceStatus.REJECTED  # type: ignore[assignment]
+            absence.status = AbsenceStatus.REJECTED
             db.commit()
 
             # Audit log for rejection
-            audit_log(  # type: ignore[arg-type]
+            audit_log(
                 action="absence_rejected",
                 user_id=current_user.id,
                 resource_type="absence",
@@ -261,8 +261,8 @@ class AbsenceService:
 
         # Status aktualisieren
         old_status = absence.status.value
-        absence.status = AbsenceStatus.COMPLETED  # type: ignore[assignment]
-        absence.completed_at = datetime.utcnow()  # type: ignore[assignment]
+        absence.status = AbsenceStatus.COMPLETED
+        absence.completed_at = datetime.utcnow()
 
         # Audit log
         audit_absence_completed(

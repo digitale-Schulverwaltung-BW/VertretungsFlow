@@ -222,7 +222,7 @@ def _create_wordpress_user(
     db.refresh(user)
 
     # Audit log for user creation
-    audit_log(  # type: ignore[arg-type]
+    audit_log(
         action="user_created",
         user_id=user.id,
         resource_type="user",
@@ -274,33 +274,33 @@ def _update_wordpress_user_fields(
     if user.email != email:
         update_details["old_email"] = user.email
         update_details["new_email"] = email
-        user.email = email  # type: ignore[assignment]
+        user.email = email
         needs_update = True
 
     if user.full_name != full_name:
         update_details["old_name"] = user.full_name
         update_details["new_name"] = full_name
-        user.full_name = full_name  # type: ignore[assignment]
+        user.full_name = full_name
         needs_update = True
 
     if user.first_name != first_name:
-        user.first_name = first_name  # type: ignore[assignment]
+        user.first_name = first_name
         needs_update = True
 
     if user.last_name != last_name:
-        user.last_name = last_name  # type: ignore[assignment]
+        user.last_name = last_name
         needs_update = True
 
     if user.role != role:
         update_details["old_role"] = user.role.value
         update_details["new_role"] = role.value
-        user.role = role  # type: ignore[assignment]
+        user.role = role
         needs_update = True
 
     if user.webuntis_teacher_code != webuntis_code:
         update_details["old_webuntis_code"] = user.webuntis_teacher_code
         update_details["new_webuntis_code"] = webuntis_code
-        user.webuntis_teacher_code = webuntis_code  # type: ignore[assignment]
+        user.webuntis_teacher_code = webuntis_code
         needs_update = True
 
     return needs_update, update_details
@@ -335,7 +335,7 @@ def _create_ldap_user(
     db.refresh(user)
 
     # Audit log for LDAP user creation
-    audit_log(  # type: ignore[arg-type]
+    audit_log(
         action="user_created",
         user_id=user.id,
         resource_type="user",
@@ -488,12 +488,12 @@ def _handle_wordpress_proxy_user(
         )
 
         if needs_update:
-            user.updated_at = datetime.utcnow()  # type: ignore[assignment]
+            user.updated_at = datetime.utcnow()
             db.commit()
             db.refresh(user)
 
             # Audit log for user update
-            audit_log(  # type: ignore[arg-type]
+            audit_log(
                 action="user_updated",
                 user_id=user.id,
                 resource_type="user",
