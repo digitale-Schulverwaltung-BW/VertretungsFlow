@@ -14,7 +14,7 @@ from sqlalchemy import (
     Enum,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 from app.core.database import Base
 import enum
 
@@ -52,7 +52,7 @@ class User(Base):
     full_name = Column(String(255))
     first_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
-    role = Column(Enum(UserRole), default=UserRole.TEACHER)
+    role: Mapped[UserRole] = Column(Enum(UserRole), default=UserRole.TEACHER)
     webuntis_teacher_code = Column(String(20), nullable=True, index=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -86,7 +86,9 @@ class Absence(Base):
     end_period = Column(Integer, nullable=False)  # Endstunde (1-10)
 
     # Status & Workflow
-    status = Column(Enum(AbsenceStatus), default=AbsenceStatus.SUBMITTED)
+    status: Mapped[AbsenceStatus] = Column(
+        Enum(AbsenceStatus), default=AbsenceStatus.SUBMITTED
+    )
     approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)

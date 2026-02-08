@@ -23,7 +23,7 @@ try:
     from app.services.webuntis_service import WebUntisService, webuntis_service
 except ImportError:
     # During initial loading, webuntis_service might not be available yet
-    WebUntisService = None
+    WebUntisService = None  # type: ignore[misc]
     webuntis_service = None
 
 __all__ = [

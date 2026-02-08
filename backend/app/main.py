@@ -106,9 +106,8 @@ async def limit_request_size(request: Request, call_next):
             max_size = 10 * 1024 * 1024  # 10 MB
 
             if size > max_size:
-                logger.warning(
-                    f"Request too large: {size} bytes from {request.client.host}"
-                )
+                client_host = request.client.host if request.client else "unknown"
+                logger.warning(f"Request too large: {size} bytes from {client_host}")
                 return JSONResponse(
                     status_code=413,
                     content={
@@ -117,7 +116,8 @@ async def limit_request_size(request: Request, call_next):
                 )
         except ValueError:
             # Invalid Content-Length header
-            logger.warning(f"Invalid Content-Length header from {request.client.host}")
+            client_host = request.client.host if request.client else "unknown"
+            logger.warning(f"Invalid Content-Length header from {client_host}")
             return JSONResponse(
                 status_code=400, content={"detail": "Invalid Content-Length header"}
             )

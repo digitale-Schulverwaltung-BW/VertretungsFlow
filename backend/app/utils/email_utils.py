@@ -3,7 +3,7 @@ Email Utilities
 Helper functions for email-related operations
 """
 
-from typing import List
+from typing import List, cast
 from sqlalchemy.orm import Session
 
 from app.models.models import User, UserRole
@@ -36,4 +36,4 @@ def get_recipients_by_roles(db: Session, roles: List[UserRole]) -> List[str]:
         .all()
     )
 
-    return [user.email for user in users]
+    return [cast(str, user.email) for user in users]

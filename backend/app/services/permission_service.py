@@ -27,7 +27,7 @@ class PermissionService:
         """
         # Teachers can only view their own absences
         if user.role == UserRole.TEACHER:
-            return absence.teacher_id == user.id
+            return bool(absence.teacher_id == user.id)
 
         # Admins, Planners, and Department Heads can view all absences
         return user.role in [UserRole.ADMIN, UserRole.PLANNER, UserRole.DEPARTMENT_HEAD]
@@ -49,7 +49,7 @@ class PermissionService:
 
         # Teachers can only edit their own absences
         if user.role == UserRole.TEACHER:
-            return absence.teacher_id == user.id
+            return bool(absence.teacher_id == user.id)
 
         # Admins and Planners can edit all absences
         return user.role in [UserRole.ADMIN, UserRole.PLANNER]
@@ -79,7 +79,7 @@ class PermissionService:
                 return True
 
             # Others can only approve SUBMITTED absences
-            return absence.status == AbsenceStatus.SUBMITTED
+            return bool(absence.status == AbsenceStatus.SUBMITTED)
 
         return True
 

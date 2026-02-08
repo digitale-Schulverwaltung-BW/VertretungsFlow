@@ -36,7 +36,7 @@ if settings.AUTH_MODE == "standalone":
     ]
 else:
     # WordPress-Modus - LDAP nicht verfügbar
-    LDAPService = None
+    LDAPService = None  # type: ignore[misc]
     ldap_service = None
 
     __all__ = [

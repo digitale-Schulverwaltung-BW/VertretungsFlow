@@ -4,6 +4,7 @@ Business logic for sending absence-related email notifications
 """
 
 import logging
+from typing import cast
 from sqlalchemy.orm import Session
 
 from app.models.models import Absence, User, UserRole
@@ -33,7 +34,9 @@ class AbsenceNotificationService:
 
             start_date_str = absence.start_date.strftime("%d.%m.%Y")
             end_date_str = absence.end_date.strftime("%d.%m.%Y")
-            reason_label = REASON_LABELS.get(absence.reason, absence.reason)
+            reason_label = REASON_LABELS.get(
+                cast(str, absence.reason), cast(str, absence.reason)
+            )
 
             success = await email_service.send_absence_submitted_notification(
                 teacher_name=current_user.full_name or current_user.username,
