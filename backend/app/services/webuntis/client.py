@@ -47,9 +47,7 @@ class WebUntisAPIClient:
         Returns:
             True wenn erfolgreich, sonst False
         """
-        logger.info(
-            f"🔐 Authentifizierung gegen WebUntis: {self.server}"
-        )
+        logger.info(f"🔐 Authentifizierung gegen WebUntis: {self.server}")
 
         try:
             async with httpx.AsyncClient() as client:
