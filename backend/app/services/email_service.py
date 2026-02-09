@@ -72,6 +72,7 @@ class EmailService:
             # Port 25 oder andere ohne TLS: keine zusätzlichen Parameter
 
             await aiosmtplib.send(message, **smtp_kwargs)
+            logger.info(f"✓ Email sent successfully to {to}: {subject}")
 
             return True
 
