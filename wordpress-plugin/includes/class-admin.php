@@ -237,86 +237,121 @@ class AbsenzFlow_Admin {
     public function render_roles_page() {
         // Load current user roles from database
         global $wpdb;
-        
-        // Wenn Form submitted
-        if (isset($_POST['absenzflow_update_role']) && check_admin_referer('absenzflow_role_update')) {
-            $user_id = intval($_POST['user_id']);
-            $role = sanitize_text_field($_POST['absenzflow_role']);
 
-            update_user_meta($user_id, 'absenzflow_role', $role);
+        // Batch form submitted - save all role changes at once
+        if (isset($_POST['absenzflow_batch_update_roles']) && check_admin_referer('absenzflow_roles_batch_update')) {
+            $roles = isset($_POST['roles']) ? $_POST['roles'] : array();
+            $webuntis_codes = isset($_POST['webuntis_codes']) ? $_POST['webuntis_codes'] : array();
 
-            // WebUntis-Kürzel speichern
-            if (isset($_POST['webuntis_code'])) {
-                $code = sanitize_text_field(trim($_POST['webuntis_code']));
+            $updated_count = 0;
 
-                if (!empty($code)) {
-                    update_user_meta($user_id, 'absenzflow_webuntis_code', $code);
-                } else {
-                    delete_user_meta($user_id, 'absenzflow_webuntis_code');
+            foreach ($roles as $user_id => $role) {
+                $user_id = intval($user_id);
+                $role = sanitize_text_field($role);
+
+                // Validate role - only allow known roles
+                if (!in_array($role, ['teacher', 'dept_head', 'planner', 'admin'], true)) {
+                    continue;
+                }
+
+                // Update role only if it changed
+                $old_role = get_user_meta($user_id, 'absenzflow_role', true);
+                if ($old_role !== $role) {
+                    update_user_meta($user_id, 'absenzflow_role', $role);
+                    $updated_count++;
+                }
+
+                // Update WebUntis code only if provided
+                if (isset($webuntis_codes[$user_id])) {
+                    $code = sanitize_text_field(trim($webuntis_codes[$user_id]));
+                    $old_code = get_user_meta($user_id, 'absenzflow_webuntis_code', true);
+
+                    if (!empty($code)) {
+                        // Only update if code changed
+                        if ($old_code !== $code) {
+                            update_user_meta($user_id, 'absenzflow_webuntis_code', $code);
+                            $updated_count++;
+                        }
+                    } else {
+                        // Delete if empty and previously set
+                        if ($old_code !== '') {
+                            delete_user_meta($user_id, 'absenzflow_webuntis_code');
+                            $updated_count++;
+                        }
+                    }
                 }
             }
 
-            echo '<div class="notice notice-success"><p>Rolle erfolgreich aktualisiert.</p></div>';
+            // Display result message
+            if ($updated_count > 0) {
+                echo '<div class="notice notice-success"><p>' .
+                     sprintf('Erfolgreich %d Änderung(en) gespeichert.', $updated_count) .
+                     '</p></div>';
+            } else {
+                echo '<div class="notice notice-info"><p>Keine Änderungen vorgenommen.</p></div>';
+            }
         }
-        
+
         // Get all users
         $users = get_users();
-        
+
         ?>
         <div class="wrap">
             <h1>AbsenzFlow Rollenverwaltung</h1>
             <p>Weisen Sie WordPress-Benutzern AbsenzFlow-Rollen zu.</p>
-            
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                    <tr>
-                        <th>Benutzer</th>
-                        <th>E-Mail</th>
-                        <th>WordPress-Rolle</th>
-                        <th>AbsenzFlow-Rolle</th>
-                        <th>WebUntis-Kürzel</th>
-                        <th>Aktion</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($users as $user):
-                        $current_role = get_user_meta($user->ID, 'absenzflow_role', true);
-                        if (!$current_role) {
-                            $current_role = 'teacher'; // Default
-                        }
-                        $webuntis_code = get_user_meta($user->ID, 'absenzflow_webuntis_code', true);
-                    ?>
-                    <tr>
-                        <td><?php echo esc_html($user->display_name); ?></td>
-                        <td><?php echo esc_html($user->user_email); ?></td>
-                        <td><?php echo esc_html(implode(', ', $user->roles)); ?></td>
-                        <td>
-                            <form method="post" style="display: inline;">
-                                <?php wp_nonce_field('absenzflow_role_update'); ?>
-                                <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>" />
-                                <select name="absenzflow_role">
+
+            <form method="post">
+                <?php wp_nonce_field('absenzflow_roles_batch_update'); ?>
+
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th>Benutzer</th>
+                            <th>E-Mail</th>
+                            <th>WordPress-Rolle</th>
+                            <th>AbsenzFlow-Rolle</th>
+                            <th>WebUntis-Kürzel</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($users as $user):
+                            $current_role = get_user_meta($user->ID, 'absenzflow_role', true);
+                            if (!$current_role) {
+                                $current_role = 'teacher'; // Default
+                            }
+                            $webuntis_code = get_user_meta($user->ID, 'absenzflow_webuntis_code', true);
+                        ?>
+                        <tr>
+                            <td><?php echo esc_html($user->display_name); ?></td>
+                            <td><?php echo esc_html($user->user_email); ?></td>
+                            <td><?php echo esc_html(implode(', ', $user->roles)); ?></td>
+                            <td>
+                                <select name="roles[<?php echo intval($user->ID); ?>]">
                                     <option value="teacher" <?php selected($current_role, 'teacher'); ?>>Lehrkraft</option>
                                     <option value="dept_head" <?php selected($current_role, 'dept_head'); ?>>Abteilungsleiter</option>
                                     <option value="planner" <?php selected($current_role, 'planner'); ?>>Vertretungsplaner</option>
                                     <option value="admin" <?php selected($current_role, 'admin'); ?>>Administrator</option>
                                 </select>
-                        </td>
-                        <td>
+                            </td>
+                            <td>
                                 <input type="text"
-                                       name="webuntis_code"
+                                       name="webuntis_codes[<?php echo intval($user->ID); ?>]"
                                        value="<?php echo esc_attr($webuntis_code); ?>"
                                        placeholder="Kürzel"
                                        maxlength="20"
                                        style="width: 100px;">
-                        </td>
-                        <td>
-                                <button type="submit" name="absenzflow_update_role" class="button button-small">Speichern</button>
-                            </form>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+
+                <p class="submit">
+                    <button type="submit" name="absenzflow_batch_update_roles" class="button button-primary">
+                        Alle Änderungen speichern
+                    </button>
+                </p>
+            </form>
         </div>
         <?php
     }
