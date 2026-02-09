@@ -14,6 +14,9 @@ test_backend:
   services:
     - postgres:15
   stage: test
+  variables:
+    # Skip production secret validation in test environment
+    SKIP_SECURITY_VALIDATION: "true"
   before_script:
     - cd backend
     - pip install -r requirements-dev.txt
