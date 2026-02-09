@@ -347,8 +347,7 @@ async def trigger_cleanup(
     logger.info(f"Manual cleanup triggered by {current_user.username}")
 
     result = absence_service.cleanup_old_absences(
-        db=db,
-        retention_days=settings.ABSENCE_RETENTION_DAYS
+        db=db, retention_days=settings.ABSENCE_RETENTION_DAYS
     )
 
     return {

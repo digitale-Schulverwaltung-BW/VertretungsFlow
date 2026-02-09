@@ -65,13 +65,14 @@ def run_cleanup_task():
         logger.info("Absence auto-deletion is disabled")
         return
 
-    logger.info(f"Running automatic absence cleanup (retention: {settings.ABSENCE_RETENTION_DAYS} days)")
+    logger.info(
+        f"Running automatic absence cleanup (retention: {settings.ABSENCE_RETENTION_DAYS} days)"
+    )
 
     db = SessionLocal()
     try:
         result = absence_service.cleanup_old_absences(
-            db=db,
-            retention_days=settings.ABSENCE_RETENTION_DAYS
+            db=db, retention_days=settings.ABSENCE_RETENTION_DAYS
         )
         logger.info(f"Cleanup result: {result}")
     except Exception as e:
@@ -191,6 +192,7 @@ async def startup_event():
     # Initialize database connection test
     try:
         from app.core.database import SessionLocal
+
         db = SessionLocal()
         db.execute(text("SELECT 1"))
         db.close()
@@ -204,12 +206,14 @@ async def startup_event():
         scheduler.add_job(
             run_cleanup_task,
             trigger=CronTrigger(hour=2, minute=0),  # Run daily at 2:00 AM
-            id='cleanup_old_absences',
-            name='Clean up old absences',
-            replace_existing=True
+            id="cleanup_old_absences",
+            name="Clean up old absences",
+            replace_existing=True,
         )
         scheduler.start()
-        logger.info(f"Scheduled daily cleanup at 02:00 (retention: {settings.ABSENCE_RETENTION_DAYS} days)")
+        logger.info(
+            f"Scheduled daily cleanup at 02:00 (retention: {settings.ABSENCE_RETENTION_DAYS} days)"
+        )
     else:
         logger.info("Absence auto-deletion is disabled")
 

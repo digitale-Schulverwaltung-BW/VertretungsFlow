@@ -319,9 +319,12 @@ class AbsenceService:
             HTTPException: If absence not found
         """
         # Eager load attachments for cleanup
-        absence = db.query(Absence).options(
-            selectinload(Absence.attachments)
-        ).filter(Absence.id == absence_id).first()
+        absence = (
+            db.query(Absence)
+            .options(selectinload(Absence.attachments))
+            .filter(Absence.id == absence_id)
+            .first()
+        )
 
         if not absence:
             raise HTTPException(
@@ -330,7 +333,9 @@ class AbsenceService:
 
         # Delete attachments from disk before deleting DB record
         if absence.attachments:
-            logger.info(f"Deleting {len(absence.attachments)} attachments for absence {absence_id}...")
+            logger.info(
+                f"Deleting {len(absence.attachments)} attachments for absence {absence_id}..."
+            )
             for attachment in absence.attachments:
                 try:
                     attachment_service.delete_file(attachment.file_path)
@@ -366,28 +371,30 @@ class AbsenceService:
         logger.info(f"Starting cleanup of absences with end_date before {cutoff_date}")
 
         # Find all absences older than cutoff_date
-        old_absences = db.query(Absence).filter(
-            Absence.end_date < cutoff_date
-        ).all()
+        old_absences = db.query(Absence).filter(Absence.end_date < cutoff_date).all()
 
         deleted_count = 0
         error_count = 0
 
         for absence in old_absences:
             try:
-                logger.info(f"Deleting old absence {absence.id} (end_date: {absence.end_date}, teacher: {absence.teacher.username})")
+                logger.info(
+                    f"Deleting old absence {absence.id} (end_date: {absence.end_date}, teacher: {absence.teacher.username})"
+                )
                 self.delete_absence(absence.id, db)
                 deleted_count += 1
             except Exception as e:
                 logger.error(f"Failed to delete absence {absence.id}: {e}")
                 error_count += 1
 
-        logger.info(f"Cleanup completed: {deleted_count} absences deleted, {error_count} errors")
+        logger.info(
+            f"Cleanup completed: {deleted_count} absences deleted, {error_count} errors"
+        )
 
         return {
             "deleted_count": deleted_count,
             "errors": error_count,
-            "cutoff_date": cutoff_date.isoformat()
+            "cutoff_date": cutoff_date.isoformat(),
         }
 
 
