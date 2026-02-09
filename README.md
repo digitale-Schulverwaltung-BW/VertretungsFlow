@@ -15,6 +15,7 @@ AbsenzFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abwesenh
 - 🎨 WordPress-Plugin mit React-Frontend
   - Shortcode-Integration: `[absenzflow]`
   - 2-Schritt-Workflow für Abwesenheitsmeldungen
+- In Planung: Frontend ohne Wordpress.
 
 ## 🏗️ Architektur
 
@@ -22,19 +23,19 @@ AbsenzFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abwesenh
 ```
 ┌─────────────────────────────────────┐
 │  WordPress + AbsenzFlow Plugin      │  ← Frontend (React-App)
-│  - PHP Plugin lädt React-Bundle     │
-│  - Shortcode: [absenzflow]          │
+│  - PHP Plugin lädt React-Bundle     │    als Wordpress-Plugin
+│  - Shortcode: [absenzflow]          │    Benutzerdaten aus WP
 └──────────────┬──────────────────────┘
                │ REST API (HTTPS)
 ┌──────────────▼──────────────────────┐
 │  FastAPI Backend (Docker)           │  ← Business Logic
-│  - LDAP/AD Auth                     │
-│  - WebUntis Integration             │
+│  - Wordpress Auth                   │    auf Backend-Server
+│  - WebUntis Integration             │    (durch Firewall vom Internet getrennt)
 │  - Email Service                    │
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│  PostgreSQL (Docker)                │  ← Datenbank
+│  PostgreSQL (Docker)                │  ← Datenbank-Server, kann auf Backend laufen
 └─────────────────────────────────────┘
 ```
 
@@ -48,6 +49,7 @@ absenzflow/
 │       ├── models/       # SQLAlchemy Models
 │       ├── schemas/      # Pydantic Schemas
 │       └── services/     # LDAP, WebUntis, Email
+│       └── utils/        # Werkzeuge
 ├── wordpress-plugin/     # WordPress Plugin (React + TypeScript)
 │   ├── src/              # React-Frontend-Code
 │   │   ├── pages/        # React Pages (CreateAbsence)
@@ -69,10 +71,16 @@ absenzflow/
 
 ## 🚀 Quick Start
 
+Für eine ausführliche Anleitung siehe unseren [vollständigen Setup Guide](./docs/SETUP.md) - Installation Schritt für Schritt
+
 ### Voraussetzungen
 
-- Docker & Docker Compose
+- Docker & Docker Compose auf dem Backend-Server
 - WebUntis Account mit API-Zugang
+- Bestehende Wordpress-Installation mit Benutzern für alle Lehrkräfte auf Frontend-Server. 
+  **Tipp**: Es gibt Wordpress-Plugins, welche eine AD-Integration anbieten. Dabei kann die Default-Rolle
+  so eingestellt sein, dass die Lehrkräfte keine Berechtigung haben, im Wordpress Beiträge oder Seiten
+  zu ändern, aber einen Account haben.
 - LDAP/AD Server
 
 ### Installation
@@ -86,13 +94,13 @@ cd absenzflow
 2. Umgebungsvariablen konfigurieren:
 ```bash
 cp .env.example .env
-# .env bearbeiten mit deinen Credentials
+nano .env # .env bearbeiten mit deinen Credentials
 ```
 
 **Wichtig:** Setze `WORDPRESS_PROXY_SECRET` auf einen zufälligen, sicheren Wert:
 ```bash
-# Beispiel für sicheres Secret generieren
-openssl rand -hex 32
+# Beispiel für sicheres Secret generieren und in .env eintragen
+SECRET=$(openssl rand -hex 32); sed -i.bak "s/change-this-shared-secret-in-production/$SECRET/" .env; echo "Secret in Wordpress-Plugin-Einstellungen eintragen: $SECRET"
 ```
 
 Dieser Secret muss identisch im Backend (.env) und im WordPress Plugin (Einstellungen) konfiguriert werden.
@@ -107,7 +115,7 @@ docker-compose up -d
 
 ### WordPress Plugin
 
-1. WordPress Plugin bauen:
+1. WordPress Plugin bauen auf Frontend-Server:
 ```bash
 cd wordpress-plugin
 npm install
@@ -115,23 +123,15 @@ npm run build
 ```
 
 2. Plugin nach WordPress kopieren:
+Hier zunächst WP_ROOT anpassen!
 ```bash
-# Methode 1: Kopieren (für einfache Installation)
-cp -r wordpress-plugin/ /path/to/wordpress/wp-content/plugins/absenzflow/
-
-# Methode 2: Softlink (empfohlen für Entwicklung/Updates)
-ln -s /absolute/path/to/absenzflow/wordpress-plugin /path/to/wordpress/wp-content/plugins/absenzflow
+WP_ROOT=/var/www/html
+for file in absenzflow.php  assets  build  includes; do
+  ln -s $(pwd)/wordpress-plugin/$file $WP_ROOT/wp-content/plugins/absenzflow/$file
+done
 ```
-
-**Wichtig:** Das `assets/` Verzeichnis muss ebenfalls ins WordPress-Plugin kopiert/verlinkt werden:
-```bash
-# Falls nicht automatisch mitkopiert:
-cp -r wordpress-plugin/assets/ /path/to/wordpress/wp-content/plugins/absenzflow/assets/
-
-# Oder bei Softlink-Verwendung bereits enthalten
-```
-
-**Vorteil Softlink:** Updates werden direkt synchronisiert - einfach `npm run build` ausführen, ohne erneut zu kopieren.
+**Hinweis:** der Vorteil der Softlinks ist, dass Updates im AbsenzFlow-Verzeichnis bereits im WebRoot liegen und nur noch
+ein ```npm run build``` erfolgen muss.
 
 3. In WordPress aktivieren: **Plugins → AbsenzFlow → Aktivieren**
 
@@ -167,7 +167,7 @@ Contributions sind willkommen! Bitte lies [CONTRIBUTING.md](CONTRIBUTING.md) fü
 
 ## 📧 Support
 
-Bei Fragen oder Problemen erstelle bitte ein Issue auf GitHub.
+Bei Fragen oder Problemen erstelle bitte ein Issue auf [GitHub](https://github.com/digitale-Schulverwaltung-BW/absenzflow) - Schülerinnen, Schüler und Lehrkräfte der HHS Karlsruhe natürlich auch gerne über das [HHS Gitlab](https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow).
 
 ---
 

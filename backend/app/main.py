@@ -155,7 +155,6 @@ async def startup_event():
     logger.info("✅ Security validation passed - no default secrets detected")
     if settings.DEBUG:
         logger.warning("⚠️ DEBUG MODE ENABLED - NOT FOR PRODUCTION!")
-    logger.info(f"📝 API Dokumentation: {settings.API_URL}/docs")
     logger.info(f"🔍 Debug Mode: {settings.DEBUG}")
     logger.info(f"🔐 Auth Mode: {settings.AUTH_MODE}")
 

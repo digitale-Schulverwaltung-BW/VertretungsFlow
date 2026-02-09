@@ -111,7 +111,6 @@ LDAP_DISPLAYNAME_ATTR=displayName
 #### WebUntis
 ```env
 WEBUNTIS_SERVER=ihre-schule.webuntis.com
-WEBUNTIS_SCHOOL=ihre-schule
 WEBUNTIS_USERNAME=api-benutzer
 WEBUNTIS_PASSWORD=api-passwort
 ```

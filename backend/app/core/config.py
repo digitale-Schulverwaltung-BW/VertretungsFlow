@@ -15,7 +15,6 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = "AbsenzFlow"
-    API_URL: str = "http://localhost:8000"
     FRONTEND_URL: str = (
         "http://localhost:3000"  # WordPress page with [absenzflow] shortcode
     )
@@ -48,7 +47,6 @@ class Settings(BaseSettings):
     LDAP_USE_SSL: bool = False
 
     # WebUntis API
-    WEBUNTIS_SCHOOL: str = ""
     WEBUNTIS_USERNAME: str = ""
     WEBUNTIS_PASSWORD: str = ""
     WEBUNTIS_SERVER: str = "neilo.webuntis.com"

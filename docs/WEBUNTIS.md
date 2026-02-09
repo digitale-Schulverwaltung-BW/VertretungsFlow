@@ -39,7 +39,6 @@ In der `.env` Datei:
 
 ```env
 WEBUNTIS_SERVER=neilo.webuntis.com
-WEBUNTIS_SCHOOL=ihre-schule
 WEBUNTIS_USERNAME=api
 WEBUNTIS_PASSWORD=ihr_passwort
 ```

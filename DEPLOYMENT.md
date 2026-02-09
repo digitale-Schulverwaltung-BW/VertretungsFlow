@@ -1,144 +1,112 @@
-# AbsenzFlow Deployment Guide
+# AbsenzFlow Deployment-Anleitung
 
-This guide explains how to deploy AbsenzFlow securely in different environments.
+Diese Anleitung erklärt, wie man AbsenzFlow sicher in verschiedenen Umgebungen bereitstellt.
 
-## 📋 Table of Contents
+## 📋 Inhaltsverzeichnis
 
-- [Environment Overview](#environment-overview)
-- [Development Setup](#development-setup)
-- [Production Deployment](#production-deployment)
-- [Security Checklist](#security-checklist)
-- [Database Access](#database-access)
+- [Umgebungsübersicht](#umgebungsübersicht)
+- [Production-Deployment](#production-deployment)
+- [Sicherheits-Checkliste](#sicherheits-checkliste)
+- [Development-Setup](#development-setup)
+- [Datenbankzugriff](#datenbankzugriff)
 - [Troubleshooting](#troubleshooting)
 
 ---
 
-## Environment Overview
+## Umgebungsübersicht
 
-AbsenzFlow provides two Docker Compose configurations:
+AbsenzFlow bietet zwei Docker-Compose-Konfigurationen:
 
-| File | Purpose | Security Level | Use Case |
+| Datei | Zweck | Sicherheit | Use Case |
 |------|---------|----------------|----------|
-| `docker-compose.yml` | Development | ⚠️ Low | Local development with hot-reload |
-| `docker-compose.prod.yml` | Production | ✅ High | Production deployment |
+| `docker-compose.yml` | Development | ⚠️ Niedrig | Lokale Entwicklung mit Hot-Reload |
+| `docker-compose.prod.yml` | Production | ✅ Hoch | Produktives Deployment |
 
-### Key Differences
+### Wichtigste Unterschiede
 
 | Feature | Development | Production |
 |---------|-------------|------------|
-| **Database Port** | ⚠️ Exposed (5432) | ✅ Not exposed |
-| **Source Code** | ✅ Mounted (hot-reload) | ❌ Baked into image |
-| **DEBUG Mode** | ✅ Enabled by default | ❌ Disabled by default |
-| **Secrets** | ⚠️ Has defaults | ✅ Must be provided |
-| **Uvicorn Workers** | 1 (--reload) | 4 (production) |
-| **Restart Policy** | ❌ None | ✅ unless-stopped |
-| **pgAdmin** | ✅ Always available | ❌ Profile-only |
+| **Datenbank-Port** | ⚠️ Exposed (5432) | ✅ Nicht exposed |
+| **Quellcode** | ✅ Mounted (Hot-Reload) | ❌ In Image eingebunden |
+| **DEBUG Mode** | ✅ Standardmäßig aktiviert | ❌ Standardmäßig deaktiviert |
+| **Secrets** | ⚠️ Hat Defaults | ✅ Müssen gesetzt werden |
+| **Uvicorn Worker** | 1 (--reload) | 4 (production) |
+| **Restart Policy** | ❌ Keine | ✅ unless-stopped |
+| **pgAdmin** | ✅ Immer verfügbar | ❌ Nur mit Profil |
 
 ---
 
-## Development Setup
+## Production-Deployment
 
-### Quick Start
+### Voraussetzungen
 
+Vor dem Deployment in Production sicherstellen:
+
+1. ✅ Gültige `.env` Datei mit sicheren Secrets vorhanden
+2. ✅ WordPress installiert und AbsenzFlow-Plugin konfiguriert
+3. ✅ WordPress Proxy Secret stimmt zwischen WordPress Admin und `.env` überein
+4. ✅ Datenbank-Backups konfiguriert
+5. ✅ SSL/TLS-Zertifikate vorhanden (falls HTTPS verwendet)
+
+Wir nehmen an, das Frontend, auf dem Wordpress läuft, ist erreichbar unter https://your-production-domain.com und das Backend ist vom Frontend-Server aus erreichbar über https://backend.local.
+
+### Schritt-für-Schritt Production-Deployment
+
+#### 1. Repository klonen:
 ```bash
-# 1. Clone repository
-git clone <repository-url>
-cd AbsenzFlow
-
-# 2. Copy environment template
-cp .env.example .env
-
-# 3. Edit .env with your settings (optional for dev)
-nano .env
-
-# 4. Start development environment
-docker-compose up -d
-
-# 5. View logs
-docker-compose logs -f backend
-
-# 6. Access services
-# - Backend API: http://localhost:8000
-# - API Docs: http://localhost:8000/docs
-# - PostgreSQL: localhost:5432
-# - pgAdmin: http://localhost:5050 (use docker-compose --profile dev up)
+git clone https://github.com/your-org/absenzflow.git
+cd absenzflow
 ```
 
-### Development Features
+#### 2. Umgebungsvariablen-Datei aus Vorlage erstellen:
+```bash
+cp .env.example .env
+```
 
-✅ **Hot-Reload**: Code changes automatically restart the backend
-✅ **Direct DB Access**: Connect to PostgreSQL on `localhost:5432`
-✅ **Debug Logging**: Detailed logs for troubleshooting
-✅ **pgAdmin**: Database management UI available
-
-### ⚠️ Development Security Warnings
-
-The development environment has several intentional security weaknesses for convenience:
-
-- **Database port exposed** - Anyone on your network can access the database
-- **Default secrets allowed** - Will trigger validation error if you have the defaults
-- **Debug mode** - Exposes detailed error messages
-- **CORS permissive** - Allows localhost origins
-
-**Never deploy the development configuration to production!**
-
----
-
-## Production Deployment
-
-### Prerequisites
-
-Before deploying to production, ensure:
-
-1. ✅ You have a valid `.env` file with secure secrets
-2. ✅ WordPress is installed and AbsenzFlow plugin configured
-3. ✅ WordPress Proxy Secret matches between WordPress Admin and `.env`
-4. ✅ Database backups are configured
-5. ✅ SSL/TLS certificates are ready (if using HTTPS)
-
-### Step-by-Step Production Deployment
-
-#### 1. Generate Secure Secrets
+#### 3. Sichere Secrets generieren
 
 ```bash
-# Generate SECRET_KEY
+# SECRET_KEY generieren
 openssl rand -hex 32
 
-# Generate WORDPRESS_PROXY_SECRET
+# WORDPRESS_PROXY_SECRET generieren
 openssl rand -hex 32
 
-# Generate secure database password
+# Sicheres Datenbankpasswort generieren
 openssl rand -base64 32
 ```
 
-#### 2. Configure Production .env
+#### 4. Production .env konfigurieren
 
-Create or update your `.env` file with production values:
+`.env` Datei mit Production-Werten erstellen oder aktualisieren:
 
 ```bash
+nano .env
 # .env (PRODUCTION)
 
-# === CRITICAL: Change These! ===
-SECRET_KEY=<generated-secret-from-step-1>
-WORDPRESS_PROXY_SECRET=<generated-secret-from-step-1>
-POSTGRES_PASSWORD=<generated-password-from-step-1>
+# === KRITISCH: Diese ändern! ===
+SECRET_KEY=<SECRET_KEY aus Schritt 1>
+WORDPRESS_PROXY_SECRET=<WORDPRESS_PROXY_SECRET aus Schritt 1>
+POSTGRES_PASSWORD=<Datenbankpasswort aus Schritt 1>
 
-# === Application Settings ===
+# === Anwendungseinstellungen ===
 DEBUG=false
 ENVIRONMENT=production
 CORS_ORIGINS=https://your-production-domain.com
-FRONTEND_URL=https://your-production-domain.com
-API_URL=https://your-production-domain.com/api
+FRONTEND_URL=https://your-production-domain.com/absenzflow
+# FRONTEND_URL zeigt auf die Seite, wo der [absenzflow]-Shortcode platziert wurde.
+# In den E-Mails des Systems werden hier noch Parameter angehängt, um direkt zu einer
+# Abwesenheit zu springen.
 
-# === Database ===
+# === Datenbank ===
 POSTGRES_DB=absenzflow
 POSTGRES_USER=absenzflow
-# POSTGRES_PASSWORD already set above
+# POSTGRES_PASSWORD bereits gesetzt
 
-# === WordPress Integration ===
-# WORDPRESS_PROXY_SECRET already set above
+# === WordPress-Integration ===
+# WORDPRESS_PROXY_SECRET bereits gesetzt
 
-# === LDAP (if using standalone auth) ===
+# === LDAP (bei Standalone-Auth, kann bei Wordpress-Setup leer bleiben) ===
 LDAP_SERVER=ldap.schule.local
 LDAP_PORT=389
 LDAP_BASE_DN=dc=schule,dc=local
@@ -146,10 +114,9 @@ LDAP_BIND_DN=cn=absenzflow,ou=services,dc=schule,dc=local
 LDAP_BIND_PASSWORD=<ldap-password>
 
 # === WebUntis API ===
-WEBUNTIS_SCHOOL=<your-school-name>
 WEBUNTIS_USERNAME=<webuntis-api-user>
 WEBUNTIS_PASSWORD=<webuntis-api-password>
-WEBUNTIS_SERVER=neilo.webuntis.com
+WEBUNTIS_SERVER=schoolname.webuntis.com
 
 # === SMTP ===
 SMTP_HOST=smtp.schule.local
@@ -163,128 +130,176 @@ SMTP_USE_TLS=true
 UPLOAD_DIR=/app/uploads
 ```
 
-#### 3. Update WordPress Plugin Settings
+#### 3. WordPress-Plugin-Einstellungen aktualisieren
 
-In WordPress Admin → Settings → AbsenzFlow:
+In WordPress Admin → Einstellungen → AbsenzFlow:
 
-1. Set **Proxy Secret** to match `WORDPRESS_PROXY_SECRET` from `.env`
-2. Set **Backend URL** to your backend API URL
-3. Test the connection
+1. **Proxy Secret** auf `WORDPRESS_PROXY_SECRET` aus `.env` setzen
+2. **Backend URL** auf die Backend-API-URL setzen
+3. Verbindung testen
 
-#### 4. Deploy with Production Configuration
+#### 4. Mit Production-Konfiguration deployen
 
 ```bash
-# 1. Navigate to project directory
+# 1. Zum Projektverzeichnis navigieren
 cd AbsenzFlow
 
-# 2. Build images (first time only)
+# 2. Images bauen (nur beim ersten Mal)
 docker-compose -f docker-compose.prod.yml build
 
-# 3. Start services
+# 3. Services starten
 docker-compose -f docker-compose.prod.yml up -d
 
-# 4. Check logs
+# 4. Logs prüfen
 docker-compose -f docker-compose.prod.yml logs -f backend
 
-# 5. Verify startup
-# Look for: "✅ Security validation passed"
+# 5. Startup verifizieren
+# Nach "✅ Security validation passed" suchen
 ```
 
-#### 5. Verify Production Deployment
+#### 5. Production-Deployment verifizieren
 
 ```bash
-# Test health check
+# Health Check testen
 curl http://localhost:8000/health
 
-# Expected response: {"status":"ok"}
+# Erwartete Antwort: {"status":"ok"}
 
-# Check backend logs for security validation
+# Backend-Logs auf Sicherheitsvalidierung prüfen
 docker-compose -f docker-compose.prod.yml logs backend | grep "Security validation"
 
-# Expected: "✅ Security validation passed - no default secrets detected"
+# Erwartet: "✅ Security validation passed - no default secrets detected"
 ```
 
 ---
 
-## Security Checklist
+## Sicherheits-Checkliste
 
-Before going live, verify:
+Vor dem Go-Live überprüfen:
 
-### ✅ Critical Security Items
+### ✅ Kritische Sicherheitselemente
 
-- [ ] `SECRET_KEY` changed from default (min 32 chars)
-- [ ] `WORDPRESS_PROXY_SECRET` changed from default
-- [ ] `POSTGRES_PASSWORD` changed from default
-- [ ] WordPress Admin secret matches `.env` secret
+- [ ] `SECRET_KEY` von Default geändert (min 32 Zeichen)
+- [ ] `WORDPRESS_PROXY_SECRET` von Default geändert
+- [ ] `POSTGRES_PASSWORD` von Default geändert
+- [ ] WordPress Admin Secret stimmt mit `.env` Secret überein
 - [ ] `DEBUG=false` in `.env`
-- [ ] `CORS_ORIGINS` set to production domain only
-- [ ] Database port NOT exposed (using `docker-compose.prod.yml`)
-- [ ] SSL/TLS enabled (reverse proxy)
-- [ ] File upload directory has proper permissions
+- [ ] `CORS_ORIGINS` nur auf Production-Domain gesetzt
+- [ ] Datenbank-Port NICHT exposed (mit `docker-compose.prod.yml`)
+- [ ] SSL/TLS aktiviert (Reverse Proxy)
+- [ ] Upload-Verzeichnis hat korrekte Berechtigungen
 
-### ✅ Operational Items
+### ✅ Operationelle Elemente
 
-- [ ] Database backups configured
-- [ ] Log rotation configured
-- [ ] Monitoring/alerting set up
-- [ ] Firewall rules configured
-- [ ] Container restart policies enabled
-- [ ] Health checks configured
+- [ ] Datenbank-Backups konfiguriert
+- [ ] Log-Rotation konfiguriert
+- [ ] Monitoring/Alerting eingerichtet
+- [ ] Firewall-Regeln konfiguriert
+- [ ] Container-Restart-Policies aktiviert
+- [ ] Health Checks konfiguriert
 
-### ✅ WordPress Integration
+### ✅ WordPress-Integration
 
-- [ ] AbsenzFlow plugin activated
-- [ ] Proxy secret configured in WordPress Admin
-- [ ] Backend URL configured correctly
-- [ ] User roles mapped correctly
-- [ ] Test absence creation works
+- [ ] AbsenzFlow-Plugin aktiviert
+- [ ] Proxy Secret in WordPress Admin konfiguriert
+- [ ] Backend URL korrekt konfiguriert
+- [ ] Benutzerrollen korrekt gemappt
+- [ ] Test-Absenz-Erstellung funktioniert
 
 ---
 
-## Database Access
+## Development-Setup
 
-### Development (Direct Access)
+### Quick Start
 
 ```bash
-# Connect via psql
+# 1. Repository klonen
+git clone https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow.git
+cd absenzflow
+
+# 2. Environment-Template kopieren
+cp .env.example .env
+
+# 3. .env bearbeiten (optional für Development)
+nano .env
+
+# 4. Development-Umgebung starten
+docker-compose up -d
+
+# 5. Logs anschauen
+docker-compose logs -f backend
+
+# 6. Services aufrufen
+# - Backend API: http://localhost:8000
+# - API Docs: http://localhost:8000/docs
+# - PostgreSQL: localhost:5432
+# - pgAdmin: http://localhost:5050 (mit docker-compose --profile dev up)
+```
+
+### Development-Features
+
+✅ **Hot-Reload**: Codeänderungen starten Backend automatisch neu
+✅ **Direkter DB-Zugriff**: Verbindung zu PostgreSQL auf `localhost:5432`
+✅ **Debug-Logging**: Detaillierte Logs zur Fehlersuche
+✅ **pgAdmin**: Datenbank-Management-UI verfügbar
+
+### ⚠️ Development-Sicherheitswarnungen
+
+Die Development-Umgebung hat absichtlich mehrere Sicherheitsschwächen für Bequemlichkeit:
+
+- **Datenbank-Port exposed** - Jeder im Netzwerk kann auf die Datenbank zugreifen
+- **Default Secrets erlaubt** - Triggert Validierungsfehler bei Defaults
+- **Debug Mode** - Zeigt detaillierte Fehlermeldungen
+- **CORS permissiv** - Erlaubt localhost Origins
+
+**Stellen Sie die Development-Konfiguration niemals in Production bereit!**
+
+---
+
+## Datenbankzugriff
+
+### Development (Direkter Zugriff)
+
+```bash
+# Mit psql verbinden
 psql -h localhost -U absenzflow -d absenzflow
 
-# Or use pgAdmin
+# Oder pgAdmin verwenden
 docker-compose --profile dev up -d pgadmin
-# Visit http://localhost:5050
+# Öffne http://localhost:5050
 ```
 
-### Production (Secure Access)
+### Production (Sicherer Zugriff)
 
-**Option 1: Docker Exec (Recommended)**
+**Option 1: Docker Exec (Empfohlen)**
 
 ```bash
-# Access database via container
+# Auf Datenbank über Container zugreifen
 docker-compose -f docker-compose.prod.yml exec postgres psql -U absenzflow -d absenzflow
 
-# Example: Run a query
+# Beispiel: Query ausführen
 docker-compose -f docker-compose.prod.yml exec postgres psql -U absenzflow -d absenzflow -c "SELECT COUNT(*) FROM absences;"
 ```
 
-**Option 2: Emergency pgAdmin Access**
+**Option 2: Notfall pgAdmin-Zugriff**
 
 ```bash
-# Start pgAdmin with admin profile (emergency only)
+# pgAdmin mit Admin-Profil starten (nur im Notfall!)
 docker-compose -f docker-compose.prod.yml --profile admin up -d pgadmin
 
-# Access at http://localhost:5050 (localhost only!)
+# Zugriff unter http://localhost:5050 (nur localhost!)
 
-# When done, stop pgAdmin
+# Nach Verwendung pgAdmin stoppen
 docker-compose -f docker-compose.prod.yml stop pgadmin
 ```
 
-**Option 3: SSH Port Forwarding**
+**Option 3: SSH-Portweiterleitung**
 
 ```bash
-# From your local machine, forward port through SSH
+# Von deinem lokalen Rechner Port durch SSH weiterleiten
 ssh -L 5432:localhost:5432 user@production-server
 
-# Now connect to localhost:5432 from your machine
+# Jetzt verbinde dich mit localhost:5432
 psql -h localhost -U absenzflow -d absenzflow
 ```
 
@@ -292,7 +307,7 @@ psql -h localhost -U absenzflow -d absenzflow
 
 ## Troubleshooting
 
-### Backend Won't Start - Security Validation Error
+### Backend startet nicht - Sicherheitsvalidierungsfehler
 
 **Problem:**
 ```
@@ -300,78 +315,78 @@ psql -h localhost -U absenzflow -d absenzflow
 ❌ SECRET_KEY is still set to default value!
 ```
 
-**Solution:**
-1. Generate new secrets: `openssl rand -hex 32`
-2. Update `.env` with generated secrets
-3. Restart: `docker-compose -f docker-compose.prod.yml restart backend`
+**Lösung:**
+1. Neue Secrets generieren: `openssl rand -hex 32`
+2. `.env` mit generierten Secrets aktualisieren
+3. Neu starten: `docker-compose -f docker-compose.prod.yml restart backend`
 
 ---
 
-### Database Connection Failed
+### Datenbankverbindung fehlgeschlagen
 
 **Problem:**
 ```
 sqlalchemy.exc.OperationalError: could not connect to server
 ```
 
-**Solutions:**
+**Lösungen:**
 
 ```bash
-# 1. Check if postgres is healthy
+# 1. Prüfe ob postgres gesund ist
 docker-compose -f docker-compose.prod.yml ps postgres
 
-# 2. Check postgres logs
+# 2. Postgres-Logs prüfen
 docker-compose -f docker-compose.prod.yml logs postgres
 
-# 3. Verify DATABASE_URL in backend
+# 3. Verifiziere DATABASE_URL im Backend
 docker-compose -f docker-compose.prod.yml exec backend env | grep DATABASE_URL
 
-# 4. Test connection manually
+# 4. Verbindung manuell testen
 docker-compose -f docker-compose.prod.yml exec postgres pg_isready -U absenzflow
 ```
 
 ---
 
-### WordPress Can't Connect to Backend
+### WordPress kann sich nicht mit Backend verbinden
 
-**Problem:** WordPress shows "Invalid proxy secret" or connection errors.
+**Problem:** WordPress zeigt "Invalid proxy secret" oder Verbindungsfehler.
 
-**Solutions:**
+**Lösungen:**
 
 ```bash
-# 1. Verify backend is running
+# 1. Verifiziere Backend läuft
 curl http://localhost:8000/health
 
-# 2. Check WORDPRESS_PROXY_SECRET matches
-# In backend:
+# 2. Prüfe WORDPRESS_PROXY_SECRET stimmt überein
+# Im Backend:
 docker-compose -f docker-compose.prod.yml exec backend env | grep WORDPRESS_PROXY_SECRET
 
 # In WordPress:
-# Admin → Settings → AbsenzFlow → Proxy Secret
+# Admin → Einstellungen → AbsenzFlow → Proxy Secret
 
-# 3. Check backend logs for auth errors
+# 3. Backend-Logs auf Auth-Fehler prüfen
 docker-compose -f docker-compose.prod.yml logs backend | grep -i "proxy\|auth"
 ```
 
 ---
 
-### High Memory Usage
+### Hohe Speichernutzung
 
-**Problem:** Containers using excessive memory.
+**Problem:** Container nutzen zu viel Speicher.
 
-**Solutions:**
+**Lösungen:**
 
 ```bash
-# 1. Check resource usage
+# 1. Ressourcennutzung prüfen
 docker stats
 
-# 2. Restart backend (clears caches)
+# 2. Backend neu starten (löscht Caches)
 docker-compose -f docker-compose.prod.yml restart backend
 
-# 3. Adjust worker count (in docker-compose.prod.yml)
-# Change: --workers 4 to --workers 2
+# 3. Worker-Anzahl anpassen (in docker-compose.prod.yml)
+# Ändere: --workers 4 zu --workers 2
 
-# 4. Add resource limits (in docker-compose.prod.yml)
+# 4. Ressourcen-Limits setzen (in docker-compose.prod.yml)
 services:
   backend:
     deploy:
@@ -382,27 +397,27 @@ services:
 
 ---
 
-## Useful Commands
+## Nützliche Commands
 
 ### Development
 
 ```bash
-# Start development environment
+# Development-Umgebung starten
 docker-compose up -d
 
-# View logs (all services)
+# Logs anschauen (alle Services)
 docker-compose logs -f
 
-# View logs (backend only)
+# Logs anschauen (nur Backend)
 docker-compose logs -f backend
 
-# Restart after code changes (if hot-reload fails)
+# Neu starten nach Code-Änderungen (falls Hot-Reload fehlschlägt)
 docker-compose restart backend
 
-# Stop all services
+# Alle Services stoppen
 docker-compose down
 
-# Reset database (⚠️ DATA LOSS!)
+# Datenbank zurücksetzen (⚠️ DATENVERLUST!)
 docker-compose down -v
 docker-compose up -d
 ```
@@ -410,44 +425,44 @@ docker-compose up -d
 ### Production
 
 ```bash
-# Start production environment
+# Production-Umgebung starten
 docker-compose -f docker-compose.prod.yml up -d
 
-# Update after code changes
+# Nach Code-Änderungen aktualisieren
 docker-compose -f docker-compose.prod.yml build backend
 docker-compose -f docker-compose.prod.yml up -d backend
 
-# View logs
+# Logs anschauen
 docker-compose -f docker-compose.prod.yml logs -f backend
 
-# Restart services
+# Services neu starten
 docker-compose -f docker-compose.prod.yml restart
 
-# Stop all services
+# Alle Services stoppen
 docker-compose -f docker-compose.prod.yml down
 
-# Backup database
+# Datenbank-Backup erstellen
 docker-compose -f docker-compose.prod.yml exec postgres pg_dump -U absenzflow absenzflow > backup_$(date +%Y%m%d).sql
 
-# Restore database
+# Datenbank wiederherstellen
 docker-compose -f docker-compose.prod.yml exec -T postgres psql -U absenzflow absenzflow < backup.sql
 ```
 
 ---
 
-## Next Steps
+## Nächste Schritte
 
-After successful deployment:
+Nach erfolgreichem Deployment:
 
-1. ✅ Configure regular database backups
-2. ✅ Set up log monitoring and alerting
-3. ✅ Configure reverse proxy (Nginx/Caddy) with SSL
-4. ✅ Set up firewall rules
-5. ✅ Document your production environment
-6. ✅ Train users on the system
+1. ✅ Regelmäßige Datenbank-Backups konfigurieren
+2. ✅ Log-Monitoring und Alerting einrichten
+3. ✅ Reverse Proxy (Nginx/Caddy) mit SSL konfigurieren
+4. ✅ Firewall-Regeln einrichten
+5. ✅ Production-Umgebung dokumentieren
+6. ✅ Benutzer im System einweisen
 
 ---
 
-**Last Updated:** 2026-02-06
-**Maintainer:** AbsenzFlow Team
-**Questions?** See [CLAUDE.md](CLAUDE.md) for development documentation
+**Zuletzt aktualisiert:** 2026-02-06
+**Betreuer:** AbsenzFlow Team
+**Fragen?** Siehe [CLAUDE.md](CLAUDE.md) für Entwickler-Dokumentation

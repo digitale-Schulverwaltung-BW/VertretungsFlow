@@ -20,7 +20,6 @@ class WebUntisAPIClient:
     def __init__(
         self,
         server: str = None,
-        school: str = None,
         username: str = None,
         password: str = None,
     ):
@@ -29,12 +28,10 @@ class WebUntisAPIClient:
 
         Args:
             server: WebUntis server URL (default: from settings)
-            school: School identifier (default: from settings)
             username: API username (default: from settings)
             password: API password (default: from settings)
         """
         self.server = server or settings.WEBUNTIS_SERVER
-        self.school = school or settings.WEBUNTIS_SCHOOL
         self.username = username or settings.WEBUNTIS_USERNAME
         self.password = password or settings.WEBUNTIS_PASSWORD
         self.base_url = f"https://{self.server}/WebUntis/jsonrpc.do"
@@ -51,7 +48,7 @@ class WebUntisAPIClient:
             True wenn erfolgreich, sonst False
         """
         logger.info(
-            f"🔐 Authentifizierung gegen WebUntis: {self.server} (Schule: {self.school})"
+            f"🔐 Authentifizierung gegen WebUntis: {self.server}"
         )
 
         try:
