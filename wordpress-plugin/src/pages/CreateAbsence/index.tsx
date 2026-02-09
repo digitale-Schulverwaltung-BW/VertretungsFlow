@@ -12,13 +12,22 @@ const CreateAbsence: React.FC = () => {
   const [createdAbsence, setCreatedAbsence] = useState<Absence | null>(null);
   const navigate = useNavigate();
 
+  const scrollToTop = () => {
+    const rootElement = document.getElementById('absenzflow-root');
+    if (rootElement) {
+      rootElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const handleStepOneComplete = (data: StepOneData) => {
     setStepOneData(data);
     setStep(2);
+    scrollToTop();
   };
 
   const handleBack = () => {
     setStep(1);
+    scrollToTop();
   };
 
   const handleSubmitComplete = (absence: Absence) => {
