@@ -20,6 +20,8 @@ test_backend:
     - cd ..
   script:
     - cd backend
+    # Set PYTHONPATH so pytest can find the 'app' module
+    - export PYTHONPATH=.:$PYTHONPATH
     # Run all unit tests with coverage
     # See UNITTESTS.md for detailed test documentation
     - pytest tests/ -v --cov=app --cov-report=xml --cov-report=term
