@@ -227,6 +227,11 @@ class AbsenceService:
                 request=request,
             )
 
+            # Send email notification
+            await absence_notification_service.send_rejected_notification(
+                absence, current_user, db
+            )
+
             return "Absence rejected"
 
     async def complete_absence(

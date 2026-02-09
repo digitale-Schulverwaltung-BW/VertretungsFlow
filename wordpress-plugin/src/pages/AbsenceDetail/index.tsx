@@ -418,14 +418,14 @@ const AbsenceDetail: React.FC = () => {
               <>
                 <button
                   onClick={() => handleApprove(true)}
-                  disabled={actionLoading || absence.status === 'approved'}
+                  disabled={actionLoading || absence.status === 'approved' || absence.status === 'completed'}
                   className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                   {actionLoading ? 'Lädt...' : '✓ Genehmigen'}
                 </button>
                 <button
                   onClick={() => handleApprove(false)}
-                  disabled={actionLoading || absence.status === 'rejected'}
+                  disabled={actionLoading || absence.status === 'rejected' || absence.status === 'completed'}
                   className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                   {actionLoading ? 'Lädt...' : '✗ Ablehnen'}

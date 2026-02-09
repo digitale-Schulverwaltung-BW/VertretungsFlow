@@ -6,9 +6,9 @@ Vollständige Anleitung zur Installation und Konfiguration von AbsenzFlow.
 
 ### Server-Anforderungen
 - Docker & Docker Compose (für Backend)
-- PostgreSQL 15+ (oder via Docker)
-- Python 3.11+ (für lokale Entwicklung)
+- PostgreSQL 15+ (oder Docker)
 - **Node.js 18+ & npm** (für WordPress-Plugin Build)
+- *für lokale Entwicklung: Python 3.11+*
 
 #### Node.js Installation
 
@@ -38,8 +38,13 @@ nvm use 20
 - Download von https://nodejs.org/ (LTS Version 20.x)
 - Oder mit Chocolatey: `choco install nodejs-lts`
 
+## Installations-Varianten
+AbsenzFlow lässt sich auf mehrere Arten deployen:
+1. Installation in ein bestehendes Wordpress, das die Benutzer beinhaltet
+1. Standalone-Installation (ToDo, noch nicht implementiert) ohne Wordpress mit LDAP-Anbindung
+
 ### Externe Dienste
-- **LDAP/Active Directory Server**
+- **LDAP/Active Directory Server** für Variante 2
   - Zugriff auf LDAP-Server
   - Service Account mit Leseberechtigung
   - Base DN für User-Suche
@@ -54,7 +59,7 @@ nvm use 20
   - SMTP Host und Port
   - SMTP Credentials (falls erforderlich)
 
-### WordPress (für Plugin)
+### WordPress (für Plugin, Variante 1)
 - WordPress 6.0 oder höher
 - PHP 7.4 oder höher
 - LDAP-Authentifizierung für WordPress (empfohlen)
@@ -114,9 +119,9 @@ WEBUNTIS_PASSWORD=api-passwort
 **WebUntis API User erstellen:**
 1. In WebUntis als Admin einloggen
 2. Verwaltung → Stammdaten → Lehrer
-3. Neuen Lehrer mit Kürzel "API" anlegen
+3. Neuen Lehrer, z. B. mit Kürzel "API" anlegen
 4. Benutzername und Passwort notieren
-5. Dem User Leserechte auf Stundenpläne geben
+5. Dem User Leserechte auf Stundenpläne geben (standardmäßig gegeben)
 
 #### E-Mail
 ```env

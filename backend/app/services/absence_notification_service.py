@@ -119,6 +119,38 @@ class AbsenceNotificationService:
                 f"Email notification error for completed absence {absence.id}: {e}"
             )
 
+    async def send_rejected_notification(
+        self, absence: Absence, current_user: User, db: Session
+    ) -> None:
+        """
+        Sends email notification when absence is rejected
+
+        Args:
+            absence: Absence object
+            current_user: User who rejected the absence
+            db: Database session
+        """
+        try:
+            if absence.teacher and absence.teacher.email:
+                success = await email_service.send_absence_rejected_notification(
+                    teacher_email=absence.teacher.email,
+                    absence_id=absence.id,
+                    rejector_name=current_user.full_name or current_user.username,
+                )
+
+                if not success:
+                    logger.warning(
+                        f"Email notification failed for rejected absence {absence.id}"
+                    )
+            else:
+                logger.warning(
+                    "Cannot send rejection email: teacher has no email address"
+                )
+        except Exception as e:
+            logger.error(
+                f"Email notification error for rejected absence {absence.id}: {e}"
+            )
+
 
 # Singleton instance
 absence_notification_service = AbsenceNotificationService()

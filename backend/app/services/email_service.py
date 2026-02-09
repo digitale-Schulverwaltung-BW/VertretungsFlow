@@ -227,6 +227,32 @@ AbsenzFlow System
 
         return await self.send_email(teacher_email, subject, body)
 
+    async def send_absence_rejected_notification(
+        self, teacher_email: str, absence_id: int, rejector_name: str
+    ) -> bool:
+        """
+        Benachrichtigung wenn Abwesenheit abgelehnt wird
+
+        Args:
+            teacher_email: E-Mail der Lehrkraft
+            absence_id: ID der Abwesenheit
+            rejector_name: Name des Ablehnenden
+
+        Returns:
+            True wenn erfolgreich
+        """
+        subject = "Ihre Abwesenheit wurde abgelehnt"
+        body = f"""
+Hallo,
+
+Ihre Abwesenheitsmeldung (ID: {absence_id}) wurde von {rejector_name} abgelehnt.
+
+Mit freundlichen Grüßen,
+AbsenzFlow System
+        """
+
+        return await self.send_email(teacher_email, subject, body)
+
 
 # Singleton Instance
 email_service = EmailService()
