@@ -86,7 +86,9 @@ class AbsenceNotificationService:
                         f"Email notification failed for approved absence {absence.id}"
                     )
                 else:
-                    logger.info(f"✓ Approved notification sent for absence {absence.id}")
+                    logger.info(
+                        f"✓ Approved notification sent for absence {absence.id}"
+                    )
             else:
                 logger.warning(
                     "Cannot send approval email: teacher has no email address"
@@ -115,7 +117,9 @@ class AbsenceNotificationService:
                         f"Email notification failed for completed absence {absence.id}"
                     )
                 else:
-                    logger.info(f"✓ Completed notification sent for absence {absence.id}")
+                    logger.info(
+                        f"✓ Completed notification sent for absence {absence.id}"
+                    )
             else:
                 logger.warning(
                     "Cannot send completion email: teacher has no email address"
@@ -149,7 +153,9 @@ class AbsenceNotificationService:
                         f"Email notification failed for rejected absence {absence.id}"
                     )
                 else:
-                    logger.info(f"✓ Rejected notification sent for absence {absence.id}")
+                    logger.info(
+                        f"✓ Rejected notification sent for absence {absence.id}"
+                    )
             else:
                 logger.warning(
                     "Cannot send rejection email: teacher has no email address"
