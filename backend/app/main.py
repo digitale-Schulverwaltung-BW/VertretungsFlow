@@ -10,6 +10,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from sqlalchemy import text
 from app.core.config import settings
 from app.api import auth, absences, attachments, webuntis, admin, pdf_forms
 
@@ -48,6 +51,33 @@ app = FastAPI(
 # Rate Limiter an App binden
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Initialize APScheduler
+scheduler = AsyncIOScheduler()
+
+
+def run_cleanup_task():
+    """Background task to clean up old absences"""
+    from app.core.database import SessionLocal
+    from app.services.absence_service import absence_service
+
+    if not settings.ABSENCE_AUTO_DELETE_ENABLED:
+        logger.info("Absence auto-deletion is disabled")
+        return
+
+    logger.info(f"Running automatic absence cleanup (retention: {settings.ABSENCE_RETENTION_DAYS} days)")
+
+    db = SessionLocal()
+    try:
+        result = absence_service.cleanup_old_absences(
+            db=db,
+            retention_days=settings.ABSENCE_RETENTION_DAYS
+        )
+        logger.info(f"Cleanup result: {result}")
+    except Exception as e:
+        logger.error(f"Cleanup task failed: {e}")
+    finally:
+        db.close()
 
 
 # Security Headers Middleware
@@ -158,8 +188,36 @@ async def startup_event():
     logger.info(f"🔍 Debug Mode: {settings.DEBUG}")
     logger.info(f"🔐 Auth Mode: {settings.AUTH_MODE}")
 
+    # Initialize database connection test
+    try:
+        from app.core.database import SessionLocal
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        logger.info("Database connection successful")
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+        raise
+
+    # Setup scheduled cleanup task
+    if settings.ABSENCE_AUTO_DELETE_ENABLED:
+        scheduler.add_job(
+            run_cleanup_task,
+            trigger=CronTrigger(hour=2, minute=0),  # Run daily at 2:00 AM
+            id='cleanup_old_absences',
+            name='Clean up old absences',
+            replace_existing=True
+        )
+        scheduler.start()
+        logger.info(f"Scheduled daily cleanup at 02:00 (retention: {settings.ABSENCE_RETENTION_DAYS} days)")
+    else:
+        logger.info("Absence auto-deletion is disabled")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Wird beim Herunterfahren ausgeführt"""
+    if scheduler.running:
+        scheduler.shutdown()
+        logger.info("Scheduler shut down")
     logger.info("👋 AbsenzFlow Backend gestoppt")

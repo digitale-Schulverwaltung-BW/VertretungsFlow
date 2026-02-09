@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     # WordPress Proxy Authentication
     WORDPRESS_PROXY_SECRET: str = "change-this-shared-secret-in-production"
 
+    # Absence Auto-Deletion Configuration
+    ABSENCE_RETENTION_DAYS: int = 90
+    ABSENCE_AUTO_DELETE_ENABLED: bool = True
+
     model_config = {
         "env_file": ".env",
         "case_sensitive": True,

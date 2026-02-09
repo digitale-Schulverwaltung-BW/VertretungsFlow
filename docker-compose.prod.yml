@@ -58,6 +58,10 @@ services:
       # WordPress Proxy Authentication
       WORDPRESS_PROXY_SECRET: ${WORDPRESS_PROXY_SECRET}  # Must be set in .env - no default!
 
+      # Absence Auto-Deletion
+      ABSENCE_RETENTION_DAYS: ${ABSENCE_RETENTION_DAYS:-90}
+      ABSENCE_AUTO_DELETE_ENABLED: ${ABSENCE_AUTO_DELETE_ENABLED:-true}
+
       # File Upload
       UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
     volumes:

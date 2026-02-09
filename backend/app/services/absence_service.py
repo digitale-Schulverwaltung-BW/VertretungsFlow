@@ -306,7 +306,7 @@ class AbsenceService:
 
     def delete_absence(self, absence_id: int, db: Session) -> str:
         """
-        Deletes an absence
+        Deletes an absence and all associated files
 
         Args:
             absence_id: Absence ID
@@ -318,17 +318,77 @@ class AbsenceService:
         Raises:
             HTTPException: If absence not found
         """
-        absence = db.query(Absence).filter(Absence.id == absence_id).first()
+        # Eager load attachments for cleanup
+        absence = db.query(Absence).options(
+            selectinload(Absence.attachments)
+        ).filter(Absence.id == absence_id).first()
 
         if not absence:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Absence not found"
             )
 
+        # Delete attachments from disk before deleting DB record
+        if absence.attachments:
+            logger.info(f"Deleting {len(absence.attachments)} attachments for absence {absence_id}...")
+            for attachment in absence.attachments:
+                try:
+                    attachment_service.delete_file(attachment.file_path)
+                except Exception as e:
+                    logger.warning(f"Failed to delete file {attachment.file_path}: {e}")
+
+        # Delete database record (CASCADE will delete affected_lessons and attachment records)
         db.delete(absence)
         db.commit()
 
+        logger.info(f"Absence {absence_id} deleted successfully")
         return "Absence deleted"
+
+    def cleanup_old_absences(self, db: Session, retention_days: int) -> dict:
+        """
+        Deletes absences older than retention_days (based on end_date)
+
+        Args:
+            db: Database session
+            retention_days: Number of days to retain absences after end_date
+
+        Returns:
+            Dict with cleanup statistics: {"deleted_count": int, "errors": int}
+        """
+        from datetime import timedelta
+
+        if retention_days <= 0:
+            logger.info("Absence auto-deletion disabled (retention_days <= 0)")
+            return {"deleted_count": 0, "errors": 0}
+
+        cutoff_date = datetime.now().date() - timedelta(days=retention_days)
+
+        logger.info(f"Starting cleanup of absences with end_date before {cutoff_date}")
+
+        # Find all absences older than cutoff_date
+        old_absences = db.query(Absence).filter(
+            Absence.end_date < cutoff_date
+        ).all()
+
+        deleted_count = 0
+        error_count = 0
+
+        for absence in old_absences:
+            try:
+                logger.info(f"Deleting old absence {absence.id} (end_date: {absence.end_date}, teacher: {absence.teacher.username})")
+                self.delete_absence(absence.id, db)
+                deleted_count += 1
+            except Exception as e:
+                logger.error(f"Failed to delete absence {absence.id}: {e}")
+                error_count += 1
+
+        logger.info(f"Cleanup completed: {deleted_count} absences deleted, {error_count} errors")
+
+        return {
+            "deleted_count": deleted_count,
+            "errors": error_count,
+            "cutoff_date": cutoff_date.isoformat()
+        }
 
 
 # Singleton instance

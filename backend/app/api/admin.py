@@ -316,3 +316,44 @@ async def get_cache_status(
             "timegrid": webuntis_service._timegrid_cache is not None,
         },
     }
+
+
+# ============ Absence Auto-Deletion Management ============
+
+
+@router.post("/cleanup-old-absences")
+@limiter.limit("5/minute")
+async def trigger_cleanup(
+    request: Request,
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
+    db: Session = Depends(get_db),
+):
+    """
+    Manually trigger cleanup of old absences (Admin only)
+
+    Deletes absences older than ABSENCE_RETENTION_DAYS (based on end_date).
+    This is normally run automatically at 02:00 AM via APScheduler.
+
+    Args:
+        current_user: Current authenticated user (must be Admin)
+        db: Database session
+
+    Returns:
+        Cleanup result with statistics
+    """
+    from app.core.config import settings
+    from app.services.absence_service import absence_service
+
+    logger.info(f"Manual cleanup triggered by {current_user.username}")
+
+    result = absence_service.cleanup_old_absences(
+        db=db,
+        retention_days=settings.ABSENCE_RETENTION_DAYS
+    )
+
+    return {
+        "message": "Cleanup completed",
+        "result": result,
+        "triggered_by": current_user.username,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
