@@ -20,8 +20,19 @@ test_backend:
     - cd ..
   script:
     - cd backend
-    - pytest tests/ -v --cov=app --cov-report=xml
+    # Run all unit tests with coverage
+    # See UNITTESTS.md for detailed test documentation
+    - pytest tests/ -v --cov=app --cov-report=xml --cov-report=term
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage.xml
+    paths:
+      - backend/coverage.xml
+    expire_in: 1 week
 
 test_frontend:
   image: node:18
