@@ -2,8 +2,8 @@
 
 **Stand:** 2026-02-10
 **Test Framework:** pytest 7.4.4 + pytest-asyncio
-**Gesamt Tests:** 436 passed, 1 skipped
-**Execution Time:** ~2.9 seconds ⚡
+**Gesamt Tests:** 468 passed, 1 skipped
+**Execution Time:** ~2.7 seconds ⚡
 
 ---
 
@@ -26,6 +26,7 @@
 | `app/services/pdf_service.py` | 364 | 23 | ~85% | ✅ Abgeschlossen |
 | `app/services/email_service.py` | ~150 | 20 | ~95% | ✅ Abgeschlossen |
 | `app/services/webuntis_service.py` + parser | ~600 | 39 | ~90% | ✅ Abgeschlossen |
+| `app/services/webuntis/client.py` | 364 | 32 | ~90% | ✅ Abgeschlossen |
 | **API Routes (6/6)** | | | | |
 | `app/api/auth.py` | ~350 | 27 | ~90% | ✅ Abgeschlossen |
 | `app/api/absences.py` | 317 | 22 | ~95% | ✅ Abgeschlossen |
@@ -36,7 +37,7 @@
 | **Core** | | | | |
 | `app/core/security.py` | 72 | 11 | ~95% | ✅ Abgeschlossen |
 | `app/core/audit.py` | 168 | 16 | ~95% | ✅ Abgeschlossen |
-| **Gesamt** | **~3800** | **436** | **~75%** | |
+| **Gesamt** | **~4200** | **468** | **~78%** | |
 
 ### Noch offen ⏳
 
@@ -72,7 +73,8 @@ backend/tests/
 ├── test_api_pdf_forms.py          # ✅ 10 Tests
 ├── test_api_users.py              # ✅ 14 Tests
 ├── test_core_security.py          # ✅ 11 Tests
-└── test_core_audit.py             # ✅ 16 Tests
+├── test_core_audit.py             # ✅ 16 Tests
+└── test_webuntis_client.py        # ✅ 32 Tests
 ```
 
 ### Fehlende Tests (ToDo)
@@ -442,6 +444,25 @@ backend/tests/
 
 ---
 
+### ✅ test_webuntis_client.py (32 Tests)
+
+**Getestet:**
+- `authenticate()` - Erfolg (session_id/person_id gesetzt), API-Error-Response, non-200 Status, Exception, echtes Passwort im POST-Payload (nicht `***`)
+- `logout()` - Kein Session-ID → sofortiges True ohne HTTP-Call, Erfolg (200), non-200 → False, Exception
+- `_call_api()` - Erfolg mit result, API-Error-Response → None, Session-Expiry (-8520) + Auto-Retry → Ergebnis, Re-Auth-Failure → None, non-200, Exception, `handle_session_expiration=False`-Bypass
+- `_handle_expired_session()` - Löscht `session_id` vor Re-Auth, gibt `authenticate()`-Ergebnis zurück
+- Wrapper-Methoden (`get_teachers`, `get_timetable`, `get_subjects`, `get_classes`, `get_rooms`, `get_timegrid`) - Ergebnis zurückgegeben / `[]` bei None; `get_timetable` prüft params-Struktur mit teacher_id/startDate/endDate
+- `find_teacher_id()` - Exact match, case-insensitive (MAIER == maier), nicht gefunden → None, leere Lehrerliste → None
+
+**Test-Coverage:**
+- ✅ `patch_httpx(mock_client)` Contextmanager-Helper: wired `httpx.AsyncClient.__aenter__/__aexit__`
+- ✅ `make_http_response()` mit `headers = {}` (nötig wegen `dict(response.headers)` in `authenticate()`)
+- ✅ `side_effects=[expiry_response, success_response]` für Session-Expiry-Retry (zwei POST-Calls in einer `_call_api`-Kette)
+- ✅ `patch.object(client, "_handle_expired_session", new_callable=AsyncMock)` zum Isolieren des Retry-Pfads
+- ✅ `mock_cls.assert_not_called()` für logout() ohne Session (kein HTTP-Aufruf)
+
+---
+
 ## 🚀 CI/CD Integration
 
 ### GitLab CI Configuration
@@ -505,11 +526,12 @@ docker-compose exec backend python -m pytest tests/ -q
 - ✅ `test_api_attachments.py` (11 Tests) - Audit-Log Reihenfolge, FileResponse
 - ✅ `test_api_webuntis.py` (5 Tests) - Perioden-Filterlogik
 
-#### Phase 3: Coverage-Lücken ✅ (51 Tests, 2026-02-10)
+#### Phase 3: Coverage-Lücken ✅ (83 Tests, 2026-02-10)
 - ✅ `test_api_pdf_forms.py` (10 Tests) - Filename-Sanitizer, AsyncMock für PDF-Generierung
 - ✅ `test_api_users.py` (14 Tests) - Admin-Guard, filter-Branch, commit+refresh
 - ✅ `test_core_security.py` (11 Tests) - JWT Round-Trip, pwd_context gemockt (bcrypt-Inkompatibilität)
 - ✅ `test_core_audit.py` (16 Tests) - IP-Header-Extraktion, JSON-Audit-Format, alle Convenience-Funktionen
+- ✅ `test_webuntis_client.py` (32 Tests) - httpx AsyncClient gemockt, Session-Expiry-Retry, alle HTTP-Pfade
 
 ### Low Priority
 
@@ -523,12 +545,12 @@ docker-compose exec backend python -m pytest tests/ -q
 ## 🎯 Test-Quality Metriken
 
 ### Ausführungszeit ⚡
-- **436 Tests in 2.9s** - Hervorragend!
+- **468 Tests in 2.7s** - Hervorragend!
 - Durchschnitt: ~6ms pro Test
 - Keine langsamen Tests (>100ms)
 
 ### Test-Qualität ✅
-- ✅ Alle Tests grün (436/436)
+- ✅ Alle Tests grün (468/468)
 - ✅ Keine Flaky Tests
 - ✅ Gute Edge-Case Coverage
 - ✅ Security-kritische Bereiche vollständig getestet
@@ -658,6 +680,33 @@ with patch("app.core.security.pwd_context") as mock_ctx:
 assert result is True
 ```
 
+### 12. httpx AsyncClient mocken (für HTTP-Client-Tests)
+```python
+import contextlib
+from unittest.mock import AsyncMock, Mock
+
+def make_http_response(status_code=200, json_data=None):
+    response = Mock()
+    response.status_code = status_code
+    response.headers = {}  # dict(response.headers) schlägt fehl ohne echtes dict
+    if json_data is not None:
+        response.json.return_value = json_data
+    return response
+
+@contextlib.contextmanager
+def patch_httpx(mock_client):
+    with patch("app.services.webuntis.client.httpx.AsyncClient") as mock_cls:
+        mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+        yield mock_cls
+
+# Session-Expiry-Retry: zwei aufeinanderfolgende POST-Calls:
+mock_http = AsyncMock()
+mock_http.post = AsyncMock(side_effect=[expiry_response, success_response])
+with patch_httpx(mock_http):
+    result = await client._call_api("getTeachers")
+```
+
 ### 7. Security Tests Markieren
 ```python
 def test_path_traversal_blocked(self):
@@ -732,21 +781,21 @@ Exception: parameter `request` must be an instance of starlette.requests.Request
 
 ## 📊 Coverage Goals
 
-### Current Coverage: ~75% (gemessen, coverage.xml)
+### Current Coverage: ~78% (geschätzt nach Phase 3)
 - Utils: 100% ✅
-- Services: ~87% (ohne ldap_service) ✅
+- Services: ~90% (inkl. webuntis/client.py) ✅
 - API Routes (getestet): 100% (absences, attachments, webuntis, pdf_forms) ✅
 - Core (security, audit): ~95% ✅
 - Models: 100% ✅
 - Nicht getestet: `main.py`, `api/api.py`, `ldap_service.py`, `api/deps.py`, `api/admin.py`
 
-### Target Coverage: 80%+ (Basis erreicht)
+### Target Coverage: 80%+ (fast erreicht)
 - **Phase 1:** Services & Utils ✅ **Abgeschlossen** (319 Tests)
 - **Phase 2:** API Routes ✅ **Abgeschlossen** (65 neue Tests, gesamt 385)
-- **Phase 3:** Coverage-Lücken ✅ **Abgeschlossen** (51 neue Tests, gesamt 436)
+- **Phase 3:** Coverage-Lücken ✅ **Abgeschlossen** (83 neue Tests, gesamt 468)
 - **Phase 4:** `api/admin.py`, `api/deps.py` (optional, → 80%+ gemessen)
 
 ---
 
-**Letzte Aktualisierung:** 2026-02-10 (Phase 3)
+**Letzte Aktualisierung:** 2026-02-10 (Phase 3 abgeschlossen inkl. webuntis/client.py)
 **Von:** Claude Sonnet 4.5 (mit User Seyfried)
