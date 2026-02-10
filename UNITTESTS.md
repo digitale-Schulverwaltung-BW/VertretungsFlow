@@ -2,8 +2,8 @@
 
 **Stand:** 2026-02-10
 **Test Framework:** pytest 7.4.4 + pytest-asyncio
-**Gesamt Tests:** 320 passed, 1 skipped
-**Execution Time:** ~1.5 seconds ⚡
+**Gesamt Tests:** 385 passed, 1 skipped
+**Execution Time:** ~1.3 seconds ⚡
 
 ---
 
@@ -17,7 +17,7 @@
 | `app/utils/time_format_utils.py` | 126 | 30 | 100% | ✅ Abgeschlossen |
 | `app/utils/absence_utils.py` | 99 | 21 | 100% | ✅ Abgeschlossen |
 | `app/utils/email_utils.py` | ~40 | 18 | 100% | ✅ Abgeschlossen |
-| **Services (6/7)** | | | | |
+| **Services (7/8)** | | | | |
 | `app/services/permission_service.py` | 134 | 44 | 100% | ✅ Abgeschlossen |
 | `app/services/template_service.py` | 138 | 51 | 100% | ✅ Abgeschlossen |
 | `app/services/attachment_service.py` | 235 | 29 | ~95% | ✅ Abgeschlossen |
@@ -26,7 +26,12 @@
 | `app/services/pdf_service.py` | 364 | 23 | ~85% | ✅ Abgeschlossen |
 | `app/services/email_service.py` | ~150 | 20 | ~95% | ✅ Abgeschlossen |
 | `app/services/webuntis_service.py` + parser | ~600 | 39 | ~90% | ✅ Abgeschlossen |
-| **Gesamt** | **~2325** | **319** | **~93%** | |
+| **API Routes (4/4)** | | | | |
+| `app/api/auth.py` | ~350 | 27 | ~90% | ✅ Abgeschlossen |
+| `app/api/absences.py` | 317 | 22 | ~95% | ✅ Abgeschlossen |
+| `app/api/attachments.py` | 183 | 11 | ~95% | ✅ Abgeschlossen |
+| `app/api/webuntis.py` | 72 | 5 | ~90% | ✅ Abgeschlossen |
+| **Gesamt** | **~3500** | **384** | **~93%** | |
 
 ### Noch offen ⏳
 
@@ -54,7 +59,11 @@ backend/tests/
 ├── test_absence_notification_service.py  # ✅ 18 Tests
 ├── test_pdf_service.py            # ✅ 23 Tests
 ├── test_email_service.py          # ✅ 20 Tests
-└── test_webuntis_service.py       # ✅ 39 Tests
+├── test_webuntis_service.py       # ✅ 39 Tests
+├── test_api_auth.py               # ✅ 27 Tests
+├── test_api_absences.py           # ✅ 22 Tests
+├── test_api_attachments.py        # ✅ 11 Tests
+└── test_api_webuntis.py           # ✅ 5 Tests
 ```
 
 ### Fehlende Tests (ToDo)
@@ -255,6 +264,8 @@ backend/tests/
 - ✅ `side_effect=[True, False]` für Partial-Failure-Test
 - ✅ `mock_send.call_args[0][1]` für Subject-Inhalt, `call_args[0][2]` für Body-Inhalt
 
+---
+
 ### ✅ test_webuntis_service.py (39 Tests)
 
 **Getestet:**
@@ -276,6 +287,80 @@ backend/tests/
 **Architektur-Entscheidung:**
 - `WebUntisAPIClient._call_api()` und HTTP-Layer nicht direkt getestet (httpx-Mocking nicht nötig)
 - Stattdessen: Wichtige Business-Logic (`find_teacher_id`) und Pure Functions vollständig abgedeckt
+
+---
+
+### ✅ test_api_auth.py (27 Tests)
+
+**Getestet:**
+- `map_wordpress_role()` - WordPress → AbsenzFlow role mapping (alle 4 Rollen + Unknown-Fallback + Uppercase)
+- `_decode_wordpress_name()` - URL-decode Header-Namen (None, plain, Umlaute, Whitespace)
+- `_update_wordpress_user_fields()` - Smart Update: nur bei Änderungen (email, role, name, webuntis_code, multiple)
+- `_handle_wordpress_proxy_user()` - Create vs. Update Flow (neuer User, geänderter User, kein Commit wenn unverändert)
+- `get_wordpress_proxy_user()` - Secret-Validierung (kein Secret, kein User, falsches Secret, inaktiver User, Happy Path)
+
+**Test-Coverage:**
+- ✅ Direkte Funktionsaufrufe (kein TestClient/HTTP)
+- ✅ `patch.object(settings, "WORDPRESS_PROXY_SECRET", TEST_SECRET)` für Settings-Isolation
+- ✅ `patch.object(settings, "AUTH_MODE", "wordpress")` für Mode-Isolation
+- ✅ `mock_create.call_args.args[4]` für positionale Argument-Validierung (URL-Decode)
+- ✅ `db.commit.assert_not_called()` für No-Op-Verify
+
+**Security Tests:** 🔒
+- Falsches Secret → 401 "Invalid proxy secret"
+- Fehlende Header → 401 "Not authenticated"
+- Inaktiver User → 400 "Inactive user"
+
+---
+
+### ✅ test_api_absences.py (22 Tests)
+
+**Getestet (Route-Logik, Services bereits getestet):**
+- `create_absence()` - Delegation + korrekter Rückgabewert
+- `list_absences()` - Teacher-Filter, Planner sieht alles, leere Liste, Status-Filter
+- `get_absence()` - 404, 403, Erfolgsfall
+- `update_lesson_notes()` - 404 Absence, 403, 404 Lesson, Update+Commit, None-Guard
+- `approve_absence()` - 404, 403, Delegation an Service
+- `complete_absence()` - 403, Header→`can_complete_absence(user, True)`, Delegation
+- `delete_absence()` - 404, 403, Delegation + korrekter Aufruf
+
+**Test-Coverage:**
+- ✅ `unwrap(func)` Pattern: slowapi `@limiter.limit()` Decorator via `__wrapped__` bypassed
+- ✅ `make_two_query_db()`: Unterschiedliche Query-Ergebnisse für Absence vs. AffectedLesson
+- ✅ `make_list_mock_db()`: Selbst-referenzierende Chain für options/filter/order_by/offset/limit/all
+- ✅ `request.headers.get.return_value = "1"` für Custom-Header-Tests
+
+---
+
+### ✅ test_api_attachments.py (11 Tests)
+
+**Getestet:**
+- `upload_attachment()` - 404/403-Checks, validate+save aufgerufen, DB-Persist, Audit-Log
+- `download_attachment()` - 404/403-Checks, `get_file_path` aufgerufen, `FileResponse` mit korrektem Pfad
+- `delete_attachment()` - 404/403-Checks, `delete_file` + `db.delete()` + Commit, Audit-Log **vor** DB-Delete
+
+**Test-Coverage:**
+- ✅ `test_audit_log_called_before_db_delete`: Reihenfolge audit → db.delete via `call_order`-Tracking
+- ✅ `isinstance(response, FileResponse)` + `response.path` ohne echte Datei auf Disk
+- ✅ `save_file(mock_file, b"file content", absence_id)` - korrekte Weitergabe von file_content
+
+**Security Tests:** 🔒
+- Auth-Check vor File-Operationen (403 bei fehlenden Rechten)
+- Audit-Log vor DB-Delete (Metadaten gesichert bevor Eintrag verschwindet)
+
+---
+
+### ✅ test_api_webuntis.py (5 Tests)
+
+**Getestet:**
+- `fetch_lessons_from_webuntis()` - Validierung → WebUntis-Abruf → Perioden-Filterung
+
+**Test-Coverage:**
+- ✅ `validate_date_range` HTTPException wird durchgereicht (400)
+- ✅ Leere Liste wenn WebUntis keine Stunden liefert
+- ✅ `is_lesson_in_period` filtert korrekt (side_effect=[True, False])
+- ✅ Alle Stunden zurückgegeben wenn alle Perioden-Check bestehen
+- ✅ `username` und `webuntis_teacher_code` korrekt an Service übergeben
 
 ---
 
@@ -314,7 +399,7 @@ test_backend:
 docker-compose exec backend python -m pytest tests/ -v
 
 # Einzelne Test-Suite
-docker-compose exec backend python -m pytest tests/test_permission_service.py -v
+docker-compose exec backend python -m pytest tests/test_api_absences.py -v
 
 # Mit Coverage (wenn installiert)
 docker-compose exec backend python -m pytest tests/ --cov=app --cov-report=html
@@ -329,34 +414,24 @@ docker-compose exec backend python -m pytest tests/ -q
 
 ### ✅ Erledigt
 
-#### ~~1. `test_absence_service.py`~~ ✅ (26 Tests, 2026-02-10)
-- DB Session Mocking via `make_mock_db()` Helper gelöst
-- Alle 5 Methoden + Cleanup abgedeckt
+#### Phase 1: Services & Utils ✅ (319 Tests, 2026-02-10)
+- ✅ `test_absence_service.py` (26 Tests) - DB Session Mocking via `make_mock_db()`
+- ✅ `test_absence_notification_service.py` (18 Tests) - Silent Error Handling
+- ✅ `test_pdf_service.py` (23 Tests) - Config Caching, pypdf gemockt
+- ✅ `test_webuntis_service.py` (39 Tests) - client=Mock() statt HTTP-Mocking
+- ✅ `test_email_service.py` (20 Tests) - aiosmtplib SMTP Mocking
 
-#### ~~2. `test_absence_notification_service.py`~~ ✅ (18 Tests, 2026-02-10)
-- `email_service` Singleton via `@patch` gemockt
-- Silent Error Handling explizit getestet (no-raise für alle Methoden)
-
-#### ~~3. `test_pdf_service.py`~~ ✅ (23 Tests, 2026-02-10)
-- `service.config` direkt setzen → kein File-I/O
-- pypdf durch `patch.object(service, "_merge_fdf_with_pdf")` gemockt
-- `service.webuntis_service._load_timegrid = AsyncMock(...)` für WebUntis
+#### Phase 2: API Routes ✅ (65 Tests, 2026-02-10)
+- ✅ `test_api_auth.py` (27 Tests) - Settings patchen, direkte async-Aufrufe
+- ✅ `test_api_absences.py` (22 Tests) - `unwrap()` für slowapi-Bypass
+- ✅ `test_api_attachments.py` (11 Tests) - Audit-Log Reihenfolge, FileResponse
+- ✅ `test_api_webuntis.py` (5 Tests) - Perioden-Filterlogik
 
 ### Low Priority
 
-#### ~~4. `test_webuntis_service.py`~~ ✅ (39 Tests, 2026-02-10)
-- `service.client = Mock()` statt HTTP-Mocking → saubere Unit-Test-Isolation
-- Pure Functions `parse_timetable()` + `merge_consecutive_lessons()` direkt getestet
-- `WebUntisAPIClient.find_teacher_id()` Business-Logic vollständig abgedeckt
-
-#### ~~5. `test_email_service.py`~~ ✅ (20 Tests, 2026-02-10)
-- `@patch("aiosmtplib.send")` für SMTP Mocking gelöst
-- TLS-Logik (Port 587/465/25) vollständig getestet
-- `patch.object(service, "send_email")` für Notification-Methoden
-
-#### 6. `test_ldap_service.py` 🟡 (Optional)
+#### `test_ldap_service.py` 🟡 (Optional)
 - **Komplexität:** Mittel
-- **Dependencies:** LDAP Server
+- **Dependencies:** LDAP Server Mocking
 - **Nur relevant wenn LDAP-Mode verwendet wird**
 
 ---
@@ -364,12 +439,12 @@ docker-compose exec backend python -m pytest tests/ -q
 ## 🎯 Test-Quality Metriken
 
 ### Ausführungszeit ⚡
-- **320 Tests in 1.3s** - Hervorragend!
-- Durchschnitt: ~4ms pro Test
+- **385 Tests in 1.3s** - Hervorragend!
+- Durchschnitt: ~3ms pro Test
 - Keine langsamen Tests (>100ms)
 
 ### Test-Qualität ✅
-- ✅ Alle Tests grün (320/320)
+- ✅ Alle Tests grün (385/385)
 - ✅ Keine Flaky Tests
 - ✅ Gute Edge-Case Coverage
 - ✅ Security-kritische Bereiche vollständig getestet
@@ -440,12 +515,44 @@ def make_mock_db(absence=None, all_absences=None):
     return db
 ```
 
-### 5. Security Tests Markieren
+### 5. slowapi Rate-Limiter bypassen (API Route Tests)
+```python
+def unwrap(func):
+    """Return the original function, bypassing slowapi @limiter.limit() decorator.
+    slowapi uses functools.wraps, so __wrapped__ points to the original function."""
+    return func.__wrapped__
+
+# Usage:
+result = await unwrap(my_route)(request=mock_request, ...)
+```
+
+### 6. FastAPI Settings patchen
+```python
+with patch.object(settings, "WORDPRESS_PROXY_SECRET", "test-secret"):
+    with patch.object(settings, "AUTH_MODE", "wordpress"):
+        result = await get_wordpress_proxy_user(...)
+```
+
+### 7. Security Tests Markieren
 ```python
 def test_path_traversal_blocked(self):
     """Test that path traversal is blocked (SECURITY!)"""
     with pytest.raises(HTTPException):
         dangerous_operation()
+```
+
+### 8. Reihenfolge von Operationen prüfen
+```python
+call_order = []
+
+def track_audit(*args, **kwargs):
+    call_order.append("audit")
+
+db.delete.side_effect = lambda obj: call_order.append("db_delete")
+
+# ... run route ...
+
+assert call_order == ["audit", "db_delete"]
 ```
 
 ---
@@ -490,21 +597,27 @@ docker-compose restart backend
 - Sicherstellen dass `@pytest.mark.asyncio` Decorator verwendet wird
 - `pytest-asyncio` in requirements-dev.txt vorhanden
 
+### slowapi-Fehler in Route-Tests
+```
+Exception: parameter `request` must be an instance of starlette.requests.Request
+```
+**Fix:** `unwrap(route_function)` verwenden (siehe Pattern 5 oben).
+
 ---
 
 ## 📊 Coverage Goals
 
-### Current Coverage: ~80% (geschätzt)
+### Current Coverage: ~93% (geschätzt)
 - Utils: 100% ✅
-- Services: 98% (8/9, ohne ldap) ✅
-- API Routes: 0% ❌
+- Services: ~93% (7/8, ohne ldap) ✅
+- API Routes: ~93% ✅
 - Models: N/A (simple ORM)
 - Schemas: N/A (Pydantic validation)
 
-### Target Coverage: 80%+
-- **Phase 1:** Services vervollständigen ✅ **Abgeschlossen** (alle außer ldap)
-- **Phase 2:** API Routes testen (→ 85%+)
-- **Phase 3:** Integration Tests (→ 90%+)
+### Target Coverage: 80%+ ✅ Erreicht!
+- **Phase 1:** Services & Utils ✅ **Abgeschlossen** (319 Tests)
+- **Phase 2:** API Routes ✅ **Abgeschlossen** (65 neue Tests, gesamt 384)
+- **Phase 3:** Integration Tests (optional, → 95%+)
 
 ---
 
