@@ -2,8 +2,8 @@
 
 **Stand:** 2026-02-10
 **Test Framework:** pytest 7.4.4 + pytest-asyncio
-**Gesamt Tests:** 468 passed, 1 skipped
-**Execution Time:** ~2.7 seconds ⚡
+**Gesamt Tests:** 505 passed, 1 skipped
+**Execution Time:** ~2.0 seconds ⚡
 
 ---
 
@@ -37,7 +37,10 @@
 | **Core** | | | | |
 | `app/core/security.py` | 72 | 11 | ~95% | ✅ Abgeschlossen |
 | `app/core/audit.py` | 168 | 16 | ~95% | ✅ Abgeschlossen |
-| **Gesamt** | **~4200** | **468** | **~78%** | |
+| **Auth & Deps** | | | | |
+| `app/api/deps.py` | 112 | 21 | ~100% | ✅ Abgeschlossen |
+| `app/api/admin.py` | 359 | 16 | ~90% | ✅ Abgeschlossen |
+| **Gesamt** | **~4700** | **505** | **~82%** | |
 
 ### Noch offen ⏳
 
@@ -74,7 +77,9 @@ backend/tests/
 ├── test_api_users.py              # ✅ 14 Tests
 ├── test_core_security.py          # ✅ 11 Tests
 ├── test_core_audit.py             # ✅ 16 Tests
-└── test_webuntis_client.py        # ✅ 32 Tests
+├── test_webuntis_client.py        # ✅ 32 Tests
+├── test_api_deps.py               # ✅ 21 Tests
+└── test_api_admin.py              # ✅ 16 Tests
 ```
 
 ### Fehlende Tests (ToDo)
@@ -463,6 +468,59 @@ backend/tests/
 
 ---
 
+### ✅ test_api_deps.py (21 Tests)
+
+**Getestet:**
+- `get_current_user()` - JWT-Decode → DB-Lookup → `is_active`-Check (5 Pfade)
+- `get_current_teacher()` - Role-Guard für Teacher/DeptHead/Planner/Admin (4 Tests)
+- `get_current_department_head()` - Role-Guard für DeptHead/Admin (4 Tests)
+- `get_current_planner()` - Role-Guard für Planner/Admin (4 Tests)
+- `get_current_admin()` - Role-Guard für Admin-Only (4 Tests)
+
+**Test-Coverage:**
+- ✅ `patch("app.api.deps.decode_access_token")` für JWT-Mocking ohne echte Keys
+- ✅ `make_mock_credentials(token)` - Mock mit `.credentials = token` für `HTTPAuthorizationCredentials`
+- ✅ Alle 4 Fehlerpfade in `get_current_user`: `None`-Payload, fehlende `sub`, User nicht in DB, inaktiver User
+- ✅ Role-Guards direkt mit `current_user=make_mock_user(role=...)` aufgerufen (kein DB-Mock nötig)
+- ✅ 401 vs. 403 korrekt unterschieden: Token-Fehler → 401, inaktiver User → 403
+
+**Security Tests:** 🔒
+- Token-Fehler (invalides JWT) → 401 Unauthorized
+- Payload ohne `sub`-Claim → 401 Unauthorized
+- User nicht in DB → 401 Unauthorized
+- Inaktiver User → 403 Forbidden (nicht 401!)
+- Fehlende Rolle → 403 Forbidden
+
+---
+
+### ✅ test_api_admin.py (16 Tests)
+
+**Getestet:**
+- `list_users()` - Ergebnisse aus DB, skip+limit korrekt weitergeleitet (2 Tests)
+- `assign_role()` - 404 wenn User nicht gefunden, Role setzen + commit + refresh (2 Tests)
+- `get_dashboard_stats()` - Zählt 4 verschiedene States via `scalar()`, Null-Werte (2 Tests)
+- `list_pending_absences()` - Absences aus DB, `order_by` aufgerufen (2 Tests)
+- `list_absences_by_date()` - 400 bei ungültigem `from_date`, 400 bei ungültigem `to_date`, valides Range → Ergebnis (3 Tests)
+- `refresh_webuntis_cache()` - DB-Cache löscht + commit, gibt `message` + `timestamp` zurück (2 Tests)
+- `get_cache_status()` - In-Memory-Cache-Flags, `cached_keys`-Liste mit korrekten Keys (2 Tests)
+- `trigger_cleanup()` - Delegiert an Absence-Service, gibt `result` + `triggered_by` + `timestamp` zurück (1 Test)
+
+**Test-Coverage:**
+- ✅ `unwrap(func)` für alle 8 Endpoints (alle haben `@limiter.limit()`)
+- ✅ `make_count_db(counts=[5,3,12,47])` - `scalar.side_effect` für 4 aufeinanderfolgende Count-Queries
+- ✅ `make_list_db()`, `make_single_db()` - spezialisierte DB-Mocks für unterschiedliche Query-Patterns
+- ✅ Function-Body-Import-Patch: `with patch("app.services.webuntis.webuntis_service", mock_service):`
+  - **Grund:** `from app.services.webuntis import webuntis_service` steht im Funktions-Body, nicht im Modul-Header
+  - Patchen des Modul-Attributs (nicht `app.api.admin.webuntis_service`) ist der korrekte Ansatz
+- ✅ `with patch("app.services.absence_service.absence_service", mock_service):` für Cleanup-Endpoint
+
+**Bekanntes Setup-Problem (dokumentiert):**
+- `webuntis_service = None` in Test-Umgebung: `app/services/webuntis/__init__.py` fängt `ImportError` bei Webuntis-Konfiguration ab → Service ist None
+- Ohne Patch: `AttributeError: 'NoneType' object has no attribute '_subjects_cache'`
+- Fix: immer `patch("app.services.webuntis.webuntis_service", mock_object)` verwenden
+
+---
+
 ## 🚀 CI/CD Integration
 
 ### GitLab CI Configuration
@@ -533,6 +591,10 @@ docker-compose exec backend python -m pytest tests/ -q
 - ✅ `test_core_audit.py` (16 Tests) - IP-Header-Extraktion, JSON-Audit-Format, alle Convenience-Funktionen
 - ✅ `test_webuntis_client.py` (32 Tests) - httpx AsyncClient gemockt, Session-Expiry-Retry, alle HTTP-Pfade
 
+#### Phase 4: Auth-Dependencies & Admin ✅ (37 Tests, 2026-02-10)
+- ✅ `test_api_deps.py` (21 Tests) - get_current_user alle Fehlerpfade, alle 4 Role-Guards vollständig
+- ✅ `test_api_admin.py` (16 Tests) - alle 8 Endpoints, func.count() scalar() Chain, function-body Import-Patch
+
 ### Low Priority
 
 #### `test_ldap_service.py` 🟡 (Optional)
@@ -545,12 +607,12 @@ docker-compose exec backend python -m pytest tests/ -q
 ## 🎯 Test-Quality Metriken
 
 ### Ausführungszeit ⚡
-- **468 Tests in 2.7s** - Hervorragend!
-- Durchschnitt: ~6ms pro Test
+- **505 Tests in 2.0s** - Hervorragend!
+- Durchschnitt: ~4ms pro Test
 - Keine langsamen Tests (>100ms)
 
 ### Test-Qualität ✅
-- ✅ Alle Tests grün (468/468)
+- ✅ Alle Tests grün (505/505)
 - ✅ Keine Flaky Tests
 - ✅ Gute Edge-Case Coverage
 - ✅ Security-kritische Bereiche vollständig getestet
@@ -707,6 +769,26 @@ with patch_httpx(mock_http):
     result = await client._call_api("getTeachers")
 ```
 
+### 13. Function-Body-Import patchen (webuntis_service, absence_service)
+```python
+# Problem: Import steht im Funktions-Body, nicht im Modul-Header:
+# async def refresh_webuntis_cache(...):
+#     from app.services.webuntis import webuntis_service  ← hier!
+#     webuntis_service._subjects_cache = None
+
+# Falsch (patcht lokalen Namen der Funktion, aber der wird erst beim Import gesetzt):
+# with patch("app.api.admin.webuntis_service", mock, create=True):
+
+# Richtig: Modul-Attribut patchen, das der Import liest:
+mock_service = Mock()
+mock_service._subjects_cache = None
+with patch("app.services.webuntis.webuntis_service", mock_service):
+    await unwrap(refresh_webuntis_cache)(request=..., current_user=..., db=db)
+
+# Hintergrund: Python liest beim function-body-Import direkt das Modul-Attribut.
+# Patchen des Modul-Attributs bewirkt, dass der Import den Mock-Wert bekommt.
+```
+
 ### 7. Security Tests Markieren
 ```python
 def test_path_traversal_blocked(self):
@@ -781,21 +863,22 @@ Exception: parameter `request` must be an instance of starlette.requests.Request
 
 ## 📊 Coverage Goals
 
-### Current Coverage: ~78% (geschätzt nach Phase 3)
+### Current Coverage: ~82% (geschätzt nach Phase 4)
 - Utils: 100% ✅
 - Services: ~90% (inkl. webuntis/client.py) ✅
-- API Routes (getestet): 100% (absences, attachments, webuntis, pdf_forms) ✅
+- API Routes: 100% (absences, attachments, webuntis, pdf_forms, users, admin) ✅
+- Auth & Deps: ~100% (deps.py vollständig) ✅
 - Core (security, audit): ~95% ✅
 - Models: 100% ✅
-- Nicht getestet: `main.py`, `api/api.py`, `ldap_service.py`, `api/deps.py`, `api/admin.py`
+- Nicht getestet: `main.py`, `api/api.py`, `ldap_service.py`
 
-### Target Coverage: 80%+ (fast erreicht)
+### Target Coverage: 80%+ ✅ Erreicht!
 - **Phase 1:** Services & Utils ✅ **Abgeschlossen** (319 Tests)
 - **Phase 2:** API Routes ✅ **Abgeschlossen** (65 neue Tests, gesamt 385)
 - **Phase 3:** Coverage-Lücken ✅ **Abgeschlossen** (83 neue Tests, gesamt 468)
-- **Phase 4:** `api/admin.py`, `api/deps.py` (optional, → 80%+ gemessen)
+- **Phase 4:** Auth-Dependencies & Admin ✅ **Abgeschlossen** (37 neue Tests, gesamt 505)
 
 ---
 
-**Letzte Aktualisierung:** 2026-02-10 (Phase 3 abgeschlossen inkl. webuntis/client.py)
+**Letzte Aktualisierung:** 2026-02-10 (Phase 4 abgeschlossen: api/deps.py + api/admin.py, 505 Tests, ~82% Coverage)
 **Von:** Claude Sonnet 4.5 (mit User Seyfried)
