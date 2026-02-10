@@ -175,7 +175,6 @@ class TestGetRecipientsByRoles:
         """Test that users without email are excluded"""
         # Setup mock query chain - users without email already filtered by DB
         mock_query = Mock()
-        mock_filter = Mock()
         mock_query.filter.return_value = mock_query
         mock_query.all.return_value = [active_admin_user]
         mock_db.query.return_value = mock_query
