@@ -14,14 +14,30 @@ test_backend:
   services:
     - postgres:15
   stage: test
+  variables:
+    # Skip production secret validation in test environment
+    SKIP_SECURITY_VALIDATION: "true"
   before_script:
     - cd backend
     - pip install -r requirements-dev.txt
     - cd ..
   script:
     - cd backend
-    - pytest tests/ -v --cov=app --cov-report=xml
+    # Set PYTHONPATH so pytest can find the 'app' module
+    - export PYTHONPATH=.:$PYTHONPATH
+    # Run all unit tests with coverage
+    # See UNITTESTS.md for detailed test documentation
+    - pytest tests/ -v --cov=app --cov-report=xml --cov-report=term
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage.xml
+    paths:
+      - backend/coverage.xml
+    expire_in: 1 week
 
 test_frontend:
   image: node:18

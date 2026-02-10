@@ -488,6 +488,47 @@ npm run build  # Zeigt detaillierte Fehler
 - **Logging:** `logger.info()` für wichtige Events, `logger.error()` für Fehler
 - **Imports:** Absolute Imports (`from app.models.models import User`)
 
+#### Code Formatierung mit Black
+
+**Black** ist der obligatorische Code-Formatter (line-length = 88). Konfiguration in `backend/pyproject.toml`.
+
+```bash
+# Vor jedem Commit: Backend-Code formatieren
+cd backend
+black .
+
+# Nur prüfen (kein Ändern):
+black . --check
+
+# Im Docker-Container:
+docker-compose exec backend black .
+```
+
+**Wichtige Black-Regeln (für AI-generierte Code-Blöcke):**
+
+```python
+# ✅ Kurze UUID-Strings: eine Zeile
+mock_uuid.return_value = uuid.UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+
+# ✅ Lange Funktionsaufrufe: umbrechen wenn > 88 Zeichen
+with patch(
+    "uuid.uuid4", return_value=uuid.UUID("12345678-1234-5678-1234-567812345678")
+):
+
+# ✅ Kurze Funktionssignaturen: eine Zeile
+def test_get_file_path(self, attachment_service, temp_upload_dir):
+
+# ✅ Leerzeile vor Klassen-Body und nach letzter Methode vor Kommentar-Block
+```
+
+**CI prüft automatisch:**
+```bash
+# In .gitlab-ci.yml (lint_backend stage):
+black . --check
+```
+
+> **Hinweis für Claude:** Generierten Python-Code immer so schreiben, dass er Black-konform ist (88 Zeichen Zeilenlänge). Im Zweifelsfall `black .` im Container ausführen lassen.
+
 ### Frontend (TypeScript)
 
 - **Types:** Nie `any` verwenden, alle Props typisieren

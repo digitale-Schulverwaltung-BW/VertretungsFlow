@@ -1,5 +1,8 @@
 # AbsenzFlow
 
+[![pipeline status](https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow/badges/main/pipeline.svg)](https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow/-/commits/main)
+[![coverage report](https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow/badges/main/coverage.svg)](https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow/-/graphs/main/charts)
+
 **Modernes Abwesenheitsmanagement für Schulen mit WebUntis-Integration**
 
 AbsenzFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abwesenheiten einfach zu melden und Vertretungsplanern eine übersichtliche Verwaltung bietet.
