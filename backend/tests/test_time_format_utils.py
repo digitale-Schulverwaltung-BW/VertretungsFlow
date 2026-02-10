@@ -332,7 +332,7 @@ class TestGetTimeForPeriod:
         config_path.write_text(json.dumps(config), encoding="utf-8")
 
         timegrid = {800: 1}
-        lessons = []
+        lessons: list = []
 
         # Period 10 not in lessons or timegrid, should use config
         result = get_time_for_period(lessons, 10, "start", timegrid, config_path)
