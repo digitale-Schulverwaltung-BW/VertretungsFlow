@@ -2,8 +2,8 @@
 
 **Stand:** 2026-02-10
 **Test Framework:** pytest 7.4.4 + pytest-asyncio
-**Gesamt Tests:** 385 passed, 1 skipped
-**Execution Time:** ~1.3 seconds ⚡
+**Gesamt Tests:** 436 passed, 1 skipped
+**Execution Time:** ~2.9 seconds ⚡
 
 ---
 
@@ -26,12 +26,17 @@
 | `app/services/pdf_service.py` | 364 | 23 | ~85% | ✅ Abgeschlossen |
 | `app/services/email_service.py` | ~150 | 20 | ~95% | ✅ Abgeschlossen |
 | `app/services/webuntis_service.py` + parser | ~600 | 39 | ~90% | ✅ Abgeschlossen |
-| **API Routes (4/4)** | | | | |
+| **API Routes (6/6)** | | | | |
 | `app/api/auth.py` | ~350 | 27 | ~90% | ✅ Abgeschlossen |
 | `app/api/absences.py` | 317 | 22 | ~95% | ✅ Abgeschlossen |
 | `app/api/attachments.py` | 183 | 11 | ~95% | ✅ Abgeschlossen |
 | `app/api/webuntis.py` | 72 | 5 | ~90% | ✅ Abgeschlossen |
-| **Gesamt** | **~3500** | **384** | **~93%** | |
+| `app/api/pdf_forms.py` | 159 | 10 | ~100% | ✅ Abgeschlossen |
+| `app/api/users.py` | 141 | 14 | ~90% | ✅ Abgeschlossen |
+| **Core** | | | | |
+| `app/core/security.py` | 72 | 11 | ~95% | ✅ Abgeschlossen |
+| `app/core/audit.py` | 168 | 16 | ~95% | ✅ Abgeschlossen |
+| **Gesamt** | **~3800** | **436** | **~75%** | |
 
 ### Noch offen ⏳
 
@@ -63,7 +68,11 @@ backend/tests/
 ├── test_api_auth.py               # ✅ 27 Tests
 ├── test_api_absences.py           # ✅ 22 Tests
 ├── test_api_attachments.py        # ✅ 11 Tests
-└── test_api_webuntis.py           # ✅ 5 Tests
+├── test_api_webuntis.py           # ✅ 5 Tests
+├── test_api_pdf_forms.py          # ✅ 10 Tests
+├── test_api_users.py              # ✅ 14 Tests
+├── test_core_security.py          # ✅ 11 Tests
+└── test_core_audit.py             # ✅ 16 Tests
 ```
 
 ### Fehlende Tests (ToDo)
@@ -364,6 +373,75 @@ backend/tests/
 
 ---
 
+### ✅ test_api_pdf_forms.py (10 Tests)
+
+**Getestet:**
+- `list_available_forms()` - Absence laden, Permission-Check, Delegation an pdf_service
+- `download_pdf_form()` - Absence laden, Permission-Check, Form-Type validieren, PDF generieren, Response bauen
+
+**Test-Coverage:**
+- ✅ 404 wenn Absenz nicht gefunden (beide Endpoints)
+- ✅ 403 ohne Berechtigung (beide Endpoints)
+- ✅ 400 wenn `form_type` nicht zur Absenz passt (inkl. Fehlermeldung mit ungültigem Type)
+- ✅ Response enthält PDF-Bytes und korrekten `application/pdf` MIME-Type
+- ✅ `Content-Disposition`-Header enthält Absenz-ID und Form-Label
+- ✅ Filename-Sanitizer ersetzt Sonderzeichen (`/`, `(`, `)`, `§`) durch `_`
+- ✅ `pdf_service.get_available_forms()` wird mit der gequeryten Absenz aufgerufen
+- ✅ `AsyncMock` für `generate_filled_pdf()`
+
+---
+
+### ✅ test_api_users.py (14 Tests)
+
+**Getestet:**
+- `list_users()` - Role-Filter optional, kein Filter wenn role=None
+- `get_user()` - Owner darf eigenes Profil sehen, Admin darf alles, 403 für fremde Profile, 404
+- `update_user()` - 404, `setattr`-Loop für Felder, commit+refresh
+- `search_user_by_username()` - 404, Match zurückgegeben
+
+**Test-Coverage:**
+- ✅ `test_no_filter_when_role_is_none`: `filter.assert_not_called()` - Branch-Test
+- ✅ `test_filter_applied_when_role_provided`: `filter.assert_called_once()` - Branch-Test
+- ✅ `test_commit_and_refresh_called`: `db.commit.assert_called_once()` + `db.refresh.assert_called_once_with(user)`
+- ✅ `test_updates_fields_on_user_object`: `setattr`-Loop setzt `user.email` und `user.username` korrekt
+- ✅ `make_list_mock_db()` mit filter/offset/limit/all-Chain
+- ✅ Kein `@limiter.limit()` → kein `unwrap()` nötig
+
+---
+
+### ✅ test_core_security.py (11 Tests)
+
+**Getestet:**
+- `verify_password()` - Delegation an `pwd_context.verify` (True/False)
+- `get_password_hash()` - Delegation an `pwd_context.hash`
+- `create_access_token()` - JWT-String, Payload-Inhalt, `exp`-Claim, custom delta, Default-Delta aus Settings
+- `decode_access_token()` - Valid Token → Payload, Invalid String → None, falscher Key → None
+
+**Test-Coverage:**
+- ✅ `patch("app.core.security.pwd_context")` um bcrypt-Backend zu mocken
+  - **Hintergrund:** passlib + bcrypt Versionsinkompatibilität im Docker-Container: `detect_wrap_bug()` versucht 72+ Byte Passwort zu hashen, neuere bcrypt-Versionen lehnen das ab
+- ✅ JWT Round-Trip: `create_access_token` → `jwt.decode` mit TEST_SECRET prüft Payload
+- ✅ `patch.object(settings, "SECRET_KEY"/"ALGORITHM"/"ACCESS_TOKEN_EXPIRE_MINUTES")` für Settings-Isolation
+- ✅ Timing-Assertion für Expiry (±1 Minute Toleranz)
+
+---
+
+### ✅ test_core_audit.py (16 Tests)
+
+**Getestet:**
+- `get_client_ip()` - X-Forwarded-For (erste IP in Kette), X-Real-IP Fallback, client.host Fallback, "unknown"
+- `audit_log()` - JSON-Format im Logger, IP-Extraktion aus Request, explizite IP, keine IP → "unknown"
+- Alle 8 Convenience-Funktionen: `audit_user_created`, `audit_user_updated`, `audit_absence_created`, `audit_absence_approved`, `audit_absence_completed`, `audit_file_uploaded`, `audit_file_deleted`, `audit_role_changed`
+
+**Test-Coverage:**
+- ✅ `make_mock_request()` Helper mit `side_effect`-basiertem `headers.get` für Header-Simulation
+- ✅ `patch("app.core.audit.logger")` → `mock_logger.info.call_args[0][0]` → JSON parsen
+- ✅ `audit_role_changed` prüft `details["old_role"]` + `details["new_role"]` im JSON
+- ✅ X-Forwarded-For mit mehreren IPs: nur erste IP extrahiert (Proxy-Chain-Handling)
+- ✅ `_extract_action()` Helper-Methode in `TestConvenienceFunctions` für DRY-Assertions
+
+---
+
 ## 🚀 CI/CD Integration
 
 ### GitLab CI Configuration
@@ -427,6 +505,12 @@ docker-compose exec backend python -m pytest tests/ -q
 - ✅ `test_api_attachments.py` (11 Tests) - Audit-Log Reihenfolge, FileResponse
 - ✅ `test_api_webuntis.py` (5 Tests) - Perioden-Filterlogik
 
+#### Phase 3: Coverage-Lücken ✅ (51 Tests, 2026-02-10)
+- ✅ `test_api_pdf_forms.py` (10 Tests) - Filename-Sanitizer, AsyncMock für PDF-Generierung
+- ✅ `test_api_users.py` (14 Tests) - Admin-Guard, filter-Branch, commit+refresh
+- ✅ `test_core_security.py` (11 Tests) - JWT Round-Trip, pwd_context gemockt (bcrypt-Inkompatibilität)
+- ✅ `test_core_audit.py` (16 Tests) - IP-Header-Extraktion, JSON-Audit-Format, alle Convenience-Funktionen
+
 ### Low Priority
 
 #### `test_ldap_service.py` 🟡 (Optional)
@@ -439,12 +523,12 @@ docker-compose exec backend python -m pytest tests/ -q
 ## 🎯 Test-Quality Metriken
 
 ### Ausführungszeit ⚡
-- **385 Tests in 1.3s** - Hervorragend!
-- Durchschnitt: ~3ms pro Test
+- **436 Tests in 2.9s** - Hervorragend!
+- Durchschnitt: ~6ms pro Test
 - Keine langsamen Tests (>100ms)
 
 ### Test-Qualität ✅
-- ✅ Alle Tests grün (385/385)
+- ✅ Alle Tests grün (436/436)
 - ✅ Keine Flaky Tests
 - ✅ Gute Edge-Case Coverage
 - ✅ Security-kritische Bereiche vollständig getestet
@@ -533,6 +617,47 @@ with patch.object(settings, "WORDPRESS_PROXY_SECRET", "test-secret"):
         result = await get_wordpress_proxy_user(...)
 ```
 
+### 9. Request-Headers mocken (für Audit/IP-Tests)
+```python
+def make_mock_request(x_forwarded_for=None, x_real_ip=None, client_host=None):
+    request = Mock()
+
+    def headers_get(key, default=None):
+        if key == "X-Forwarded-For":
+            return x_forwarded_for
+        if key == "X-Real-IP":
+            return x_real_ip
+        return default
+
+    request.headers.get = Mock(side_effect=headers_get)
+    if client_host is not None:
+        request.client = Mock()
+        request.client.host = client_host
+    else:
+        request.client = None
+    return request
+```
+
+### 10. Logger-Output parsen (Audit-Tests)
+```python
+with patch("app.core.audit.logger") as mock_logger:
+    audit_log("action", user_id=1, resource_type="absence")
+
+log_msg = mock_logger.info.call_args[0][0]  # "AUDIT: {...}"
+data = json.loads(log_msg[len("AUDIT: "):])
+assert data["action"] == "action"
+```
+
+### 11. bcrypt-Inkompatibilität mocken
+```python
+# passlib + neuere bcrypt-Versionen: detect_wrap_bug() schlägt fehl bei 72+ Byte Passwörtern
+# Lösung: pwd_context komplett mocken statt echtes bcrypt aufzurufen
+with patch("app.core.security.pwd_context") as mock_ctx:
+    mock_ctx.verify.return_value = True
+    result = verify_password("plain", "hashed")
+assert result is True
+```
+
 ### 7. Security Tests Markieren
 ```python
 def test_path_traversal_blocked(self):
@@ -607,19 +732,21 @@ Exception: parameter `request` must be an instance of starlette.requests.Request
 
 ## 📊 Coverage Goals
 
-### Current Coverage: ~93% (geschätzt)
+### Current Coverage: ~75% (gemessen, coverage.xml)
 - Utils: 100% ✅
-- Services: ~93% (7/8, ohne ldap) ✅
-- API Routes: ~93% ✅
-- Models: N/A (simple ORM)
-- Schemas: N/A (Pydantic validation)
+- Services: ~87% (ohne ldap_service) ✅
+- API Routes (getestet): 100% (absences, attachments, webuntis, pdf_forms) ✅
+- Core (security, audit): ~95% ✅
+- Models: 100% ✅
+- Nicht getestet: `main.py`, `api/api.py`, `ldap_service.py`, `api/deps.py`, `api/admin.py`
 
-### Target Coverage: 80%+ ✅ Erreicht!
+### Target Coverage: 80%+ (Basis erreicht)
 - **Phase 1:** Services & Utils ✅ **Abgeschlossen** (319 Tests)
-- **Phase 2:** API Routes ✅ **Abgeschlossen** (65 neue Tests, gesamt 384)
-- **Phase 3:** Integration Tests (optional, → 95%+)
+- **Phase 2:** API Routes ✅ **Abgeschlossen** (65 neue Tests, gesamt 385)
+- **Phase 3:** Coverage-Lücken ✅ **Abgeschlossen** (51 neue Tests, gesamt 436)
+- **Phase 4:** `api/admin.py`, `api/deps.py` (optional, → 80%+ gemessen)
 
 ---
 
-**Letzte Aktualisierung:** 2026-02-10
+**Letzte Aktualisierung:** 2026-02-10 (Phase 3)
 **Von:** Claude Sonnet 4.5 (mit User Seyfried)
