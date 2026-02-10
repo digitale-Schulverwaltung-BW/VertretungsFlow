@@ -2,8 +2,8 @@
 
 **Stand:** 2026-02-10
 **Test Framework:** pytest 7.4.4 + pytest-asyncio
-**Gesamt Tests:** 505 passed, 1 skipped
-**Execution Time:** ~2.0 seconds ⚡
+**Gesamt Tests:** 553 passed, 1 skipped
+**Execution Time:** ~2.5 seconds ⚡
 
 ---
 
@@ -26,9 +26,11 @@
 | `app/services/pdf_service.py` | 364 | 23 | ~85% | ✅ Abgeschlossen |
 | `app/services/email_service.py` | ~150 | 20 | ~95% | ✅ Abgeschlossen |
 | `app/services/webuntis_service.py` + parser | ~600 | 39 | ~90% | ✅ Abgeschlossen |
-| `app/services/webuntis/client.py` | 364 | 32 | ~90% | ✅ Abgeschlossen |
+| `app/services/webuntis/client.py` | 364 | 32 | ~97% | ✅ Abgeschlossen |
+| `app/services/webuntis/cache.py` | 174 | 15 | ~90% | ✅ Abgeschlossen |
+| `app/services/webuntis/data_loader.py` | 211 | 13 | ~90% | ✅ Abgeschlossen |
 | **API Routes (6/6)** | | | | |
-| `app/api/auth.py` | ~350 | 27 | ~90% | ✅ Abgeschlossen |
+| `app/api/auth.py` | ~350 | 47 | ~88% | ✅ Abgeschlossen |
 | `app/api/absences.py` | 317 | 22 | ~95% | ✅ Abgeschlossen |
 | `app/api/attachments.py` | 183 | 11 | ~95% | ✅ Abgeschlossen |
 | `app/api/webuntis.py` | 72 | 5 | ~90% | ✅ Abgeschlossen |
@@ -40,7 +42,7 @@
 | **Auth & Deps** | | | | |
 | `app/api/deps.py` | 112 | 21 | ~100% | ✅ Abgeschlossen |
 | `app/api/admin.py` | 359 | 16 | ~90% | ✅ Abgeschlossen |
-| **Gesamt** | **~4700** | **505** | **~82%** | |
+| **Gesamt** | **~5100** | **553** | **~85%** | |
 
 ### Noch offen ⏳
 
@@ -78,8 +80,11 @@ backend/tests/
 ├── test_core_security.py          # ✅ 11 Tests
 ├── test_core_audit.py             # ✅ 16 Tests
 ├── test_webuntis_client.py        # ✅ 32 Tests
+├── test_webuntis_cache.py         # ✅ 15 Tests
+├── test_webuntis_data_loader.py   # ✅ 13 Tests
 ├── test_api_deps.py               # ✅ 21 Tests
-└── test_api_admin.py              # ✅ 16 Tests
+├── test_api_admin.py              # ✅ 16 Tests
+└── test_api_auth.py               # ✅ 47 Tests (erweitert)
 ```
 
 ### Fehlende Tests (ToDo)
@@ -306,14 +311,21 @@ backend/tests/
 
 ---
 
-### ✅ test_api_auth.py (27 Tests)
+### ✅ test_api_auth.py (47 Tests)
 
 **Getestet:**
 - `map_wordpress_role()` - WordPress → AbsenzFlow role mapping (alle 4 Rollen + Unknown-Fallback + Uppercase)
 - `_decode_wordpress_name()` - URL-decode Header-Namen (None, plain, Umlaute, Whitespace)
 - `_update_wordpress_user_fields()` - Smart Update: nur bei Änderungen (email, role, name, webuntis_code, multiple)
 - `_handle_wordpress_proxy_user()` - Create vs. Update Flow (neuer User, geänderter User, kein Commit wenn unverändert)
-- `get_wordpress_proxy_user()` - Secret-Validierung (kein Secret, kein User, falsches Secret, inaktiver User, Happy Path)
+- `get_wordpress_proxy_user()` - Secret-Validierung + WordPress/LDAP-Mode-Routing
+- `get_current_user()` - JWT-Version: JWTError, fehlende sub, User nicht in DB, Happy Path
+- `get_current_active_user()` - Aktiver User OK, inaktiver User → 400
+- `require_role()` - Factory: erlaubte Rolle → User, fehlende Rolle → 403
+- `_create_wordpress_user()` - db.add/commit/refresh, audit_log, korrekte User-Felder
+- `_create_ldap_user()` - LDAP-Info verwenden, username-Fallback für full_name
+- `_handle_ldap_proxy_user()` - bestehender User, ldap=None → 500, nicht in LDAP → 404, anlegen
+- `read_users_me()` + `logout()` - Einfache Endpoints via `unwrap()`
 
 **Test-Coverage:**
 - ✅ Direkte Funktionsaufrufe (kein TestClient/HTTP)
@@ -468,6 +480,52 @@ backend/tests/
 
 ---
 
+### ✅ test_webuntis_cache.py (15 Tests)
+
+**Getestet:**
+- `convert_jsonb_keys()` - String-Keys → Int-Keys (JSONB PostgreSQL Konvertierung)
+- `get_or_fetch()` - 3-Layer-Cache mit allen 8 Pfaden
+- `clear_memory_cache()` - Alle 4 In-Memory-Caches auf None setzen
+- `clear_db_cache()` - DB-Einträge löschen + commit
+- `clear_all_caches()` - Beide Clear-Methoden aufrufen
+
+**Test-Coverage:**
+- ✅ `convert_jsonb_keys`: numerisch, nicht-numerisch, gemischt, leer
+- ✅ Cache deaktiviert (`WEBUNTIS_CACHE_ENABLED=False`) → `fetch_func()` direkt aufgerufen, kein DB-Query
+- ✅ Memory-Cache-Hit → kein DB-Query, kein API-Aufruf
+- ✅ `force_refresh=True` → Memory-Cache ignoriert, API direkt aufgerufen
+- ✅ DB-Cache-Hit (nicht abgelaufen) → Schlüssel konvertiert, in Memory gespeichert
+- ✅ `expires_at=None` → gilt als dauerhaft gültig (kein API-Aufruf)
+- ✅ DB-Cache abgelaufen → API-Fetch, bestehenden DB-Eintrag aktualisieren (kein `db.add`)
+- ✅ DB-Cache-Miss → API-Fetch, neuen Eintrag via `db.add` anlegen
+- ✅ Nach API-Fetch: Ergebnis in `memory_cache_attr` gespeichert (`setattr`)
+
+**JSONB-Besonderheit:** PostgreSQL speichert numerische Dict-Keys als Strings – `convert_jsonb_keys()` konvertiert sie zurück zu `int` für korrekte Lookup-Funktionalität.
+
+---
+
+### ✅ test_webuntis_data_loader.py (13 Tests)
+
+**Getestet:**
+- `load_subjects()` - Transform: `{id: name}`, name/longName/Unbekannt-Fallback
+- `load_classes()` - Transform: `{id: name}` mit Fallback
+- `load_rooms()` - Transform: `{id: name}` mit Fallback
+- `load_timegrid()` - Transform: `{startTime: period_number}`, non-numeric Fallback, Edge Cases
+
+**Test-Coverage:**
+- ✅ `load_subjects`: `name`-Feld bevorzugt, Fallback auf `longName`, Fallback auf `"Unbekannt"`
+- ✅ `load_subjects`: leere API-Antwort → `{}`, `None`-Antwort → `{}` (keine Exception)
+- ✅ `load_classes` / `load_rooms`: korrekte `{id: name}`-Mappings
+- ✅ `load_timegrid`: `{startTime: int(period_name)}` für numerische Perioden
+- ✅ `load_timegrid`: nicht-numerischer Periodenname → `startTime // 100` als Fallback
+- ✅ `load_timegrid`: mehrere Tage → alle Zeit-Einheiten in einem Dict zusammengeführt
+- ✅ `load_timegrid`: fehlende `startTime` → Eintrag übersprungen
+- ✅ `load_timegrid`: leere `timeUnits` → leeres Dict
+
+**Strategie:** `WEBUNTIS_CACHE_ENABLED=False` lässt `fetch_func()` direkt durchlaufen. Dadurch testen wir die Transform-Logik der Closures ohne DB- oder Cache-Mocking.
+
+---
+
 ### ✅ test_api_deps.py (21 Tests)
 
 **Getestet:**
@@ -595,6 +653,11 @@ docker-compose exec backend python -m pytest tests/ -q
 - ✅ `test_api_deps.py` (21 Tests) - get_current_user alle Fehlerpfade, alle 4 Role-Guards vollständig
 - ✅ `test_api_admin.py` (16 Tests) - alle 8 Endpoints, func.count() scalar() Chain, function-body Import-Patch
 
+#### Phase 5: Coverage-Optimierung ✅ (48 Tests, 2026-02-10)
+- ✅ `test_api_auth.py` (+20, jetzt 47 Tests) - JWT-Version get_current_user, get_current_active_user, require_role, _create_wordpress_user/_create_ldap_user, _handle_ldap_proxy_user, LDAP-Mode-Routing, /me + /logout Endpoints
+- ✅ `test_webuntis_cache.py` (15 Tests) - convert_jsonb_keys, alle 8 get_or_fetch-Pfade, clear_memory/db/all
+- ✅ `test_webuntis_data_loader.py` (13 Tests) - Transform-Logik subjects/classes/rooms/timegrid, Fallbacks, Edge Cases
+
 ### Low Priority
 
 #### `test_ldap_service.py` 🟡 (Optional)
@@ -607,12 +670,12 @@ docker-compose exec backend python -m pytest tests/ -q
 ## 🎯 Test-Quality Metriken
 
 ### Ausführungszeit ⚡
-- **505 Tests in 2.0s** - Hervorragend!
+- **553 Tests in 2.5s** - Hervorragend!
 - Durchschnitt: ~4ms pro Test
 - Keine langsamen Tests (>100ms)
 
 ### Test-Qualität ✅
-- ✅ Alle Tests grün (505/505)
+- ✅ Alle Tests grün (553/553)
 - ✅ Keine Flaky Tests
 - ✅ Gute Edge-Case Coverage
 - ✅ Security-kritische Bereiche vollständig getestet
@@ -863,22 +926,23 @@ Exception: parameter `request` must be an instance of starlette.requests.Request
 
 ## 📊 Coverage Goals
 
-### Current Coverage: ~82% (geschätzt nach Phase 4)
+### Current Coverage: ~85% (geschätzt nach Phase 5)
 - Utils: 100% ✅
-- Services: ~90% (inkl. webuntis/client.py) ✅
-- API Routes: 100% (absences, attachments, webuntis, pdf_forms, users, admin) ✅
-- Auth & Deps: ~100% (deps.py vollständig) ✅
+- Services: ~92% (inkl. webuntis/cache.py + data_loader.py) ✅
+- API Routes: ~95% (absences, attachments, webuntis, pdf_forms, users, admin) ✅
+- Auth & Deps: ~88% (auth.py signifikant erweitert, deps.py ~100%) ✅
 - Core (security, audit): ~95% ✅
 - Models: 100% ✅
-- Nicht getestet: `main.py`, `api/api.py`, `ldap_service.py`
+- Nicht getestet: `main.py`, `api/api.py`, `ldap_service.py`, `schemas/schemas.py` (Validators)
 
-### Target Coverage: 80%+ ✅ Erreicht!
+### Target Coverage: 85%+ ✅ Übertroffen!
 - **Phase 1:** Services & Utils ✅ **Abgeschlossen** (319 Tests)
 - **Phase 2:** API Routes ✅ **Abgeschlossen** (65 neue Tests, gesamt 385)
 - **Phase 3:** Coverage-Lücken ✅ **Abgeschlossen** (83 neue Tests, gesamt 468)
 - **Phase 4:** Auth-Dependencies & Admin ✅ **Abgeschlossen** (37 neue Tests, gesamt 505)
+- **Phase 5:** Coverage-Optimierung ✅ **Abgeschlossen** (48 neue Tests, gesamt 553)
 
 ---
 
-**Letzte Aktualisierung:** 2026-02-10 (Phase 4 abgeschlossen: api/deps.py + api/admin.py, 505 Tests, ~82% Coverage)
+**Letzte Aktualisierung:** 2026-02-10 (Phase 5 abgeschlossen: auth.py erweitert + webuntis/cache.py + data_loader.py, 553 Tests, ~85% Coverage)
 **Von:** Claude Sonnet 4.5 (mit User Seyfried)
