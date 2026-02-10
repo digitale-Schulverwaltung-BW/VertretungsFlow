@@ -145,7 +145,11 @@ class TestCanViewAbsence:
         )
 
     def test_dept_head_can_view_all_absences(
-        self, permission_service, dept_head_user, submitted_absence, other_teacher_absence
+        self,
+        permission_service,
+        dept_head_user,
+        submitted_absence,
+        other_teacher_absence,
     ):
         """Department heads can view all absences"""
         assert permission_service.can_view_absence(dept_head_user, submitted_absence)
@@ -471,7 +475,9 @@ class TestCanDeleteAbsence:
         assert permission_service.can_delete_absence(planner_user, submitted_absence)
         assert permission_service.can_delete_absence(planner_user, approved_absence)
         assert permission_service.can_delete_absence(planner_user, completed_absence)
-        assert permission_service.can_delete_absence(planner_user, other_teacher_absence)
+        assert permission_service.can_delete_absence(
+            planner_user, other_teacher_absence
+        )
 
 
 # ============================================================================
@@ -533,9 +539,13 @@ class TestRealWorldScenarios:
         assert permission_service.can_view_absence(dept_head_user, completed_absence)
 
         # Cannot edit any absences (not their job)
-        assert not permission_service.can_edit_absence(dept_head_user, submitted_absence)
+        assert not permission_service.can_edit_absence(
+            dept_head_user, submitted_absence
+        )
         assert not permission_service.can_edit_absence(dept_head_user, approved_absence)
-        assert not permission_service.can_edit_absence(dept_head_user, completed_absence)
+        assert not permission_service.can_edit_absence(
+            dept_head_user, completed_absence
+        )
 
         # Can approve only submitted
         assert permission_service.can_approve_absence(dept_head_user, submitted_absence)
@@ -591,7 +601,11 @@ class TestRealWorldScenarios:
         assert permission_service.can_delete_absence(planner_user, completed_absence)
 
     def test_security_isolation_between_teachers(
-        self, permission_service, teacher_user, other_teacher_user, other_teacher_absence
+        self,
+        permission_service,
+        teacher_user,
+        other_teacher_user,
+        other_teacher_absence,
     ):
         """Test that teachers are properly isolated from each other (SECURITY!)"""
         # Teacher cannot view other teacher's absence

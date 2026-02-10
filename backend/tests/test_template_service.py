@@ -88,7 +88,9 @@ class TestGetNestedValue:
 
     def test_missing_key_returns_none(self, template_service, sample_context):
         """Test that missing key returns None"""
-        result = template_service.get_nested_value(sample_context, "absence.nonexistent")
+        result = template_service.get_nested_value(
+            sample_context, "absence.nonexistent"
+        )
         assert result is None
 
     def test_missing_nested_key_returns_none(self, template_service, sample_context):
@@ -262,9 +264,7 @@ class TestProcessTemplateVariable:
         )
         assert result == "Just plain text"
 
-    def test_process_empty_string_returns_empty(
-        self, template_service, sample_context
-    ):
+    def test_process_empty_string_returns_empty(self, template_service, sample_context):
         """Test processing empty string returns empty"""
         result = template_service.process_template_variable("", sample_context)
         assert result == ""

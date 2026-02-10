@@ -231,7 +231,9 @@ class TestGetRecipientsByRoles:
         mock_db.query.return_value = mock_query
 
         # Call function
-        recipients = get_recipients_by_roles(mock_db, [UserRole.ADMIN, UserRole.PLANNER])
+        recipients = get_recipients_by_roles(
+            mock_db, [UserRole.ADMIN, UserRole.PLANNER]
+        )
 
         # Verify all are strings
         assert all(isinstance(email, str) for email in recipients)
@@ -249,7 +251,9 @@ class TestGetRecipientsByRoles:
         mock_db.query.return_value = mock_query
 
         # Call function
-        recipients = get_recipients_by_roles(mock_db, [UserRole.ADMIN, UserRole.PLANNER])
+        recipients = get_recipients_by_roles(
+            mock_db, [UserRole.ADMIN, UserRole.PLANNER]
+        )
 
         # Verify
         assert set(recipients) == {"admin@example.com", "planner@example.com"}

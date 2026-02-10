@@ -239,9 +239,7 @@ class TestSaveFile:
         file_content = b"PDF content"
 
         with patch("uuid.uuid4") as mock_uuid:
-            mock_uuid.return_value = uuid.UUID(
-                "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-            )
+            mock_uuid.return_value = uuid.UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
             result = await attachment_service.save_file(
                 mock_pdf_file, file_content, absence_id=1
             )
@@ -257,7 +255,9 @@ class TestSaveFile:
         mock_file.filename = "document.docx"
         file_content = b"DOCX content"
 
-        with patch("uuid.uuid4", return_value=uuid.UUID("12345678-1234-5678-1234-567812345678")):
+        with patch(
+            "uuid.uuid4", return_value=uuid.UUID("12345678-1234-5678-1234-567812345678")
+        ):
             result = await attachment_service.save_file(
                 mock_file, file_content, absence_id=1
             )
@@ -282,6 +282,7 @@ class TestSaveFile:
         # Verify file exists and contains correct content
         assert result.file_path.exists()
         assert result.file_path.read_bytes() == file_content
+
 
 # ============================================================================
 # Test delete_file()
@@ -399,9 +400,7 @@ class TestGetFilePath:
         assert exc_info.value.status_code == 404
         assert "not found" in str(exc_info.value.detail).lower()
 
-    def test_get_file_path_traversal_blocked(
-        self, attachment_service, temp_upload_dir
-    ):
+    def test_get_file_path_traversal_blocked(self, attachment_service, temp_upload_dir):
         """Test that path traversal is blocked (SECURITY!)"""
         evil_path = "/etc/passwd"
 
@@ -454,9 +453,7 @@ class TestRealWorldScenarios:
     """Test realistic file upload/download/delete workflows"""
 
     @pytest.mark.asyncio
-    async def test_complete_upload_workflow(
-        self, attachment_service, temp_upload_dir
-    ):
+    async def test_complete_upload_workflow(self, attachment_service, temp_upload_dir):
         """Test complete file upload workflow: validate -> save"""
         # Create mock file
         mock_file = Mock(spec=UploadFile)

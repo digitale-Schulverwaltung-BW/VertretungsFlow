@@ -1,0 +1,23 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | env
+  | __pycache__
+  | \.eggs
+  | build
+  | dist
+  | \.pytest_cache
+  | \.mypy_cache
+  | migrations
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
