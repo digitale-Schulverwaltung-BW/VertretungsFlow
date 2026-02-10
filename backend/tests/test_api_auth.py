@@ -7,23 +7,52 @@ Getestet:
 - _update_wordpress_user_fields()   - Smart update logic (nur bei Änderungen)
 - _handle_wordpress_proxy_user()    - Create/Update flow (neue vs. bestehende User)
 - get_wordpress_proxy_user()        - Secret-Validierung + Auth-Flow
+- get_current_user()                - JWT decode → DB lookup → return user
+- get_current_active_user()         - is_active check
+- require_role()                    - role-based access control factory
+- _create_wordpress_user()          - DB persist + audit_log
+- _create_ldap_user()               - DB persist from LDAP info + audit_log
+- _handle_ldap_proxy_user()         - LDAP auth flow (existing/create/not found)
+- read_users_me()                   - /me endpoint
+- logout()                          - /logout endpoint
 """
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 from urllib.parse import quote
 
 from fastapi import HTTPException
+from jose import JWTError
 
 from app.api.auth import (
-    map_wordpress_role,
+    _create_ldap_user,
+    _create_wordpress_user,
     _decode_wordpress_name,
-    _update_wordpress_user_fields,
+    _handle_ldap_proxy_user,
     _handle_wordpress_proxy_user,
+    _update_wordpress_user_fields,
+    get_current_active_user,
+    get_current_user,
     get_wordpress_proxy_user,
+    logout,
+    map_wordpress_role,
+    read_users_me,
+    require_role,
 )
 from app.models.models import User, UserRole
 from app.core.config import settings
+
+
+def unwrap(func):
+    """Bypass @limiter.limit() decorator via __wrapped__."""
+    return func.__wrapped__
+
+
+def make_mock_request():
+    req = Mock()
+    req.client = Mock()
+    req.client.host = "127.0.0.1"
+    return req
 
 
 # ============================================================================
@@ -463,3 +492,297 @@ class TestGetWordpressProxyUser:
                         db=db,
                     )
         assert result is active_user
+
+
+# ============================================================================
+# Tests: get_current_user() - JWT-Version in auth.py
+# ============================================================================
+
+
+class TestGetCurrentUserJWT:
+    """Tests for auth.py JWT-based get_current_user (different from deps.py)"""
+
+    @pytest.mark.asyncio
+    async def test_jwt_error_raises_401(self):
+        """JWTError during decode → 401"""
+        db = make_mock_db()
+        with patch("app.api.auth.jwt.decode", side_effect=JWTError("bad token")):
+            with pytest.raises(HTTPException) as exc_info:
+                await get_current_user(token="invalid.token", db=db)
+        assert exc_info.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_payload_without_sub_raises_401(self):
+        """Payload without 'sub' claim → 401"""
+        db = make_mock_db()
+        with patch("app.api.auth.jwt.decode", return_value={"role": "admin"}):
+            with pytest.raises(HTTPException) as exc_info:
+                await get_current_user(token="some.token", db=db)
+        assert exc_info.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_user_not_in_db_raises_401(self):
+        """Valid token but user not in DB → 401"""
+        db = make_mock_db(existing_user=None)
+        with patch("app.api.auth.jwt.decode", return_value={"sub": "ghost.user"}):
+            with pytest.raises(HTTPException) as exc_info:
+                await get_current_user(token="some.token", db=db)
+        assert exc_info.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_valid_token_and_user_returns_user(self):
+        """Valid token + existing user → user returned"""
+        user = make_mock_user()
+        db = make_mock_db(existing_user=user)
+        with patch("app.api.auth.jwt.decode", return_value={"sub": "max.mustermann"}):
+            result = await get_current_user(token="valid.token", db=db)
+        assert result is user
+
+
+# ============================================================================
+# Tests: get_current_active_user()
+# ============================================================================
+
+
+class TestGetCurrentActiveUser:
+    @pytest.mark.asyncio
+    async def test_active_user_returned(self):
+        user = make_mock_user(is_active=True)
+        result = await get_current_active_user(current_user=user)
+        assert result is user
+
+    @pytest.mark.asyncio
+    async def test_inactive_user_raises_400(self):
+        user = make_mock_user(is_active=False)
+        with pytest.raises(HTTPException) as exc_info:
+            await get_current_active_user(current_user=user)
+        assert exc_info.value.status_code == 400
+
+
+# ============================================================================
+# Tests: require_role()
+# ============================================================================
+
+
+class TestRequireRole:
+    @pytest.mark.asyncio
+    async def test_allowed_role_returns_user(self):
+        user = make_mock_user(role=UserRole.ADMIN)
+        checker = require_role([UserRole.ADMIN, UserRole.PLANNER])
+        result = await checker(current_user=user)
+        assert result is user
+
+    @pytest.mark.asyncio
+    async def test_forbidden_role_raises_403(self):
+        user = make_mock_user(role=UserRole.TEACHER)
+        checker = require_role([UserRole.ADMIN])
+        with pytest.raises(HTTPException) as exc_info:
+            await checker(current_user=user)
+        assert exc_info.value.status_code == 403
+
+
+# ============================================================================
+# Tests: _create_wordpress_user()
+# ============================================================================
+
+
+class TestCreateWordpressUser:
+    def _make_db(self):
+        db = Mock()
+        db.refresh = Mock()
+        return db
+
+    def test_adds_commits_refreshes_and_returns_user(self):
+        db = self._make_db()
+        with patch("app.api.auth.audit_log"):
+            result = _create_wordpress_user(
+                db=db,
+                username="new.user",
+                email="new@schule.de",
+                full_name="New User",
+                first_name="New",
+                last_name="User",
+                role=UserRole.TEACHER,
+                webuntis_code="NEW",
+            )
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once()
+        assert result is not None
+
+    def test_audit_log_called_with_user_created_action(self):
+        db = self._make_db()
+        with patch("app.api.auth.audit_log") as mock_audit:
+            _create_wordpress_user(
+                db=db,
+                username="new.user",
+                email="new@schule.de",
+                full_name="New User",
+                first_name=None,
+                last_name=None,
+                role=UserRole.TEACHER,
+                webuntis_code=None,
+            )
+        mock_audit.assert_called_once()
+        call_kwargs = mock_audit.call_args.kwargs
+        assert call_kwargs["action"] == "user_created"
+
+    def test_user_has_correct_username_and_role(self):
+        db = self._make_db()
+        with patch("app.api.auth.audit_log"):
+            result = _create_wordpress_user(
+                db=db,
+                username="anna.schmidt",
+                email="anna@schule.de",
+                full_name="Anna Schmidt",
+                first_name="Anna",
+                last_name="Schmidt",
+                role=UserRole.DEPARTMENT_HEAD,
+                webuntis_code="SCH",
+            )
+        assert result.username == "anna.schmidt"
+        assert result.role == UserRole.DEPARTMENT_HEAD
+        assert result.is_active is True
+
+
+# ============================================================================
+# Tests: _create_ldap_user()
+# ============================================================================
+
+
+class TestCreateLdapUser:
+    def _make_db(self):
+        db = Mock()
+        db.refresh = Mock()
+        return db
+
+    def test_creates_user_from_ldap_info(self):
+        db = self._make_db()
+        ldap_info = {"email": "ldap@schule.de", "full_name": "LDAP User"}
+        with patch("app.api.auth.audit_log"):
+            result = _create_ldap_user(db=db, username="ldap.user", ldap_info=ldap_info)
+        assert result.username == "ldap.user"
+        assert result.email == "ldap@schule.de"
+        assert result.full_name == "LDAP User"
+        assert result.role == UserRole.TEACHER
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+
+    def test_falls_back_to_username_when_full_name_missing(self):
+        db = self._make_db()
+        with patch("app.api.auth.audit_log"):
+            result = _create_ldap_user(
+                db=db, username="bare.user", ldap_info={"email": "bare@schule.de"}
+            )
+        assert result.full_name == "bare.user"
+
+
+# ============================================================================
+# Tests: _handle_ldap_proxy_user()
+# ============================================================================
+
+
+class TestHandleLdapProxyUser:
+    @pytest.mark.asyncio
+    async def test_existing_user_returned_directly(self):
+        """If user already in DB, return without LDAP lookup"""
+        existing = make_mock_user()
+        db = Mock()
+        result = await _handle_ldap_proxy_user(
+            user=existing, db=db, username="max.mustermann"
+        )
+        assert result is existing
+
+    @pytest.mark.asyncio
+    async def test_ldap_service_none_raises_500(self):
+        """ldap_service=None (non-standalone mode) → 500"""
+        db = Mock()
+        with patch("app.api.auth.ldap_service", None):
+            with pytest.raises(HTTPException) as exc_info:
+                await _handle_ldap_proxy_user(user=None, db=db, username="ghost.user")
+        assert exc_info.value.status_code == 500
+
+    @pytest.mark.asyncio
+    async def test_user_not_in_ldap_raises_404(self):
+        """User exists in secret but not in LDAP → 404"""
+        db = Mock()
+        mock_ldap = Mock()
+        mock_ldap.get_user_info.return_value = None
+        with patch("app.api.auth.ldap_service", mock_ldap):
+            with pytest.raises(HTTPException) as exc_info:
+                await _handle_ldap_proxy_user(user=None, db=db, username="unknown.user")
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_ldap_user_found_creates_and_returns(self):
+        """LDAP returns info → create user and return"""
+        db = Mock()
+        db.refresh = Mock()
+        ldap_info = {"email": "new@schule.de", "full_name": "New LDAP User"}
+        mock_ldap = Mock()
+        mock_ldap.get_user_info.return_value = ldap_info
+        with patch("app.api.auth.ldap_service", mock_ldap):
+            with patch("app.api.auth.audit_log"):
+                result = await _handle_ldap_proxy_user(
+                    user=None, db=db, username="new.ldap.user"
+                )
+        assert result.username == "new.ldap.user"
+        assert result.email == "new@schule.de"
+
+
+# ============================================================================
+# Tests: get_wordpress_proxy_user() – LDAP Mode
+# ============================================================================
+
+
+class TestGetWordpressProxyUserLdapMode:
+    @pytest.mark.asyncio
+    async def test_ldap_mode_routes_to_ldap_handler(self):
+        """AUTH_MODE != 'wordpress' → _handle_ldap_proxy_user called"""
+        active_user = make_mock_user(is_active=True)
+        db = make_mock_db()
+        with patch.object(settings, "WORDPRESS_PROXY_SECRET", TEST_SECRET):
+            with patch.object(settings, "AUTH_MODE", "standalone"):
+                with patch(
+                    "app.api.auth._handle_ldap_proxy_user",
+                    new_callable=lambda: lambda: AsyncMock(return_value=active_user),
+                ):
+                    with patch(
+                        "app.api.auth._handle_ldap_proxy_user",
+                        new=AsyncMock(return_value=active_user),
+                    ):
+                        result = await get_wordpress_proxy_user(
+                            x_wordpress_secret=TEST_SECRET,
+                            x_wordpress_user="testuser",
+                            x_wordpress_email=None,
+                            x_wordpress_name=None,
+                            x_wordpress_first_name=None,
+                            x_wordpress_last_name=None,
+                            x_wordpress_role=None,
+                            x_wordpress_webuntis_code=None,
+                            db=db,
+                        )
+        assert result is active_user
+
+
+# ============================================================================
+# Tests: read_users_me() and logout() endpoints
+# ============================================================================
+
+
+class TestReadUsersMe:
+    @pytest.mark.asyncio
+    async def test_returns_current_user(self):
+        user = make_mock_user()
+        result = await unwrap(read_users_me)(
+            request=make_mock_request(), current_user=user
+        )
+        assert result is user
+
+
+class TestLogout:
+    @pytest.mark.asyncio
+    async def test_returns_success_message(self):
+        user = make_mock_user()
+        result = await unwrap(logout)(request=make_mock_request(), current_user=user)
+        assert result == {"message": "Successfully logged out"}
