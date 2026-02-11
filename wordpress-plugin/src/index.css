@@ -18,26 +18,21 @@
 #absenzflow-root {
   /*
    * Full-width breakout: escape the WordPress theme's content-width constraint.
-   * Many themes (Twenty-Twenty, Twenty-Twenty-Three, etc.) limit .entry-content
-   * to 580-700px via --wp--style--content-size, which is too narrow for the
-   * two date pickers side by side (~644px needed).
+   * Many themes limit .entry-content to 580–700px. We need ~490px for two
+   * compact date pickers side by side (see --rdp-cell-size below).
    *
-   * The standard "full-bleed" technique shifts the element to viewport width:
-   *   left: 50%  →  move left edge to viewport center
-   *   transform: translateX(-50%)  →  shift back so element is centered
+   * Uses the margin-based technique – more reliable than position/transform
+   * when a parent has overflow:hidden (common in WP themes for float clearing):
+   *   margin-left: calc(50% - 50vw)  →  pull left edge to viewport left
+   *   width: 100vw                   →  span full viewport
    *
-   * Note: On layouts with a sidebar + main column this can overlap the sidebar.
-   * In that case, set the shortcode page to a "Full Width" page template in WP.
+   * Note: On sidebar layouts this can overlap the sidebar.
+   * Fix: set the shortcode page to "Full Width" template in WordPress.
    */
   width: 100vw !important;
   max-width: 100vw !important;
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
-  overflow-x: hidden; /* prevent horizontal scrollbar */
-
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
   min-height: 400px;
 
   /* Typography Reset - Only the most critical inherited properties */
@@ -99,6 +94,14 @@
   max-width: 100%;
   max-height: 100%;
   vertical-align: middle !important;
+}
+
+/* React Day Picker: compact cell size so two pickers fit in ~490px.
+ * Default --rdp-cell-size is 40px (7 cols = 280px per picker).
+ * At 32px (7 cols = 224px) + p-2 padding = ~240px per picker → fits in 500px. */
+#absenzflow-root .rdp {
+  --rdp-cell-size: 32px;
+  margin: 0;
 }
 
 /* React Day Picker SVG icons size constraints */

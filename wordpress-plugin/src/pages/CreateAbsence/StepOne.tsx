@@ -310,7 +310,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Zeitraum
             </label>
-            <div className="flex gap-6 overflow-x-auto pb-1">
+            <div className="flex flex-wrap gap-4">
               <div className="flex-shrink-0">
                 <label className="block text-xs text-gray-600 mb-1">von:</label>
                 <DayPicker
@@ -321,7 +321,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   month={leftMonth}
                   onMonthChange={handleLeftMonthChange}
                   locale={de}
-                  className="border border-gray-300 rounded-md p-3 w-fit"
+                  className="border border-gray-300 rounded-md p-2 w-fit"
                   disabled={{ before: new Date() }}
                   modifiers={startPickerModifiers}
                   modifiersClassNames={modifiersClassNames}
@@ -337,7 +337,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   month={rightMonth}
                   onMonthChange={handleRightMonthChange}
                   locale={de}
-                  className="border border-gray-300 rounded-md p-3 w-fit"
+                  className="border border-gray-300 rounded-md p-2 w-fit"
                   disabled={{ before: new Date() }}
                   modifiers={endPickerModifiers}
                   modifiersClassNames={modifiersClassNames}
