@@ -251,6 +251,10 @@ table tr:hover {
   color: #155724;
   border: 1px solid #c3e6cb;
 }
+/* Date picker */
+.rdp-day {
+  padding: 6px;
+}
 
 .alert-error {
   background-color: #f8d7da;
