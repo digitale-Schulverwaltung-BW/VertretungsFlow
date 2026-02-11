@@ -254,6 +254,56 @@ AbsenzFlow System
 
         return await self.send_email(teacher_email, subject, body)
 
+    async def send_absence_deleted_notification(
+        self,
+        teacher_name: str,
+        dept_head_emails: List[str],
+        planner_emails: List[str],
+        absence_id: int,
+        reason: str,
+        start_date: str,
+        end_date: str,
+    ) -> bool:
+        """
+        Benachrichtigung wenn Abwesenheit durch Lehrkraft gelöscht wurde
+
+        Args:
+            teacher_name: Name der Lehrkraft
+            dept_head_emails: E-Mails der Abteilungsleiter
+            planner_emails: E-Mails der Vertretungsplaner
+            absence_id: ID der gelöschten Abwesenheit
+            reason: Grund
+            start_date: Startdatum
+            end_date: Enddatum
+
+        Returns:
+            True wenn erfolgreich
+        """
+        subject = f"Abwesenheitsmeldung von {teacher_name} wurde gelöscht"
+        body = f"""Hallo,
+
+{teacher_name} hat eine Abwesenheitsmeldung zurückgezogen:
+
+Abwesenheits-ID: {absence_id}
+Grund: {reason}
+Von: {start_date}
+Bis: {end_date}
+
+Die Meldung wurde aus dem AbsenzFlow-System entfernt.
+
+Mit freundlichen Grüßen,
+AbsenzFlow System"""
+
+        recipients = dept_head_emails + planner_emails
+
+        success = True
+        for email in recipients:
+            result = await self.send_email(email, subject, body)
+            if not result:
+                success = False
+
+        return success
+
 
 # Singleton Instance
 email_service = EmailService()

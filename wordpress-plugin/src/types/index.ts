@@ -51,6 +51,7 @@ export interface Attachment {
 export interface Absence {
   id?: number;
   teacher_id: number;
+  teacher?: Pick<User, 'id' | 'username' | 'full_name'>;
   reason: AbsenceReason;
   start_date: string;
   end_date: string;

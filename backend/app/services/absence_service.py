@@ -304,9 +304,68 @@ class AbsenceService:
 
         return "Absence marked as completed, attachments deleted"
 
-    def delete_absence(self, absence_id: int, db: Session) -> str:
+    async def delete_absence(
+        self, absence_id: int, current_user: User, db: Session
+    ) -> str:
         """
-        Deletes an absence and all associated files
+        Deletes an absence and all associated files, then sends notification
+
+        Args:
+            absence_id: Absence ID
+            current_user: User performing the deletion (for notification)
+            db: Database session
+
+        Returns:
+            Success message
+
+        Raises:
+            HTTPException: If absence not found
+        """
+        # Eager load attachments AND teacher for notification
+        absence = (
+            db.query(Absence)
+            .options(
+                selectinload(Absence.attachments),
+                joinedload(Absence.teacher),
+            )
+            .filter(Absence.id == absence_id)
+            .first()
+        )
+
+        if not absence:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Absence not found"
+            )
+
+        # Send notification BEFORE deletion (absence data still available)
+        await absence_notification_service.send_deleted_notification(
+            absence, current_user, db
+        )
+
+        # Delete attachments from disk before deleting DB record
+        if absence.attachments:
+            logger.info(
+                f"Deleting {len(absence.attachments)} attachments for absence {absence_id}..."
+            )
+            for attachment in absence.attachments:
+                try:
+                    attachment_service.delete_file(attachment.file_path)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to delete file {attachment.file_path}: {e}"
+                    )
+
+        # Delete database record (CASCADE will delete affected_lessons and attachment records)
+        db.delete(absence)
+        db.commit()
+
+        logger.info(f"Absence {absence_id} deleted successfully")
+        return "Absence deleted"
+
+    def _delete_absence_record(self, absence_id: int, db: Session) -> str:
+        """
+        Internal: deletes absence and files without sending notifications.
+        Used by cleanup_old_absences() where no user context is available.
 
         Args:
             absence_id: Absence ID
@@ -318,7 +377,6 @@ class AbsenceService:
         Raises:
             HTTPException: If absence not found
         """
-        # Eager load attachments for cleanup
         absence = (
             db.query(Absence)
             .options(selectinload(Absence.attachments))
@@ -340,7 +398,9 @@ class AbsenceService:
                 try:
                     attachment_service.delete_file(attachment.file_path)
                 except Exception as e:
-                    logger.warning(f"Failed to delete file {attachment.file_path}: {e}")
+                    logger.warning(
+                        f"Failed to delete file {attachment.file_path}: {e}"
+                    )
 
         # Delete database record (CASCADE will delete affected_lessons and attachment records)
         db.delete(absence)
@@ -381,7 +441,7 @@ class AbsenceService:
                 logger.info(
                     f"Deleting old absence {absence.id} (end_date: {absence.end_date}, teacher: {absence.teacher.username})"
                 )
-                self.delete_absence(absence.id, db)
+                self._delete_absence_record(absence.id, db)
                 deleted_count += 1
             except Exception as e:
                 logger.error(f"Failed to delete absence {absence.id}: {e}")

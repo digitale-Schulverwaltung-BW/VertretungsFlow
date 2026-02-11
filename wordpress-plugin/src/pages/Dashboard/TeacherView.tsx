@@ -12,6 +12,7 @@ const TeacherView: React.FC<TeacherViewProps> = ({ _user }) => {
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,8 +20,9 @@ const TeacherView: React.FC<TeacherViewProps> = ({ _user }) => {
       try {
         const data = await api.getAbsences();
         setAbsences(data);
-      } catch (err: any) {
-        setError(err.message || 'Fehler beim Laden der Abwesenheiten');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Fehler beim Laden der Abwesenheiten';
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -35,6 +37,28 @@ const TeacherView: React.FC<TeacherViewProps> = ({ _user }) => {
 
   const handleNewAbsence = () => {
     navigate('/create-absence');
+  };
+
+  const handleDelete = async (absence: Absence, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!absence.id) return;
+
+    const confirmed = window.confirm(
+      'Möchten Sie diese Abwesenheit wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden.'
+    );
+    if (!confirmed) return;
+
+    setDeletingId(absence.id);
+    try {
+      await api.deleteAbsence(absence.id);
+      setAbsences((prev) => prev.filter((a) => a.id !== absence.id));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler beim Löschen der Abwesenheit';
+      alert(message);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (loading) {
@@ -71,7 +95,12 @@ const TeacherView: React.FC<TeacherViewProps> = ({ _user }) => {
 
       {/* Tabelle */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <AbsenceTable absences={absences} onAbsenceClick={handleAbsenceClick} />
+        <AbsenceTable
+          absences={absences}
+          onAbsenceClick={handleAbsenceClick}
+          onDeleteAbsence={handleDelete}
+          deletingId={deletingId}
+        />
       </div>
 
       {/* Info wenn keine Abwesenheiten */}

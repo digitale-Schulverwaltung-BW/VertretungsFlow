@@ -165,6 +165,58 @@ class AbsenceNotificationService:
                 f"Email notification error for rejected absence {absence.id}: {e}"
             )
 
+    async def send_deleted_notification(
+        self, absence: Absence, current_user: User, db: Session
+    ) -> None:
+        """
+        Sends email notification when absence is deleted by the teacher
+
+        Args:
+            absence: Absence object (must have teacher relationship loaded)
+            current_user: User who deleted the absence
+            db: Database session
+        """
+        try:
+            dept_head_emails = get_recipients_by_roles(db, [UserRole.DEPARTMENT_HEAD])
+            planner_emails = get_recipients_by_roles(db, [UserRole.PLANNER])
+
+            if not dept_head_emails and not planner_emails:
+                logger.info(
+                    f"No recipients for deleted notification for absence {absence.id}"
+                )
+                return
+
+            start_date_str = absence.start_date.strftime("%d.%m.%Y")
+            end_date_str = absence.end_date.strftime("%d.%m.%Y")
+            reason_label = REASON_LABELS.get(
+                cast(str, absence.reason), cast(str, absence.reason)
+            )
+            teacher_name = current_user.full_name or current_user.username
+
+            success = await email_service.send_absence_deleted_notification(
+                teacher_name=teacher_name,
+                dept_head_emails=dept_head_emails,
+                planner_emails=planner_emails,
+                absence_id=absence.id,
+                reason=reason_label,
+                start_date=start_date_str,
+                end_date=end_date_str,
+            )
+
+            if not success:
+                logger.warning(
+                    f"Some email notifications failed for deleted absence {absence.id}"
+                )
+            else:
+                logger.info(
+                    f"✓ Deleted notification sent for absence {absence.id}"
+                )
+        except Exception as e:
+            logger.error(
+                f"Email notification error for deleted absence {absence.id}: {e}"
+            )
+            # Continue - don't fail the request
+
 
 # Singleton instance
 absence_notification_service = AbsenceNotificationService()

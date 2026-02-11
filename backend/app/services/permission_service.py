@@ -121,8 +121,8 @@ class PermissionService:
         if absence.teacher_id != user.id:
             return False
 
-        # Teachers can only delete DRAFT or SUBMITTED absences
-        return absence.status in [AbsenceStatus.DRAFT, AbsenceStatus.SUBMITTED]
+        # Teachers can delete any absence that is not yet completed (erledigt)
+        return absence.status != AbsenceStatus.COMPLETED
 
 
 # Singleton instance

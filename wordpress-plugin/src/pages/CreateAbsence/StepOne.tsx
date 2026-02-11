@@ -171,19 +171,24 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     }
   };
 
+  const isRangeSelected =
+    dateRange?.from &&
+    dateRange?.to &&
+    dateRange.from.getTime() !== dateRange.to.getTime();
+
   const startPickerModifiers = {
     primary: dateRange?.from ? [dateRange.from] : [],
-    secondary: dateRange?.to ? [dateRange.to] : [],
+    secondary: isRangeSelected && dateRange?.to ? [dateRange.to] : [],
   };
 
   const endPickerModifiers = {
-    primary: dateRange?.to ? [dateRange.to] : [],
+    primary: isRangeSelected && dateRange?.to ? [dateRange.to] : [],
     secondary: dateRange?.from ? [dateRange.from] : [],
   };
 
   const modifiersClassNames = {
-    primary: 'bg-black text-white font-bold rounded-full',
-    secondary: 'bg-gray-300 text-gray-600 rounded-full',
+    primary: '!bg-blue-600 !text-white font-bold rounded-full',
+    secondary: '!bg-gray-200 !text-gray-400 rounded-full opacity-30',
   };
 
   const handleLeftMonthChange = (month: Date) => {

@@ -50,7 +50,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
       setLoadingProgress(`Lade Stundenplan für ${daysDiff} Tag${daysDiff > 1 ? 'e' : ''}...`);
       await new Promise((resolve) => setTimeout(resolve, 400));
 
-      setLoadingProgress(`Verarbeite ca. ${estimatedItems} Stunden...`);
+      setLoadingProgress(`Verarbeite WebUntis-Daten (${estimatedItems} Stunden)...`);
 
       const response = await api.fetchLessons({
         start_date: format(stepOneData.startDate, 'yyyy-MM-dd'),

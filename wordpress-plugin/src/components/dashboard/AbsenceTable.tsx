@@ -7,9 +7,16 @@ import { getAbsenceReasonLabel } from '../../constants';
 interface AbsenceTableProps {
   absences: Absence[];
   onAbsenceClick?: (absence: Absence) => void;
+  onDeleteAbsence?: (absence: Absence, e: React.MouseEvent) => void;
+  deletingId?: number | null;
 }
 
-const AbsenceTable: React.FC<AbsenceTableProps> = ({ absences, onAbsenceClick }) => {
+const AbsenceTable: React.FC<AbsenceTableProps> = ({
+  absences,
+  onAbsenceClick,
+  onDeleteAbsence,
+  deletingId,
+}) => {
   const getStatusBadge = (status: string) => {
     const statusStyles = {
       submitted: 'bg-yellow-100 text-yellow-800',
@@ -66,6 +73,11 @@ const AbsenceTable: React.FC<AbsenceTableProps> = ({ absences, onAbsenceClick })
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
               Betroffene Stunden
             </th>
+            {onDeleteAbsence && (
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Aktionen
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -90,6 +102,20 @@ const AbsenceTable: React.FC<AbsenceTableProps> = ({ absences, onAbsenceClick })
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                 {absence.affected_lessons?.length || 0}
               </td>
+              {onDeleteAbsence && (
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {absence.status !== 'completed' && (
+                    <button
+                      onClick={(e) => onDeleteAbsence(absence, e)}
+                      disabled={deletingId === absence.id}
+                      className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Abwesenheit löschen"
+                    >
+                      {deletingId === absence.id ? 'Lädt...' : 'Löschen'}
+                    </button>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

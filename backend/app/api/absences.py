@@ -314,7 +314,7 @@ async def delete_absence(
     """
     Löscht Abwesenheit
 
-    Nur eigene Abwesenheiten und nur wenn noch nicht genehmigt
+    Nur eigene Abwesenheiten solange nicht erledigt; Admins/Planner können immer löschen
 
     Args:
         absence_id: ID der Abwesenheit
@@ -339,6 +339,6 @@ async def delete_absence(
         )
 
     # Delegiert an absence_service
-    message = absence_service.delete_absence(absence_id, db)
+    message = await absence_service.delete_absence(absence_id, current_user, db)
 
     return {"message": message}
