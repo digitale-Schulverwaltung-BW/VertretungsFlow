@@ -253,7 +253,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value as AbsenceReason)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="max-w-xs w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               {ABSENCE_REASONS.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -278,7 +278,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                 value={excursionClasses}
                 onChange={(e) => setExcursionClasses(e.target.value)}
                 placeholder="z.B. 10a, 10b"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="max-w-sm w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
             </div>
@@ -299,7 +299,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                 value={personalReason}
                 onChange={(e) => setPersonalReason(e.target.value)}
                 placeholder="z.B. Arzttermin"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="max-w-sm w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
             </div>
@@ -310,7 +310,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Zeitraum
             </label>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="flex flex-wrap gap-6">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">von:</label>
                 <DayPicker
@@ -321,7 +321,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   month={leftMonth}
                   onMonthChange={handleLeftMonthChange}
                   locale={de}
-                  className="border border-gray-300 rounded-md p-3"
+                  className="border border-gray-300 rounded-md p-3 w-fit"
                   disabled={{ before: new Date() }}
                   modifiers={startPickerModifiers}
                   modifiersClassNames={modifiersClassNames}
@@ -337,7 +337,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   month={rightMonth}
                   onMonthChange={handleRightMonthChange}
                   locale={de}
-                  className="border border-gray-300 rounded-md p-3"
+                  className="border border-gray-300 rounded-md p-3 w-fit"
                   disabled={{ before: new Date() }}
                   modifiers={endPickerModifiers}
                   modifiersClassNames={modifiersClassNames}
@@ -347,46 +347,46 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
           </div>
 
           {/* Stunden */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="startLesson"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Stunde (von)
-              </label>
-              <select
-                id="startLesson"
-                value={startLesson}
-                onChange={(e) => setStartLesson(Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {lessonNumbers.map((num) => (
-                  <option key={num} value={num}>
-                    {num}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label
-                htmlFor="endLesson"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Stunde (bis)
-              </label>
-              <select
-                id="endLesson"
-                value={endLesson}
-                onChange={(e) => setEndLesson(Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {lessonNumbers.map((num) => (
-                  <option key={num} value={num}>
-                    {num}
-                  </option>
-                ))}
-              </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Stunden
+            </label>
+            <div className="flex items-end gap-3">
+              <div>
+                <label htmlFor="startLesson" className="block text-xs text-gray-600 mb-1">
+                  von
+                </label>
+                <select
+                  id="startLesson"
+                  value={startLesson}
+                  onChange={(e) => setStartLesson(Number(e.target.value))}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {lessonNumbers.map((num) => (
+                    <option key={num} value={num}>
+                      {num}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <span className="pb-2 text-gray-400">–</span>
+              <div>
+                <label htmlFor="endLesson" className="block text-xs text-gray-600 mb-1">
+                  bis
+                </label>
+                <select
+                  id="endLesson"
+                  value={endLesson}
+                  onChange={(e) => setEndLesson(Number(e.target.value))}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {lessonNumbers.map((num) => (
+                    <option key={num} value={num}>
+                      {num}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

@@ -88,26 +88,31 @@ class TestSanitizeTextInput:
 
     def test_removes_html_tags(self):
         result = sanitize_text_input("<script>alert('xss')</script>hello")
+        assert result is not None
         assert "<script>" not in result
         assert "hello" in result
 
     def test_removes_html_tag_with_attributes(self):
         result = sanitize_text_input('<img src="x" onerror="alert(1)">text')
+        assert result is not None
         assert "<img" not in result
         assert "text" in result
 
     def test_removes_dangerous_control_characters(self):
         # \x01 is a control char (not newline/tab)
         result = sanitize_text_input("hello\x01world")
+        assert result is not None
         assert "\x01" not in result
         assert "helloworld" in result
 
     def test_keeps_newlines_when_allow_newlines_true(self):
         result = sanitize_text_input("line1\nline2", allow_newlines=True)
+        assert result is not None
         assert "\n" in result
 
     def test_removes_newlines_when_allow_newlines_false(self):
         result = sanitize_text_input("line1\nline2", allow_newlines=False)
+        assert result is not None
         assert "\n" not in result
         assert "line1line2" in result
 
@@ -122,6 +127,7 @@ class TestSanitizeTextInput:
 
     def test_removes_null_bytes(self):
         result = sanitize_text_input("hel\x00lo")
+        assert result is not None
         assert "\x00" not in result
 
 
@@ -180,6 +186,7 @@ class TestAbsenceBaseValidateExcursionClasses:
         absence = AbsenceBase(
             **make_absence(reason="excursion", excursion_classes="<b>10A</b>")
         )
+        assert absence.excursion_classes is not None
         assert "<b>" not in absence.excursion_classes
         assert "10A" in absence.excursion_classes
 
@@ -213,6 +220,7 @@ class TestAbsenceBaseValidatePersonalReason:
         absence = AbsenceBase(
             **make_absence(reason="personal", personal_reason="<script>x</script>Grund")
         )
+        assert absence.personal_reason is not None
         assert "<script>" not in absence.personal_reason
         assert "Grund" in absence.personal_reason
 
@@ -229,6 +237,7 @@ class TestAbsenceBaseValidateAdminNotes:
 
     def test_admin_notes_html_stripped(self):
         absence = AbsenceBase(**make_absence(admin_notes="<b>Bold</b> note"))
+        assert absence.admin_notes is not None
         assert "<b>" not in absence.admin_notes
         assert "Bold" in absence.admin_notes
 
@@ -249,6 +258,7 @@ class TestAffectedLessonUpdateValidateNotes:
 
     def test_notes_html_stripped(self):
         update = AffectedLessonUpdate(notes="<em>Hinweis</em>")
+        assert update.notes is not None
         assert "<em>" not in update.notes
         assert "Hinweis" in update.notes
 
@@ -264,15 +274,17 @@ class TestAffectedLessonUpdateValidateNotes:
 
 class TestAbsenceUpdateParseDate:
     def test_none_passes_through(self):
-        update = AbsenceUpdate(start_date=None)
+        update = AbsenceUpdate(start_date=None, start_period=None, end_period=None)
         assert update.start_date is None
 
     def test_date_only_string_gets_time_appended(self):
-        update = AbsenceUpdate(start_date="2026-02-11")
+        update = AbsenceUpdate(start_date="2026-02-11", start_period=None, end_period=None)
+        assert update.start_date is not None
         assert update.start_date.hour == 0
         assert update.start_date.minute == 0
 
     def test_datetime_string_passes_through(self):
-        update = AbsenceUpdate(start_date="2026-02-11T09:30:00")
+        update = AbsenceUpdate(start_date="2026-02-11T09:30:00", start_period=None, end_period=None)
+        assert update.start_date is not None
         assert update.start_date.hour == 9
         assert update.start_date.minute == 30
