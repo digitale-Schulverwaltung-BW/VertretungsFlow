@@ -310,8 +310,8 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Zeitraum
             </label>
-            <div className="flex flex-wrap gap-6">
-              <div>
+            <div className="flex gap-6 overflow-x-auto pb-1">
+              <div className="flex-shrink-0">
                 <label className="block text-xs text-gray-600 mb-1">von:</label>
                 <DayPicker
                   mode="range"
@@ -327,7 +327,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   modifiersClassNames={modifiersClassNames}
                 />
               </div>
-              <div>
+              <div className="flex-shrink-0">
                 <label className="block text-xs text-gray-600 mb-1">bis:</label>
                 <DayPicker
                   mode="range"
