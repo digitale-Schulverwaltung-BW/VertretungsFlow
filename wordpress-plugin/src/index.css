@@ -223,11 +223,9 @@
 #absenzflow-root .gap-2 { gap:  8px !important; }
 #absenzflow-root .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 24px !important; }
 
-/* --- Main card --- */
-#absenzflow-root .af-card {
-  max-width: 896px !important;
-  width: 100%;
-}
+/* --- Max-width containers --- */
+#absenzflow-root .af-card  { max-width:  896px !important; width: 100%; } /* max-w-4xl = 56rem */
+#absenzflow-root .max-w-7xl { max-width: 1280px !important; }              /* 80rem */
 
 /*
  * DatePicker: responsive layout via viewport media query.
@@ -271,6 +269,28 @@
   }
 
   #absenzflow-root .af-absence-table {
+    display: block;
+  }
+}
+
+#absenzflow-root .af-step2-table-root {
+  container-type: inline-size;
+}
+
+#absenzflow-root .af-step2-cards {
+  display: block;
+}
+
+#absenzflow-root .af-step2-table {
+  display: none;
+}
+
+@container (min-width: 640px) {
+  #absenzflow-root .af-step2-cards {
+    display: none;
+  }
+
+  #absenzflow-root .af-step2-table {
     display: block;
   }
 }
