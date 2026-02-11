@@ -278,13 +278,17 @@ class TestAbsenceUpdateParseDate:
         assert update.start_date is None
 
     def test_date_only_string_gets_time_appended(self):
-        update = AbsenceUpdate(start_date="2026-02-11", start_period=None, end_period=None)
+        update = AbsenceUpdate(
+            start_date="2026-02-11", start_period=None, end_period=None
+        )
         assert update.start_date is not None
         assert update.start_date.hour == 0
         assert update.start_date.minute == 0
 
     def test_datetime_string_passes_through(self):
-        update = AbsenceUpdate(start_date="2026-02-11T09:30:00", start_period=None, end_period=None)
+        update = AbsenceUpdate(
+            start_date="2026-02-11T09:30:00", start_period=None, end_period=None
+        )
         assert update.start_date is not None
         assert update.start_date.hour == 9
         assert update.start_date.minute == 30

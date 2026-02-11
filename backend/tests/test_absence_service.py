@@ -538,7 +538,9 @@ class TestDeleteAbsence:
 
     @pytest.mark.asyncio
     @patch("app.services.absence_service.attachment_service")
-    async def test_delete_absence_success(self, mock_attachment_svc, service, mock_absence):
+    async def test_delete_absence_success(
+        self, mock_attachment_svc, service, mock_absence
+    ):
         """Test successful absence deletion removes DB record"""
         db = make_mock_db(absence=mock_absence)
 

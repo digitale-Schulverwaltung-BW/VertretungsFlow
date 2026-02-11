@@ -351,9 +351,7 @@ class AbsenceService:
                 try:
                     attachment_service.delete_file(attachment.file_path)
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to delete file {attachment.file_path}: {e}"
-                    )
+                    logger.warning(f"Failed to delete file {attachment.file_path}: {e}")
 
         # Delete database record (CASCADE will delete affected_lessons and attachment records)
         db.delete(absence)
@@ -398,9 +396,7 @@ class AbsenceService:
                 try:
                     attachment_service.delete_file(attachment.file_path)
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to delete file {attachment.file_path}: {e}"
-                    )
+                    logger.warning(f"Failed to delete file {attachment.file_path}: {e}")
 
         # Delete database record (CASCADE will delete affected_lessons and attachment records)
         db.delete(absence)

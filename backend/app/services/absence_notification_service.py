@@ -208,9 +208,7 @@ class AbsenceNotificationService:
                     f"Some email notifications failed for deleted absence {absence.id}"
                 )
             else:
-                logger.info(
-                    f"✓ Deleted notification sent for absence {absence.id}"
-                )
+                logger.info(f"✓ Deleted notification sent for absence {absence.id}")
         except Exception as e:
             logger.error(
                 f"Email notification error for deleted absence {absence.id}: {e}"
