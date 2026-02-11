@@ -24,6 +24,7 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  webuntis_teacher_code?: string;
 }
 
 export interface Lesson {
@@ -80,6 +81,7 @@ export interface FetchLessonsRequest {
   end_date: string;
   start_period: number;
   end_period: number;
+  teacher_id?: number;
 }
 
 export interface CreateAbsenceRequest {
@@ -91,6 +93,7 @@ export interface CreateAbsenceRequest {
   excursion_classes?: string;
   personal_reason?: string;
   admin_notes?: string;
+  teacher_id?: number;
   affected_lessons: Array<{
     date: string;
     period: number;

@@ -57,6 +57,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         end_date: format(stepOneData.endDate, 'yyyy-MM-dd'),
         start_period: stepOneData.startLesson,
         end_period: stepOneData.endLesson,
+        teacher_id: stepOneData.selectedTeacherId,
       });
 
       setLoadingProgress(`${response.length} Stunden gefunden, bereite Anzeige vor...`);
@@ -182,6 +183,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         excursion_classes: stepOneData.excursionClasses,
         personal_reason: stepOneData.personalReason,
         admin_notes: adminNotes || undefined,
+        teacher_id: stepOneData.selectedTeacherId,
         affected_lessons: lessons.map((lesson) => ({
           date: lesson.date,
           period: lesson.period,

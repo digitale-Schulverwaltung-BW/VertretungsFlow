@@ -38,9 +38,13 @@ class AbsenceNotificationService:
                 cast(str, absence.reason), cast(str, absence.reason)
             )
 
+            # Use absence.teacher for recipient — may differ from current_user
+            # when an admin creates an absence on behalf of another teacher
+            effective_teacher = absence.teacher or current_user
+
             success = await email_service.send_absence_submitted_notification(
-                teacher_name=current_user.full_name or current_user.username,
-                teacher_email=current_user.email,
+                teacher_name=effective_teacher.full_name or effective_teacher.username,
+                teacher_email=effective_teacher.email,
                 dept_head_emails=dept_head_emails,
                 planner_emails=planner_emails,
                 absence_id=absence.id,

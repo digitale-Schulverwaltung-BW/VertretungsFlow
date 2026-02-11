@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { de } from 'date-fns/locale';
 import { format } from 'date-fns';
 import 'react-day-picker/dist/style.css';
-import type { AbsenceReason } from '../../types';
+import type { AbsenceReason, User } from '../../types';
 import { ABSENCE_REASONS } from '../../constants';
 import api from '../../api/client';
 
@@ -19,6 +19,7 @@ export interface StepOneData {
   endLesson: number;
   excursionClasses?: string;
   personalReason?: string;
+  selectedTeacherId?: number;
 }
 
 const lessonNumbers = Array.from({ length: 16 }, (_, i) => i + 1);
@@ -34,6 +35,18 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   const [excursionClasses, setExcursionClasses] = useState<string>('');
   const [personalReason, setPersonalReason] = useState<string>('');
   const [checkingDuplicates, setCheckingDuplicates] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [selectedTeacherId, setSelectedTeacherId] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    api.getCurrentUser().then((user) => {
+      setCurrentUser(user);
+      if (user.role === 'admin') {
+        api.getUsers().then(setTeachers);
+      }
+    });
+  }, []);
 
   const handleStartDayClick = (day: Date) => {
     // Einzelklick im linken Picker: immer nur Start-Datum setzen
@@ -162,6 +175,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
         endLesson,
         excursionClasses: reason === 'excursion' ? excursionClasses : undefined,
         personalReason: reason === 'personal' || reason === 'other' ? personalReason : undefined,
+        selectedTeacherId,
       });
     } catch (err) {
       console.error('Error checking for duplicates:', err);
@@ -241,6 +255,35 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Lehrkraft (nur für Admins) */}
+          {currentUser?.role === 'admin' && (
+            <div>
+              <label
+                htmlFor="teacherSelect"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Lehrkraft
+              </label>
+              <select
+                id="teacherSelect"
+                value={selectedTeacherId ?? ''}
+                onChange={(e) =>
+                  setSelectedTeacherId(e.target.value ? Number(e.target.value) : undefined)
+                }
+                className="max-w-xs w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Eigene Abwesenheit</option>
+                {teachers
+                  .filter((t) => t.id !== currentUser.id)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.webuntis_teacher_code || t.username}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+
           {/* Grund */}
           <div>
             <label

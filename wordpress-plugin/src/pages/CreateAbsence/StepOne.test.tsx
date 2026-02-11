@@ -3,6 +3,22 @@ import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import StepOne from './StepOne'
 
+vi.mock('../../api/client', () => ({
+  default: {
+    getCurrentUser: vi.fn().mockResolvedValue({
+      id: 1,
+      username: 'test.user',
+      email: 'test@schule.de',
+      full_name: 'Test User',
+      role: 'teacher',
+      is_active: true,
+      created_at: '2024-01-01T00:00:00Z',
+    }),
+    getUsers: vi.fn().mockResolvedValue([]),
+    getAbsences: vi.fn().mockResolvedValue([]),
+  },
+}))
+
 describe('StepOne - Absence Wizard Step 1', () => {
   let mockOnNext: ReturnType<typeof vi.fn>
 

@@ -5,12 +5,13 @@ Business logic for absence management
 
 import logging
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import HTTPException, Request, status
 from sqlalchemy.orm import Session, selectinload, joinedload
 
 from app.models.models import (
     User,
+    UserRole,
     Absence,
     AffectedLesson,
     AbsenceStatus,
@@ -48,6 +49,27 @@ class AbsenceService:
         """
         logger.info(f"📝 Create absence request from user {current_user.username}")
 
+        # Ziel-Lehrkraft bestimmen (Admin kann für andere Lehrkraft anlegen)
+        target_teacher: Optional[User] = None
+        if absence_data.teacher_id and current_user.role == UserRole.ADMIN:
+            target_teacher = (
+                db.query(User)
+                .filter(
+                    User.id == absence_data.teacher_id, User.is_active == True
+                )
+                .first()
+            )
+            if not target_teacher:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Teacher not found",
+                )
+            logger.info(
+                f"Admin {current_user.username} creates absence for {target_teacher.username}"
+            )
+        else:
+            target_teacher = current_user
+
         # Validierung
         validate_date_range(
             absence_data.start_date,
@@ -58,7 +80,7 @@ class AbsenceService:
 
         # Abwesenheit in DB erstellen
         db_absence = Absence(
-            teacher_id=current_user.id,
+            teacher_id=target_teacher.id,
             reason=absence_data.reason,
             start_date=absence_data.start_date,
             end_date=absence_data.end_date,
@@ -88,11 +110,11 @@ class AbsenceService:
 
         # Betroffene Stunden aus WebUntis abrufen
         lessons = await webuntis_service.get_timetable_for_teacher(
-            current_user.username,
+            target_teacher.username,
             absence_data.start_date,
             absence_data.end_date,
             db=db,
-            webuntis_code=current_user.webuntis_teacher_code,
+            webuntis_code=target_teacher.webuntis_teacher_code,
         )
 
         # Erstelle Lookup-Dictionary für Lehrkraft-Inputs (notes, can_be_canceled)

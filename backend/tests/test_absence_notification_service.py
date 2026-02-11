@@ -151,20 +151,19 @@ class TestSendSubmittedNotification:
         mock_email_svc,
         service,
         mock_absence,
+        mock_submitter,
         mock_db,
     ):
-        """Test that username is used when full_name is None"""
-        submitter = Mock()
-        submitter.full_name = None
-        submitter.username = "max.mustermann"
-        submitter.email = "max@schule.de"
+        """Test that absence.teacher.username is used when teacher has no full_name"""
+        mock_absence.teacher.full_name = None
+        mock_absence.teacher.username = "max.mustermann"
 
         mock_get_recipients.side_effect = [[], []]
         mock_email_svc.send_absence_submitted_notification = AsyncMock(
             return_value=True
         )
 
-        await service.send_submitted_notification(mock_absence, submitter, mock_db)
+        await service.send_submitted_notification(mock_absence, mock_submitter, mock_db)
 
         call_kwargs = mock_email_svc.send_absence_submitted_notification.call_args[1]
         assert call_kwargs["teacher_name"] == "max.mustermann"

@@ -210,6 +210,7 @@ class AbsenceCreate(AbsenceBase):
     """Absence Creation Schema"""
 
     affected_lessons: Optional[List[AffectedLessonBase]] = None
+    teacher_id: Optional[int] = None  # Admin only: create absence for another teacher
 
 
 class AffectedLessonResponse(AffectedLessonBase):
@@ -317,6 +318,7 @@ class FetchLessonsRequest(BaseModel):
     end_date: datetime
     start_period: int = Field(..., ge=1, le=16)
     end_period: int = Field(..., ge=1, le=16)
+    teacher_id: Optional[int] = None  # Admin only: fetch lessons for another teacher
 
     @field_validator("start_date", "end_date", mode="before")
     @classmethod

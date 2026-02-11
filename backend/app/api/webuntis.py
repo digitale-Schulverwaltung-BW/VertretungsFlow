@@ -4,14 +4,14 @@ Integration with WebUntis timetable system
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.core.database import get_db
-from app.models.models import User
+from app.models.models import User, UserRole
 from app.schemas.schemas import FetchLessonsRequest, WebUntisLesson
 from app.api.auth import get_wordpress_proxy_user
 from app.services.webuntis_service import webuntis_service
@@ -56,13 +56,28 @@ async def fetch_lessons_from_webuntis(
         fetch_request.end_period,
     )
 
+    # Ziel-Lehrkraft bestimmen (Admin kann für andere Lehrkraft abrufen)
+    target_teacher: Optional[User] = None
+    if fetch_request.teacher_id and current_user.role == UserRole.ADMIN:
+        target_teacher = (
+            db.query(User)
+            .filter(User.id == fetch_request.teacher_id, User.is_active == True)
+            .first()
+        )
+        if not target_teacher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Teacher not found"
+            )
+    else:
+        target_teacher = current_user
+
     # Stunden aus WebUntis abrufen
     lessons = await webuntis_service.get_timetable_for_teacher(
-        current_user.username,
+        target_teacher.username,
         fetch_request.start_date,
         fetch_request.end_date,
         db=db,
-        webuntis_code=current_user.webuntis_teacher_code,
+        webuntis_code=target_teacher.webuntis_teacher_code,
     )
 
     # Filtern nach Perioden (delegiert an Utils)
