@@ -208,7 +208,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="w-full p-6">
       <div className="bg-white rounded-lg shadow-lg p-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Abwesenheit</h1>
         <p className="text-gray-600 mb-8">Meldung einer geplanten Abwesenheit</p>
