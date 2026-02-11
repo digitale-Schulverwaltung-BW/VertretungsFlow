@@ -209,7 +209,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
 
   return (
     <div className="w-full p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
+      <div className="af-card max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Abwesenheit</h1>
         <p className="text-gray-600 mb-8">Meldung einer geplanten Abwesenheit</p>
 
@@ -310,7 +310,8 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Zeitraum
             </label>
-            <div className="flex flex-wrap gap-4">
+            <div className="af-date-pickers-root">
+            <div className="af-date-pickers pb-1">
               <div className="flex-shrink-0">
                 <label className="block text-xs text-gray-600 mb-1">von:</label>
                 <DayPicker
@@ -343,6 +344,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   modifiersClassNames={modifiersClassNames}
                 />
               </div>
+            </div>
             </div>
           </div>
 

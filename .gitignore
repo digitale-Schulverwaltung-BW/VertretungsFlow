@@ -50,3 +50,6 @@ wordpress-plugin/package-lock.json
 backend/uploads/*
 !backend/uploads/.gitkeep
 coverage.xml
+wordpress-plugin/tests/example.spec.ts
+wordpress-plugin/playwright.config.ts
+wordpress-plugin/tests/screenshot.spec.ts
