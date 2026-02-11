@@ -1,9 +1,9 @@
 # Unit Tests - AbsenzFlow Backend
 
-**Stand:** 2026-02-10
+**Stand:** 2026-02-11
 **Test Framework:** pytest 7.4.4 + pytest-asyncio
-**Gesamt Tests:** 553 passed, 1 skipped
-**Execution Time:** ~2.5 seconds ⚡
+**Gesamt Tests:** 620 passed, 1 skipped
+**Execution Time:** ~2.0 seconds ⚡
 
 ---
 
@@ -29,6 +29,9 @@
 | `app/services/webuntis/client.py` | 364 | 32 | ~97% | ✅ Abgeschlossen |
 | `app/services/webuntis/cache.py` | 174 | 15 | ~90% | ✅ Abgeschlossen |
 | `app/services/webuntis/data_loader.py` | 211 | 13 | ~90% | ✅ Abgeschlossen |
+| **Schemas & Config** | | | | |
+| `app/schemas/schemas.py` | 380 | 35 | ~95% | ✅ Abgeschlossen |
+| `app/core/config.py` | 340 | 32 | ~95% | ✅ Abgeschlossen |
 | **API Routes (6/6)** | | | | |
 | `app/api/auth.py` | ~350 | 47 | ~88% | ✅ Abgeschlossen |
 | `app/api/absences.py` | 317 | 22 | ~95% | ✅ Abgeschlossen |
@@ -42,13 +45,14 @@
 | **Auth & Deps** | | | | |
 | `app/api/deps.py` | 112 | 21 | ~100% | ✅ Abgeschlossen |
 | `app/api/admin.py` | 359 | 16 | ~90% | ✅ Abgeschlossen |
-| **Gesamt** | **~5100** | **553** | **~85%** | |
+| **Gesamt** | **~5800** | **620** | **~88%** | |
 
 ### Noch offen ⏳
 
 | Modul | LOC | Komplexität | Dependencies | Priorität |
 |-------|-----|-------------|--------------|-----------|
 | `app/services/ldap_service.py` | ? | 🟠 Mittel | LDAP Mocking (optional) | Niedrig |
+| `app/main.py` | ~120 | 🔴 Hoch | FastAPI App-Startup, Mocking | Sehr Niedrig |
 
 ---
 
@@ -84,7 +88,9 @@ backend/tests/
 ├── test_webuntis_data_loader.py   # ✅ 13 Tests
 ├── test_api_deps.py               # ✅ 21 Tests
 ├── test_api_admin.py              # ✅ 16 Tests
-└── test_api_auth.py               # ✅ 47 Tests (erweitert)
+├── test_api_auth.py               # ✅ 47 Tests (erweitert)
+├── test_schemas.py                # ✅ 35 Tests
+└── test_core_config.py            # ✅ 32 Tests
 ```
 
 ### Fehlende Tests (ToDo)
@@ -526,6 +532,59 @@ backend/tests/
 
 ---
 
+### ✅ test_schemas.py (35 Tests)
+
+**Getestet:**
+- `sanitize_text_input()` - XSS/Injection-Prävention via HTML-Stripping und Control-Char-Removal
+- `AffectedLessonBase.parse_date` - Datum-String-Normalisierung (Datum-only → T00:00:00)
+- `AbsenceBase.validate_excursion_classes` - Pflichtfeld bei `reason='excursion'`, Sanitization
+- `AbsenceBase.validate_personal_reason` - Pflichtfeld bei `reason in ['personal', 'other']`
+- `AbsenceBase.validate_admin_notes` - Sanitization (kein Pflichtfeld)
+- `AffectedLessonUpdate.validate_notes` - Sanitization für Stunden-Hinweise
+- `AbsenceUpdate.parse_date` - None-Passthrough, Datum-String-Normalisierung
+
+**Test-Coverage:**
+- ✅ `sanitize_text_input`: None, leerer String, Whitespace-only, Nicht-String, HTML-Tags, Attribut-Tags, Control-Chars, Newlines (allow/deny), Max-Length, Null-Bytes
+- ✅ Konditionale Validator-Logik: Pflichtfeld erzwingt `ValidationError`, optionale Felder akzeptieren `None`
+- ✅ Sanitization-in-Validator: HTML in `excursion_classes`/`personal_reason` wird vor Validator-Logik entfernt
+- ✅ `AbsenceUpdate.parse_date`: `None` passiert ohne Änderung (im Gegensatz zu `AbsenceBase`)
+
+**Security Tests:** 🔒
+- XSS via `<script>`, `<img onerror=>` in Pflichtfeldern wird neutralisiert
+- HTML-Tags in `admin_notes`/`notes` werden gestrippt
+- Control-Character-Injection (NUL, SOH etc.) wird entfernt
+
+---
+
+### ✅ test_core_config.py (32 Tests)
+
+**Getestet:**
+- `_parse_cors_origins()` - String (kommagetrennt) → Liste, Liste → unverändert
+- `_validate_secret_key()` - Default-Wert → Fehlermeldung, Custom-Wert → None
+- `_validate_wordpress_proxy_secret()` - WordPress-Mode + Default → Fehler, Custom → None, Standalone → kein Check
+- `_validate_database_password()` - "changeme" (case-insensitive) → Fehler, Secure → None
+- `_validate_debug_mode()` - DEBUG=True + production → Warnung, Development → None
+- `_validate_secret_key_length()` - < 32 Chars → Fehler, >= 32 → None
+- `_validate_cors_localhost()` - Production + localhost → Fehler, 127.0.0.1 → Fehler, Proper → None, Non-production → None
+- `_validate_cors_wildcard()` - Production + `*` → Fehler, Non-production → None
+- `_validate_cors_empty()` - Production + leer → Warnung, Befüllt → None, Non-production → None
+- `validate_production_secrets()` - Alle Validator zusammen: kein Fehler bei sicheren Settings, ValueError mit allen Fehlermeldungen
+
+**Test-Coverage:**
+- ✅ `make_settings(**overrides)` Helper: Mock mit sicheren Defaults, überschreibbar für Edge-Case-Tests
+- ✅ `patch.dict("os.environ", {"ENVIRONMENT": "production"})` für Production-Validatoren
+- ✅ Jeder Validator isoliert getestet (positive + negative Pfade)
+- ✅ `validate_production_secrets` sammelt ALLE Fehler in einer Exception (kein Fail-Fast nach erstem Fehler)
+- ✅ Error-Message-Format: "STARTUP ABORTED" Header bestätigt
+
+**Security Tests:** 🔒
+- Default SECRET_KEY in production → Application-Startup schlägt fehl
+- Default WORDPRESS_PROXY_SECRET → Fehlermeldung mit Hinweis auf HMAC-Risiko
+- Localhost-CORS in production → Warnung (SSRF-Risiko)
+- Wildcard-CORS in production → Fehler (XSS/CSRF-Risiko)
+
+---
+
 ### ✅ test_api_deps.py (21 Tests)
 
 **Getestet:**
@@ -658,6 +717,10 @@ docker-compose exec backend python -m pytest tests/ -q
 - ✅ `test_webuntis_cache.py` (15 Tests) - convert_jsonb_keys, alle 8 get_or_fetch-Pfade, clear_memory/db/all
 - ✅ `test_webuntis_data_loader.py` (13 Tests) - Transform-Logik subjects/classes/rooms/timegrid, Fallbacks, Edge Cases
 
+#### Phase 6: Schemas & Config ✅ (67 Tests, 2026-02-11)
+- ✅ `test_schemas.py` (35 Tests) - sanitize_text_input XSS-Prävention, konditionale @field_validator (excursion_classes, personal_reason), Datum-Parsing, alle Sanitization-Validatoren
+- ✅ `test_core_config.py` (32 Tests) - alle 8 Security-Validatoren isoliert, validate_production_secrets sammelt Fehler, CORS/Secret/Debug-Validierungen
+
 ### Low Priority
 
 #### `test_ldap_service.py` 🟡 (Optional)
@@ -670,12 +733,12 @@ docker-compose exec backend python -m pytest tests/ -q
 ## 🎯 Test-Quality Metriken
 
 ### Ausführungszeit ⚡
-- **553 Tests in 2.5s** - Hervorragend!
-- Durchschnitt: ~4ms pro Test
+- **620 Tests in 2.0s** - Hervorragend!
+- Durchschnitt: ~3ms pro Test
 - Keine langsamen Tests (>100ms)
 
 ### Test-Qualität ✅
-- ✅ Alle Tests grün (553/553)
+- ✅ Alle Tests grün (620/620)
 - ✅ Keine Flaky Tests
 - ✅ Gute Edge-Case Coverage
 - ✅ Security-kritische Bereiche vollständig getestet
@@ -926,14 +989,15 @@ Exception: parameter `request` must be an instance of starlette.requests.Request
 
 ## 📊 Coverage Goals
 
-### Current Coverage: ~85% (geschätzt nach Phase 5)
+### Current Coverage: ~88% (geschätzt nach Phase 6)
 - Utils: 100% ✅
 - Services: ~92% (inkl. webuntis/cache.py + data_loader.py) ✅
 - API Routes: ~95% (absences, attachments, webuntis, pdf_forms, users, admin) ✅
 - Auth & Deps: ~88% (auth.py signifikant erweitert, deps.py ~100%) ✅
-- Core (security, audit): ~95% ✅
+- Core (security, audit, config): ~95% ✅
 - Models: 100% ✅
-- Nicht getestet: `main.py`, `api/api.py`, `ldap_service.py`, `schemas/schemas.py` (Validators)
+- Schemas: ~95% (alle Validator-Pfade, sanitize_text_input) ✅
+- Nicht getestet: `main.py`, `api/api.py`, `ldap_service.py`
 
 ### Target Coverage: 85%+ ✅ Übertroffen!
 - **Phase 1:** Services & Utils ✅ **Abgeschlossen** (319 Tests)
@@ -941,8 +1005,9 @@ Exception: parameter `request` must be an instance of starlette.requests.Request
 - **Phase 3:** Coverage-Lücken ✅ **Abgeschlossen** (83 neue Tests, gesamt 468)
 - **Phase 4:** Auth-Dependencies & Admin ✅ **Abgeschlossen** (37 neue Tests, gesamt 505)
 - **Phase 5:** Coverage-Optimierung ✅ **Abgeschlossen** (48 neue Tests, gesamt 553)
+- **Phase 6:** Schemas & Config ✅ **Abgeschlossen** (67 neue Tests, gesamt 620)
 
 ---
 
-**Letzte Aktualisierung:** 2026-02-10 (Phase 5 abgeschlossen: auth.py erweitert + webuntis/cache.py + data_loader.py, 553 Tests, ~85% Coverage)
+**Letzte Aktualisierung:** 2026-02-11 (Phase 6 abgeschlossen: schemas/schemas.py + core/config.py, 620 Tests, ~88% Coverage)
 **Von:** Claude Sonnet 4.5 (mit User Seyfried)
