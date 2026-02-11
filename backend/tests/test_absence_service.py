@@ -536,39 +536,43 @@ class TestCompleteAbsence:
 class TestDeleteAbsence:
     """Test absence deletion with file cleanup and cascade"""
 
+    @pytest.mark.asyncio
     @patch("app.services.absence_service.attachment_service")
-    def test_delete_absence_success(self, mock_attachment_svc, service, mock_absence):
+    async def test_delete_absence_success(self, mock_attachment_svc, service, mock_absence):
         """Test successful absence deletion removes DB record"""
         db = make_mock_db(absence=mock_absence)
 
-        result = service.delete_absence(42, db)
+        result = await service.delete_absence(42, Mock(), db)
 
         db.delete.assert_called_once_with(mock_absence)
         db.commit.assert_called()
         assert result == "Absence deleted"
 
-    def test_delete_absence_not_found_raises_404(self, service):
+    @pytest.mark.asyncio
+    async def test_delete_absence_not_found_raises_404(self, service):
         """Test that deleting non-existent absence raises 404"""
         db = make_mock_db(absence=None)
 
         with pytest.raises(HTTPException) as exc_info:
-            service.delete_absence(999, db)
+            await service.delete_absence(999, Mock(), db)
 
         assert exc_info.value.status_code == 404
 
+    @pytest.mark.asyncio
     @patch("app.services.absence_service.attachment_service")
-    def test_delete_absence_removes_attachment_files(
+    async def test_delete_absence_removes_attachment_files(
         self, mock_attachment_svc, service, mock_absence_with_attachments
     ):
         """Test that attachment files are deleted before DB record"""
         db = make_mock_db(absence=mock_absence_with_attachments)
 
-        service.delete_absence(42, db)
+        await service.delete_absence(42, Mock(), db)
 
         assert mock_attachment_svc.delete_file.call_count == 2
 
+    @pytest.mark.asyncio
     @patch("app.services.absence_service.attachment_service")
-    def test_delete_absence_continues_on_file_error(
+    async def test_delete_absence_continues_on_file_error(
         self, mock_attachment_svc, service, mock_absence_with_attachments
     ):
         """Test that deletion continues even if a file cannot be deleted"""
@@ -576,7 +580,7 @@ class TestDeleteAbsence:
         db = make_mock_db(absence=mock_absence_with_attachments)
 
         # Should NOT raise, just log warning
-        result = service.delete_absence(42, db)
+        result = await service.delete_absence(42, Mock(), db)
 
         assert result == "Absence deleted"
         db.delete.assert_called_once_with(mock_absence_with_attachments)

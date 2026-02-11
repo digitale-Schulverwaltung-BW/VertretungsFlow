@@ -662,5 +662,5 @@ class TestDeleteAbsence:
                     db=db,
                 )
 
-        mock_delete.assert_called_once_with(1, db)
+        mock_delete.assert_called_once_with(1, teacher, db)
         assert result == {"message": "Absenz gelöscht"}
