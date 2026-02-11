@@ -15,8 +15,8 @@ describe('StepOne - Absence Wizard Step 1', () => {
       render(<StepOne onNext={mockOnNext} />)
 
       expect(screen.getByLabelText(/Grund/i)).toBeInTheDocument()
-      expect(screen.getByLabelText(/Stunde \(von\)/i)).toBeInTheDocument()
-      expect(screen.getByLabelText(/Stunde \(bis\)/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/^von$/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/^bis$/i)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /Weiter/i })).toBeInTheDocument()
     })
 
@@ -46,8 +46,8 @@ describe('StepOne - Absence Wizard Step 1', () => {
     it('renders lesson/period selectors', () => {
       render(<StepOne onNext={mockOnNext} />)
 
-      const startLesson = screen.getByLabelText(/Stunde \(von\)/i) as HTMLSelectElement
-      const endLesson = screen.getByLabelText(/Stunde \(bis\)/i) as HTMLSelectElement
+      const startLesson = screen.getByLabelText(/^von$/i) as HTMLSelectElement
+      const endLesson = screen.getByLabelText(/^bis$/i) as HTMLSelectElement
 
       expect(startLesson.value).toBe('1')
       expect(endLesson.value).toBe('16')
@@ -172,7 +172,7 @@ describe('StepOne - Absence Wizard Step 1', () => {
       const user = userEvent.setup()
       render(<StepOne onNext={mockOnNext} />)
 
-      const startLessonSelect = screen.getByLabelText(/Stunde \(von\)/i) as HTMLSelectElement
+      const startLessonSelect = screen.getByLabelText(/^von$/i) as HTMLSelectElement
       await user.selectOptions(startLessonSelect, '3')
 
       expect(startLessonSelect.value).toBe('3')
@@ -182,7 +182,7 @@ describe('StepOne - Absence Wizard Step 1', () => {
       const user = userEvent.setup()
       render(<StepOne onNext={mockOnNext} />)
 
-      const endLessonSelect = screen.getByLabelText(/Stunde \(bis\)/i) as HTMLSelectElement
+      const endLessonSelect = screen.getByLabelText(/^bis$/i) as HTMLSelectElement
       await user.selectOptions(endLessonSelect, '6')
 
       expect(endLessonSelect.value).toBe('6')
@@ -191,8 +191,8 @@ describe('StepOne - Absence Wizard Step 1', () => {
     it('has default values of 1 and 16 for start and end lesson', () => {
       render(<StepOne onNext={mockOnNext} />)
 
-      const startLesson = screen.getByLabelText(/Stunde \(von\)/i) as HTMLSelectElement
-      const endLesson = screen.getByLabelText(/Stunde \(bis\)/i) as HTMLSelectElement
+      const startLesson = screen.getByLabelText(/^von$/i) as HTMLSelectElement
+      const endLesson = screen.getByLabelText(/^bis$/i) as HTMLSelectElement
 
       expect(startLesson.value).toBe('1')
       expect(endLesson.value).toBe('16')
@@ -235,8 +235,8 @@ describe('StepOne - Absence Wizard Step 1', () => {
       const user = userEvent.setup()
       render(<StepOne onNext={mockOnNext} />)
 
-      const startLessonSelect = screen.getByLabelText(/Stunde \(von\)/i) as HTMLSelectElement
-      const endLessonSelect = screen.getByLabelText(/Stunde \(bis\)/i) as HTMLSelectElement
+      const startLessonSelect = screen.getByLabelText(/^von$/i) as HTMLSelectElement
+      const endLessonSelect = screen.getByLabelText(/^bis$/i) as HTMLSelectElement
 
       // Default values should be valid (1, 16)
       expect(Number(startLessonSelect.value)).toBeLessThanOrEqual(Number(endLessonSelect.value))
@@ -308,8 +308,8 @@ describe('StepOne - Absence Wizard Step 1', () => {
       render(<StepOne onNext={mockOnNext} />)
 
       const reasonSelect = screen.getByLabelText(/Grund/i)
-      const startLessonSelect = screen.getByLabelText(/Stunde \(von\)/i)
-      const endLessonSelect = screen.getByLabelText(/Stunde \(bis\)/i)
+      const startLessonSelect = screen.getByLabelText(/^von$/i)
+      const endLessonSelect = screen.getByLabelText(/^bis$/i)
 
       await user.selectOptions(reasonSelect, 'sick')
       await user.selectOptions(startLessonSelect, '2')

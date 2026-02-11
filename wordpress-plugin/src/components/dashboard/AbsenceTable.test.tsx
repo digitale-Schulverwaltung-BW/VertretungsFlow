@@ -52,11 +52,13 @@ describe('AbsenceTable', () => {
   it('renders absence data correctly', () => {
     render(<AbsenceTable absences={[mockAbsence]} />)
 
-    expect(screen.getByText('Test Teacher')).toBeInTheDocument()
+    // Component renders both card and table view simultaneously
+    expect(screen.getAllByText('Test Teacher').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Krank').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Eingereicht').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('2').length).toBeGreaterThan(0)
+    // Table uses hyphen separator, card uses em-dash – check table cell specifically
     expect(screen.getByText('15.01.2024 - 15.01.2024')).toBeInTheDocument()
-    expect(screen.getByText('Krank')).toBeInTheDocument()
-    expect(screen.getByText('Eingereicht')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
   })
 
   it('shows empty state when no absences', () => {
@@ -71,20 +73,21 @@ describe('AbsenceTable', () => {
 
     render(<AbsenceTable absences={[mockAbsence]} onAbsenceClick={handleClick} />)
 
-    const row = screen.getByText('Test Teacher').closest('tr')
+    // Find the table row (not the card view) by locating the <td> with the teacher name
+    const teacherElements = screen.getAllByText('Test Teacher')
+    const row = teacherElements.map(el => el.closest('tr')).find(Boolean) as HTMLElement
     expect(row).toBeInTheDocument()
 
-    if (row) {
-      await user.click(row)
-      expect(handleClick).toHaveBeenCalledWith(mockAbsence)
-      expect(handleClick).toHaveBeenCalledTimes(1)
-    }
+    await user.click(row)
+    expect(handleClick).toHaveBeenCalledWith(mockAbsence)
+    expect(handleClick).toHaveBeenCalledTimes(1)
   })
 
   it('does not add click handler when onAbsenceClick is not provided', () => {
     render(<AbsenceTable absences={[mockAbsence]} />)
 
-    const row = screen.getByText('Test Teacher').closest('tr')
+    const teacherElements = screen.getAllByText('Test Teacher')
+    const row = teacherElements.map(el => el.closest('tr')).find(Boolean) as HTMLElement
     expect(row).not.toHaveClass('cursor-pointer')
   })
 
@@ -98,10 +101,11 @@ describe('AbsenceTable', () => {
 
     render(<AbsenceTable absences={absences} />)
 
-    expect(screen.getByText('Eingereicht')).toBeInTheDocument()
-    expect(screen.getByText('Genehmigt')).toBeInTheDocument()
-    expect(screen.getByText('Erledigt')).toBeInTheDocument()
-    expect(screen.getByText('Abgelehnt')).toBeInTheDocument()
+    // Each status appears in both card and table view
+    expect(screen.getAllByText('Eingereicht').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Genehmigt').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Erledigt').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Abgelehnt').length).toBeGreaterThan(0)
   })
 
   it('renders multiple absences', () => {
@@ -121,10 +125,10 @@ describe('AbsenceTable', () => {
 
     render(<AbsenceTable absences={absences} />)
 
-    expect(screen.getByText('Test Teacher')).toBeInTheDocument()
-    expect(screen.getByText('Another Teacher')).toBeInTheDocument()
-    expect(screen.getByText('Krank')).toBeInTheDocument()
-    expect(screen.getByText('Fortbildung')).toBeInTheDocument()
+    expect(screen.getAllByText('Test Teacher').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Another Teacher').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Krank').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Fortbildung').length).toBeGreaterThan(0)
   })
 
   it('handles absence with no affected lessons', () => {
@@ -135,7 +139,7 @@ describe('AbsenceTable', () => {
 
     render(<AbsenceTable absences={[absenceWithoutLessons]} />)
 
-    expect(screen.getByText('0')).toBeInTheDocument()
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0)
   })
 
   it('uses username when full_name is not available', () => {
@@ -149,6 +153,6 @@ describe('AbsenceTable', () => {
 
     render(<AbsenceTable absences={[absenceWithoutFullName]} />)
 
-    expect(screen.getByText('testuser')).toBeInTheDocument()
+    expect(screen.getAllByText('testuser').length).toBeGreaterThan(0)
   })
 })
