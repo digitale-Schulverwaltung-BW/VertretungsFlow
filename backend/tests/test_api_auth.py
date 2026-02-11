@@ -363,6 +363,45 @@ class TestHandleWordpressProxyUser:
         assert call_args[4] == "Jörg"  # first_name_decoded
         assert call_args[5] == "Müller"  # last_name_decoded
 
+    def test_full_name_composed_from_first_and_last_name(self):
+        """full_name wird aus first_name + last_name zusammengesetzt wenn beide vorhanden"""
+        db = make_mock_db(existing_user=None)
+        with patch("app.api.auth._create_wordpress_user") as mock_create:
+            mock_create.return_value = make_mock_user()
+            _handle_wordpress_proxy_user(
+                user=None,
+                db=db,
+                username="joerg.seyfried",
+                email="joerg@schule.de",
+                display_name="joerg.seyfried",  # WP default: login name
+                first_name="Jörg",
+                last_name="Seyfried",
+                role="teacher",
+                webuntis_code=None,
+            )
+        # _create_wordpress_user(db, username, email, full_name, ...)
+        call_args = mock_create.call_args.args
+        assert call_args[3] == "Jörg Seyfried"  # full_name = first + last
+
+    def test_full_name_falls_back_to_display_name_when_first_last_missing(self):
+        """Fallback auf display_name wenn first_name oder last_name fehlt"""
+        db = make_mock_db(existing_user=None)
+        with patch("app.api.auth._create_wordpress_user") as mock_create:
+            mock_create.return_value = make_mock_user()
+            _handle_wordpress_proxy_user(
+                user=None,
+                db=db,
+                username="anna.schmidt",
+                email="anna@schule.de",
+                display_name="Anna Schmidt",
+                first_name=None,
+                last_name=None,
+                role="teacher",
+                webuntis_code=None,
+            )
+        call_args = mock_create.call_args.args
+        assert call_args[3] == "Anna Schmidt"  # full_name = display_name
+
     def test_webuntis_code_whitespace_stripped(self):
         """Leerzeichen im WebUntis-Kürzel werden vor User-Erstellung entfernt"""
         db = make_mock_db(existing_user=None)

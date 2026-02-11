@@ -455,13 +455,18 @@ def _handle_wordpress_proxy_user(
         User object (created or updated)
     """
     user_email = email
-    user_name = display_name or username
     user_role = map_wordpress_role(role) if role else UserRole.TEACHER
     webuntis_code_clean = webuntis_code.strip() if webuntis_code else None
 
     # Decode first and last names
     first_name_decoded = _decode_wordpress_name(first_name)
     last_name_decoded = _decode_wordpress_name(last_name)
+
+    # Prefer explicit first+last name over display_name (which defaults to username in WP)
+    if first_name_decoded and last_name_decoded:
+        user_name = f"{first_name_decoded} {last_name_decoded}"
+    else:
+        user_name = display_name or username
 
     if not user:
         # Create new user from WordPress headers

@@ -39,11 +39,6 @@ const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
               </>
             )}
           </div>
-          {user && (
-            <div className="flex items-center">
-              <span className="text-sm text-gray-600">{user.full_name}</span>
-            </div>
-          )}
         </div>
       </div>
     </nav>
@@ -70,6 +65,9 @@ function App() {
       const token = api.getToken();
       if (token) {
         api.setToken(token);
+        const currentUser = await api.getCurrentUser();
+        setUser(currentUser);
+      } else if (config?.useProxy) {
         const currentUser = await api.getCurrentUser();
         setUser(currentUser);
       }

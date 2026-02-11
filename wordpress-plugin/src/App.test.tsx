@@ -104,6 +104,29 @@ describe('App', () => {
     })
   })
 
+  it('calls getCurrentUser in proxy mode without token', async () => {
+    window.absenzflowConfig = {
+      ...window.absenzflowConfig!,
+      useProxy: true,
+    }
+    vi.mocked(api.getToken).mockReturnValue(null)
+    vi.mocked(api.getCurrentUser).mockResolvedValue({
+      id: 1,
+      username: 'joerg.seyfried',
+      email: 'joerg@schule.de',
+      full_name: 'Jörg Seyfried',
+      role: 'teacher',
+      is_active: true,
+      created_at: '2024-01-01T00:00:00Z',
+    })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(api.getCurrentUser).toHaveBeenCalledTimes(1)
+    })
+  })
+
   it('handles missing config gracefully', async () => {
     window.absenzflowConfig = undefined
 
