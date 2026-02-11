@@ -18,6 +18,9 @@
 #absenzflow-root {
   /* Layout */
   width: 100%;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   min-height: 400px;
 
   /* Typography Reset - Only the most critical inherited properties */
@@ -139,4 +142,31 @@
 #absenzflow-root ul,
 #absenzflow-root ol {
   list-style: none;
+}
+
+/*
+ * AbsenceTable: Container Query responsive layout
+ * Responds to the actual container width, not viewport width
+ * → theme-agnostic, works correctly with WordPress sidebars
+ */
+#absenzflow-root .af-absence-table-root {
+  container-type: inline-size;
+}
+
+#absenzflow-root .af-absence-cards {
+  display: block;
+}
+
+#absenzflow-root .af-absence-table {
+  display: none;
+}
+
+@container (min-width: 800px) {
+  #absenzflow-root .af-absence-cards {
+    display: none;
+  }
+
+  #absenzflow-root .af-absence-table {
+    display: block;
+  }
 }

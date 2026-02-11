@@ -116,6 +116,7 @@ class AbsenzFlow_Shortcode {
         }
         
         // Container für React App
-        return '<div id="absenzflow-root"></div>';
+        // alignfull: WordPress-natives Escape-Hatch für .is-layout-constrained (Block Themes)
+        return '<div id="absenzflow-root" class="alignfull"></div>';
     }
 }

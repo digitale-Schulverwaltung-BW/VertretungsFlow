@@ -10,9 +10,6 @@ export default {
 
   theme: {
     extend: {
-      maxWidth: {
-        '4xl': '100%',  // Full width statt Standard 56rem
-      },
       fontSize: {
         'xs': '11px',
         'sm': '14px',

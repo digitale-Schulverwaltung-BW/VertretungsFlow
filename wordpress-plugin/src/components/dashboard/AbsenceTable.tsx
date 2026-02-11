@@ -54,72 +54,112 @@ const AbsenceTable: React.FC<AbsenceTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Lehrkraft
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Zeitraum
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Grund
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Status
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Betroffene Stunden
-            </th>
-            {onDeleteAbsence && (
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Aktionen
-              </th>
+    <div className="af-absence-table-root">
+      {/* Card-Layout für schmale Container */}
+      <div className="af-absence-cards space-y-2 p-4">
+        {absences.map((absence) => (
+          <div
+            key={absence.id}
+            onClick={() => onAbsenceClick?.(absence)}
+            className={`border border-gray-200 rounded-lg p-4 bg-white ${onAbsenceClick ? 'hover:bg-gray-50 cursor-pointer' : ''}`}
+          >
+            <div className="flex justify-between items-start gap-2">
+              <span className="font-medium text-gray-900 text-sm">
+                {absence.teacher?.full_name || absence.teacher?.username}
+              </span>
+              {getStatusBadge(absence.status)}
+            </div>
+            <div className="text-sm text-gray-600 mt-1">
+              {formatDate(absence.start_date)} – {formatDate(absence.end_date)}
+            </div>
+            <div className="flex justify-between items-center mt-1 text-sm text-gray-600">
+              <span>{getAbsenceReasonLabel(absence.reason)}</span>
+              <span>{absence.affected_lessons?.length || 0} Stunden</span>
+            </div>
+            {onDeleteAbsence && absence.status !== 'completed' && (
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={(e) => onDeleteAbsence(absence, e)}
+                  disabled={deletingId === absence.id}
+                  className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Abwesenheit löschen"
+                >
+                  {deletingId === absence.id ? 'Lädt...' : 'Löschen'}
+                </button>
+              </div>
             )}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {absences.map((absence) => (
-            <tr
-              key={absence.id}
-              onClick={() => onAbsenceClick?.(absence)}
-              className={onAbsenceClick ? 'hover:bg-gray-50 cursor-pointer' : ''}
-            >
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {absence.teacher.full_name || absence.teacher.username}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {formatDate(absence.start_date)} - {formatDate(absence.end_date)}
-              </td>
-              <td className="px-6 py-4 text-sm text-gray-600">
-                {getAbsenceReasonLabel(absence.reason)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {getStatusBadge(absence.status)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {absence.affected_lessons?.length || 0}
-              </td>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabellen-Layout für breite Container */}
+      <div className="af-absence-table overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Lehrkraft
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Zeitraum
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Grund
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Betroffene Stunden
+              </th>
               {onDeleteAbsence && (
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {absence.status !== 'completed' && (
-                    <button
-                      onClick={(e) => onDeleteAbsence(absence, e)}
-                      disabled={deletingId === absence.id}
-                      className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Abwesenheit löschen"
-                    >
-                      {deletingId === absence.id ? 'Lädt...' : 'Löschen'}
-                    </button>
-                  )}
-                </td>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Aktionen
+                </th>
               )}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {absences.map((absence) => (
+              <tr
+                key={absence.id}
+                onClick={() => onAbsenceClick?.(absence)}
+                className={onAbsenceClick ? 'hover:bg-gray-50 cursor-pointer' : ''}
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {absence.teacher?.full_name || absence.teacher?.username}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {formatDate(absence.start_date)} - {formatDate(absence.end_date)}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-600">
+                  {getAbsenceReasonLabel(absence.reason)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {getStatusBadge(absence.status)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {absence.affected_lessons?.length || 0}
+                </td>
+                {onDeleteAbsence && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {absence.status !== 'completed' && (
+                      <button
+                        onClick={(e) => onDeleteAbsence(absence, e)}
+                        disabled={deletingId === absence.id}
+                        className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Abwesenheit löschen"
+                      >
+                        {deletingId === absence.id ? 'Lädt...' : 'Löschen'}
+                      </button>
+                    )}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
