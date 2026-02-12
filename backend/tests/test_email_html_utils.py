@@ -45,36 +45,70 @@ class TestSubmittedHtml:
     """HTML template: new absence submitted (for dept heads & planners)"""
 
     def test_returns_valid_html(self):
-        html = submitted_html("Max Muster", "Krankheit", "10.02.2026", "12.02.2026", "http://example.com/absence/42")
+        html = submitted_html(
+            "Max Muster",
+            "Krankheit",
+            "10.02.2026",
+            "12.02.2026",
+            "http://example.com/absence/42",
+        )
         assert_valid_html(html)
 
     def test_contains_teacher_name(self):
-        html = submitted_html("Anna Bauer", "Fortbildung", "01.03.2026", "01.03.2026", "http://example.com/absence/1")
+        html = submitted_html(
+            "Anna Bauer",
+            "Fortbildung",
+            "01.03.2026",
+            "01.03.2026",
+            "http://example.com/absence/1",
+        )
         assert "Anna Bauer" in html
 
     def test_contains_reason(self):
-        html = submitted_html("Max Muster", "Exkursion", "10.02.2026", "12.02.2026", "http://example.com/absence/42")
+        html = submitted_html(
+            "Max Muster",
+            "Exkursion",
+            "10.02.2026",
+            "12.02.2026",
+            "http://example.com/absence/42",
+        )
         assert "Exkursion" in html
 
     def test_contains_dates(self):
-        html = submitted_html("Max Muster", "Krankheit", "10.02.2026", "12.02.2026", "http://example.com/absence/42")
+        html = submitted_html(
+            "Max Muster",
+            "Krankheit",
+            "10.02.2026",
+            "12.02.2026",
+            "http://example.com/absence/42",
+        )
         assert "10.02.2026" in html
         assert "12.02.2026" in html
 
     def test_contains_absence_url(self):
         url = "http://schule.de/#/absence/99"
-        html = submitted_html("Max Muster", "Krankheit", "10.02.2026", "10.02.2026", url)
+        html = submitted_html(
+            "Max Muster", "Krankheit", "10.02.2026", "10.02.2026", url
+        )
         assert url in html
 
     def test_has_green_approve_button(self):
         """Abteilungsleitung soll grünen Genehmigen-Button sehen"""
-        html = submitted_html("Max Muster", "Krankheit", "10.02.2026", "12.02.2026", "http://example.com/absence/42")
+        html = submitted_html(
+            "Max Muster",
+            "Krankheit",
+            "10.02.2026",
+            "12.02.2026",
+            "http://example.com/absence/42",
+        )
         assert "Abwesenheit genehmigen" in html
         assert "#16a34a" in html  # green
 
     def test_button_href_matches_url(self):
         url = "http://schule.de/#/absence/5"
-        html = submitted_html("Max Muster", "Krankheit", "10.02.2026", "10.02.2026", url)
+        html = submitted_html(
+            "Max Muster", "Krankheit", "10.02.2026", "10.02.2026", url
+        )
         assert f'href="{url}"' in html
 
 
@@ -122,7 +156,9 @@ class TestApprovedPlannerHtml:
         assert "42" in html
 
     def test_contains_approver_name(self):
-        html = approved_planner_html(42, "Dr. Approver", "http://example.com/absence/42")
+        html = approved_planner_html(
+            42, "Dr. Approver", "http://example.com/absence/42"
+        )
         assert "Dr. Approver" in html
 
     def test_contains_absence_url(self):

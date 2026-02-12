@@ -4,7 +4,9 @@ Pure Functions für die Generierung von HTML-E-Mail-Inhalten
 """
 
 # Gemeinsame Inline-Styles (viele Mail-Clients ignorieren <style>-Tags)
-_BODY_STYLE = "font-family: Arial, sans-serif; background: #f3f4f6; margin: 0; padding: 20px;"
+_BODY_STYLE = (
+    "font-family: Arial, sans-serif; background: #f3f4f6; margin: 0; padding: 20px;"
+)
 _CARD_STYLE = (
     "max-width: 600px; margin: 0 auto; background: #ffffff; "
     "border-radius: 8px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
@@ -44,7 +46,7 @@ _SUBTITLE_STYLE = "color: #6b7280; font-size: 13px; margin: 0 0 20px 0;"
 
 def _detail_row(label: str, value: str) -> str:
     return (
-        f'<tr>'
+        f"<tr>"
         f'<td style="{_TD_LABEL_STYLE}">{label}</td>'
         f'<td style="{_TD_VALUE_STYLE}">{value}</td>'
         f"</tr>"

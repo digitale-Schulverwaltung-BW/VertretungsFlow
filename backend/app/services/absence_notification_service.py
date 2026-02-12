@@ -30,7 +30,9 @@ class AbsenceNotificationService:
         """
         try:
             dept_head_emails = get_recipients_by_roles(db, [UserRole.DEPARTMENT_HEAD])
-            planner_emails = get_recipients_by_roles(db, [UserRole.PLANNER])
+            planner_emails = get_recipients_by_roles(
+                db, [UserRole.PLANNER, UserRole.ADMIN]
+            )
 
             start_date_str = absence.start_date.strftime("%d.%m.%Y")
             end_date_str = absence.end_date.strftime("%d.%m.%Y")
@@ -75,7 +77,9 @@ class AbsenceNotificationService:
             db: Database session
         """
         try:
-            planner_emails = get_recipients_by_roles(db, [UserRole.PLANNER])
+            planner_emails = get_recipients_by_roles(
+                db, [UserRole.PLANNER, UserRole.ADMIN]
+            )
 
             if absence.teacher and absence.teacher.email:
                 success = await email_service.send_absence_approved_notification(
@@ -182,7 +186,9 @@ class AbsenceNotificationService:
         """
         try:
             dept_head_emails = get_recipients_by_roles(db, [UserRole.DEPARTMENT_HEAD])
-            planner_emails = get_recipients_by_roles(db, [UserRole.PLANNER])
+            planner_emails = get_recipients_by_roles(
+                db, [UserRole.PLANNER, UserRole.ADMIN]
+            )
 
             if not dept_head_emails and not planner_emails:
                 logger.info(
