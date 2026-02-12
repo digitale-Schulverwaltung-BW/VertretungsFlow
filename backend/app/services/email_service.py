@@ -7,8 +7,16 @@ import logging
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import List
+from typing import List, Optional
 from app.core.config import settings
+from app.utils.email_html_utils import (
+    submitted_html,
+    approved_teacher_html,
+    approved_planner_html,
+    completed_html,
+    rejected_html,
+    deleted_html,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,16 +33,20 @@ class EmailService:
         self.use_tls = settings.SMTP_USE_TLS
 
     async def send_email(
-        self, to: str, subject: str, body: str, html: bool = False
+        self,
+        to: str,
+        subject: str,
+        body_plain: str,
+        body_html: Optional[str] = None,
     ) -> bool:
         """
-        Sendet eine E-Mail
+        Sendet eine E-Mail als multipart/alternative (Plaintext + optional HTML)
 
         Args:
             to: Empfänger E-Mail-Adresse
             subject: Betreff
-            body: Nachrichtentext
-            html: True wenn body HTML ist
+            body_plain: Plaintext-Fallback (für Mail-Clients ohne HTML-Support)
+            body_html: Optionaler HTML-Teil (wird bevorzugt angezeigt wenn vorhanden)
 
         Returns:
             True wenn erfolgreich, sonst False
@@ -45,11 +57,10 @@ class EmailService:
             message["To"] = to
             message["Subject"] = subject
 
-            # Body hinzufügen
-            if html:
-                message.attach(MIMEText(body, "html"))
-            else:
-                message.attach(MIMEText(body, "plain"))
+            # Plaintext zuerst anhängen (Fallback), HTML als letzter Part (bevorzugt, RFC 2046)
+            message.attach(MIMEText(body_plain, "plain"))
+            if body_html:
+                message.attach(MIMEText(body_html, "html"))
 
             # E-Mail versenden mit port-basierter TLS-Auswahl
             smtp_kwargs = {
@@ -142,12 +153,20 @@ Mit freundlichen Grüßen,
 AbsenzFlow System
         """
 
+        html_body = submitted_html(
+            teacher_name,
+            reason,
+            start_date,
+            end_date,
+            f"{settings.FRONTEND_URL}/#/absence/{absence_id}",
+        )
+
         # An Abteilungsleiter und Vertretungsplaner
         recipients = dept_head_emails + planner_emails
 
         success = True
         for email in recipients:
-            result = await self.send_email(email, subject, body)
+            result = await self.send_email(email, subject, body, html_body)
             if not result:
                 success = False
 
@@ -172,6 +191,8 @@ AbsenzFlow System
         Returns:
             True wenn erfolgreich
         """
+        absence_url = f"{settings.FRONTEND_URL}/#/absence/{absence_id}"
+
         # An Lehrkraft
         teacher_subject = "Ihre Abwesenheit wurde genehmigt"
         teacher_body = f"""
@@ -183,7 +204,12 @@ Mit freundlichen Grüßen,
 AbsenzFlow System
         """
 
-        await self.send_email(teacher_email, teacher_subject, teacher_body)
+        await self.send_email(
+            teacher_email,
+            teacher_subject,
+            teacher_body,
+            approved_teacher_html(absence_id, approver_name),
+        )
 
         # An Vertretungsplaner
         planner_subject = f"Abwesenheit #{absence_id} genehmigt"
@@ -192,14 +218,19 @@ Hallo,
 
 Die Abwesenheit #{absence_id} wurde von {approver_name} genehmigt und ist nun bereit zur Vertretungsplanung.
 
-Link: {settings.FRONTEND_URL}/#/absence/{absence_id}
+Link: {absence_url}
 
 Mit freundlichen Grüßen,
 AbsenzFlow System
         """
 
         for email in planner_emails:
-            await self.send_email(email, planner_subject, planner_body)
+            await self.send_email(
+                email,
+                planner_subject,
+                planner_body,
+                approved_planner_html(absence_id, approver_name, absence_url),
+            )
 
         return True
 
@@ -216,17 +247,22 @@ AbsenzFlow System
         Returns:
             True wenn erfolgreich
         """
+        absence_url = f"{settings.FRONTEND_URL}/#/absence/{absence_id}"
         subject = "Ihre Abwesenheit wurde eingetragen"
         body = f"""
 Hallo,
 
 Ihre Abwesenheitsmeldung (ID: {absence_id}) wurde in den Vertretungsplan eingetragen.
 
+Link: {absence_url}
+
 Mit freundlichen Grüßen,
 AbsenzFlow System
         """
 
-        return await self.send_email(teacher_email, subject, body)
+        return await self.send_email(
+            teacher_email, subject, body, completed_html(absence_id, absence_url)
+        )
 
     async def send_absence_rejected_notification(
         self, teacher_email: str, absence_id: int, rejector_name: str
@@ -252,7 +288,9 @@ Mit freundlichen Grüßen,
 AbsenzFlow System
         """
 
-        return await self.send_email(teacher_email, subject, body)
+        return await self.send_email(
+            teacher_email, subject, body, rejected_html(absence_id, rejector_name)
+        )
 
     async def send_absence_deleted_notification(
         self,
@@ -294,11 +332,12 @@ Die Meldung wurde aus dem AbsenzFlow-System entfernt.
 Mit freundlichen Grüßen,
 AbsenzFlow System"""
 
+        html_body = deleted_html(teacher_name, reason, start_date, end_date, absence_id)
         recipients = dept_head_emails + planner_emails
 
         success = True
         for email in recipients:
-            result = await self.send_email(email, subject, body)
+            result = await self.send_email(email, subject, body, html_body)
             if not result:
                 success = False
 
