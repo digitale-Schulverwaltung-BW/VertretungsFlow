@@ -63,7 +63,7 @@ async def fetch_lessons_from_webuntis(
             db.query(User)
             .filter(
                 User.username == fetch_request.teacher_username,
-                User.is_active == True,
+                User.is_active.is_(True),
             )
             .first()
         )

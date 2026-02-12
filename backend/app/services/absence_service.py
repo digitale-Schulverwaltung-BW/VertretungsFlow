@@ -56,7 +56,7 @@ class AbsenceService:
                 db.query(User)
                 .filter(
                     User.username == absence_data.teacher_username,
-                    User.is_active == True,
+                    User.is_active.is_(True),
                 )
                 .first()
             )
