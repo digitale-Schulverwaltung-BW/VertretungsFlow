@@ -283,6 +283,43 @@ class TestSaveFile:
         assert result.file_path.exists()
         assert result.file_path.read_bytes() == file_content
 
+    @pytest.mark.asyncio
+    async def test_save_file_raises_400_on_symlink_path_traversal(
+        self, temp_upload_dir
+    ):
+        """Path traversal via symlink is caught by the post-UUID path check (lines 152-153)
+
+        A symlink inside absence_dir/ that points outside upload_dir resolves
+        to a path that does NOT start with upload_dir → HTTPException 400.
+        """
+        from app.services.attachment_service import AttachmentService
+
+        service = AttachmentService(upload_dir=temp_upload_dir)
+
+        # Create a file outside the upload directory
+        outside_dir = temp_upload_dir.parent / "outside"
+        outside_dir.mkdir()
+        evil_target = outside_dir / "evil.pdf"
+        evil_target.write_bytes(b"evil content")
+
+        # Create the absence subdirectory and a symlink with a known UUID name
+        absence_dir = temp_upload_dir / "absence_1"
+        absence_dir.mkdir()
+        fixed_uuid = "aabbccdd-1234-5678-1234-aabbccddee01"
+        symlink_path = absence_dir / f"{fixed_uuid}.pdf"
+        symlink_path.symlink_to(evil_target)
+
+        mock_file = Mock(spec="UploadFile")
+        mock_file.filename = "upload.pdf"
+        mock_file.content_type = "application/pdf"
+
+        with patch("app.services.attachment_service.uuid.uuid4", return_value=fixed_uuid):
+            with pytest.raises(HTTPException) as exc_info:
+                await service.save_file(mock_file, b"content", absence_id=1)
+
+        assert exc_info.value.status_code == 400
+        assert "path" in exc_info.value.detail.lower()
+
 
 # ============================================================================
 # Test delete_file()
@@ -368,6 +405,21 @@ class TestDeleteFile:
 
             assert exc_info.value.status_code == 500
             assert "system error" in str(exc_info.value.detail).lower()
+
+    def test_delete_file_race_condition_silently_handled(
+        self, attachment_service, temp_upload_dir
+    ):
+        """FileNotFoundError during unlink (race condition) is caught and logged (line 199)
+
+        Scenario: file exists when checked but disappears before unlink().
+        The outer except FileNotFoundError swallows it without raising.
+        """
+        test_file = temp_upload_dir / "race.pdf"
+        test_file.write_bytes(b"content")
+
+        with patch.object(Path, "unlink", side_effect=FileNotFoundError("race gone")):
+            # Should NOT raise – exception is silently logged
+            attachment_service.delete_file(str(test_file))
 
 
 # ============================================================================

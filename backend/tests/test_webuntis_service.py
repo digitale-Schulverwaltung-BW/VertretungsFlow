@@ -493,6 +493,38 @@ class TestParseTimetable:
 
         assert result[0].subject == "Mathematik"
 
+    def test_resolves_class_with_string_key_fallback(self):
+        """Test that string key fallback works for class IDs (JSONB edge case)"""
+        classes_with_string_keys = {"201": "5A"}  # only string key, no int key
+        raw = [make_raw_entry(class_ids=[201])]  # integer key in entry
+
+        result = parse_timetable(
+            raw,
+            TEACHER_ID,
+            SAMPLE_SUBJECTS,
+            classes_with_string_keys,
+            SAMPLE_ROOMS,
+            SAMPLE_TIMEGRID,
+        )
+
+        assert result[0].class_name == "5A"
+
+    def test_resolves_room_with_string_key_fallback(self):
+        """Test that string key fallback works for room IDs (JSONB edge case)"""
+        rooms_with_string_keys = {"301": "Raum 101"}  # only string key, no int key
+        raw = [make_raw_entry(room_ids=[301])]  # integer key in entry
+
+        result = parse_timetable(
+            raw,
+            TEACHER_ID,
+            SAMPLE_SUBJECTS,
+            SAMPLE_CLASSES,
+            rooms_with_string_keys,
+            SAMPLE_TIMEGRID,
+        )
+
+        assert result[0].room == "Raum 101"
+
     def test_returns_empty_list_for_empty_input(self):
         """Test that empty input returns empty list"""
         result = parse_timetable(

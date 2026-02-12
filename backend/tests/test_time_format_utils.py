@@ -206,6 +206,13 @@ class TestGetTimeFromPeriod:
         result = get_time_from_period(timegrid, 1, "start")
         assert result == "08:00"
 
+    def test_non_convertible_period_value_is_skipped(self):
+        """Non-int period values (e.g. corrupted JSONB data) are skipped via ValueError"""
+        # "invalid" cannot be converted to int → except (ValueError, TypeError): continue
+        timegrid = {800: "invalid", 850: 1}
+        result = get_time_from_period(timegrid, 1, "start")
+        assert result == "08:50"  # skips 800 (invalid), matches 850 → period 1
+
     def test_missing_period_uses_config_fallback(self, tmp_path):
         """Test that missing period falls back to config"""
         timegrid = {800: 1, 850: 2}

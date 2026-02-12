@@ -386,12 +386,32 @@ class TestWrapperMethods:
             assert await client.get_subjects() == []
 
     @pytest.mark.asyncio
+    async def test_get_classes_returns_result(self):
+        client = make_client()
+        expected = [{"id": 1, "name": "5A"}, {"id": 2, "name": "5B"}]
+        with patch.object(
+            client, "_call_api", new_callable=AsyncMock, return_value=expected
+        ):
+            result = await client.get_classes()
+        assert result == expected
+
+    @pytest.mark.asyncio
     async def test_get_classes_returns_empty_list_on_none(self):
         client = make_client()
         with patch.object(
             client, "_call_api", new_callable=AsyncMock, return_value=None
         ):
             assert await client.get_classes() == []
+
+    @pytest.mark.asyncio
+    async def test_get_rooms_returns_result(self):
+        client = make_client()
+        expected = [{"id": 1, "name": "Raum 101"}]
+        with patch.object(
+            client, "_call_api", new_callable=AsyncMock, return_value=expected
+        ):
+            result = await client.get_rooms()
+        assert result == expected
 
     @pytest.mark.asyncio
     async def test_get_rooms_returns_empty_list_on_none(self):

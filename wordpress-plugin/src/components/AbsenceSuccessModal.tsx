@@ -69,7 +69,7 @@ const AbsenceSuccessModal: React.FC<AbsenceSuccessModalProps> = ({
             <div className="pdf-forms-section">
               <h3>Formulare zum Download</h3>
               <p className="section-description">
-                Laden Sie die vorausgefüllten Formulare herunter und reichen Sie diese bei Bedarf ein.
+                Laden Sie bei Bedarf die vorausgefüllten Formulare herunter und reichen Sie diese ggf. ein.
               </p>
               <div className="form-buttons">
                 {availableForms.map((form) => (

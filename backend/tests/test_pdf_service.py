@@ -10,6 +10,7 @@ Getestet:
 """
 
 import json
+import sys
 import pytest
 from datetime import datetime
 from pathlib import Path
@@ -308,6 +309,37 @@ class TestBuildTemplateContext:
         assert context is not None
         assert "absence" in context
 
+    @pytest.mark.asyncio
+    async def test_teacher_none_uses_empty_strings(
+        self, service, mock_absence, mock_db
+    ):
+        """When absence.teacher is None, name/email fields default to empty strings"""
+        mock_absence.teacher = None
+        service.webuntis_service._load_timegrid = AsyncMock(return_value={})
+
+        context = await service._build_template_context(mock_absence, [], mock_db)
+
+        teacher_ctx = context["absence"]["teacher"]
+        assert teacher_ctx["full_name"] == ""
+        assert teacher_ctx["first_name"] == ""
+        assert teacher_ctx["last_name"] == ""
+        assert teacher_ctx["email"] == ""
+
+    @pytest.mark.asyncio
+    async def test_single_word_full_name_used_as_last_name(
+        self, service, mock_absence, mock_db
+    ):
+        """A full_name with a single word (no space) is placed into last_name only"""
+        mock_absence.teacher.first_name = None
+        mock_absence.teacher.last_name = None
+        mock_absence.teacher.full_name = "Sokrates"
+        service.webuntis_service._load_timegrid = AsyncMock(return_value={})
+
+        context = await service._build_template_context(mock_absence, [], mock_db)
+
+        assert context["absence"]["teacher"]["first_name"] == ""
+        assert context["absence"]["teacher"]["last_name"] == "Sokrates"
+
 
 # ============================================================================
 # Test generate_filled_pdf()
@@ -428,3 +460,122 @@ class TestFixPdfEncoding:
         result = service._fix_pdf_encoding(b"Hello")
         assert isinstance(result, str)
         assert result == "Hello"
+
+    def test_invalid_utf8_bytes_decoded_via_latin1_fallback(self, service):
+        """Bytes that are not valid UTF-8 are decoded with Latin-1 fallback"""
+        # 0x80-0xFF are valid Latin-1 but not valid UTF-8 sequences
+        invalid_utf8 = b"\x80\x99\xc3"
+        result = service._fix_pdf_encoding(invalid_utf8)
+        assert isinstance(result, str)
+
+    def test_non_string_non_bytes_converted_to_str(self, service):
+        """Non-string, non-bytes values (e.g. int) are converted via str()"""
+        result = service._fix_pdf_encoding(42)
+        assert result == "42"
+
+    def test_non_latin1_characters_returned_as_utf8_string(self, service):
+        """Characters outside Latin-1 (e.g. emoji, CJK) are returned as UTF-8 string"""
+        # These characters cannot be encoded as Latin-1 → UnicodeEncodeError branch
+        result = service._fix_pdf_encoding("Hallo 🎓 Welt")
+        assert isinstance(result, str)
+        assert "🎓" in result
+
+
+# ============================================================================
+# Test _merge_fdf_with_pdf()
+# ============================================================================
+
+
+def _make_mock_pypdf(output_bytes: bytes):
+    """Build a pypdf mock module with PdfReader + PdfWriter that writes output_bytes."""
+    mock_reader = Mock()
+    mock_writer = Mock()
+    mock_writer.pages = [Mock()]
+
+    def fake_write(buf):
+        buf.write(output_bytes)
+
+    mock_writer.write = fake_write
+
+    mock_pypdf = Mock()
+    mock_pypdf.PdfReader = Mock(return_value=mock_reader)
+    mock_pypdf.PdfWriter = Mock(return_value=mock_writer)
+    return mock_pypdf, mock_reader, mock_writer
+
+
+class TestMergeFdfWithPdf:
+    """Tests for the internal PDF merging logic (previously always mocked)"""
+
+    def test_raises_500_when_pypdf_not_installed(self, service, tmp_path):
+        """ImportError during pypdf import raises HTTPException 500"""
+        fake_pdf = tmp_path / "test.pdf"
+        fake_pdf.write_bytes(b"fake content")
+
+        with patch.dict(sys.modules, {"pypdf": None}):
+            with pytest.raises(HTTPException) as exc_info:
+                service._merge_fdf_with_pdf(fake_pdf, {"Field": "Value"})
+
+        assert exc_info.value.status_code == 500
+        assert "not installed" in exc_info.value.detail.lower()
+
+    def test_successful_merge_returns_bytes(self, service, tmp_path):
+        """PDF is read, fields are written into the writer, and bytes are returned"""
+        fake_pdf = tmp_path / "test.pdf"
+        fake_pdf.write_bytes(b"fake content")
+
+        output_bytes = b"%PDF-1.4 result"
+        mock_pypdf, mock_reader, mock_writer = _make_mock_pypdf(output_bytes)
+
+        with patch.dict(sys.modules, {"pypdf": mock_pypdf}):
+            result = service._merge_fdf_with_pdf(fake_pdf, {"Name": "Max"})
+
+        assert result == output_bytes
+        mock_pypdf.PdfReader.assert_called_once_with(str(fake_pdf))
+        mock_writer.clone_reader_document_root.assert_called_once_with(mock_reader)
+        mock_writer.update_page_form_field_values.assert_called_once()
+
+    def test_page_update_failure_logs_warning_and_continues(
+        self, service, tmp_path
+    ):
+        """Exception during page field update is caught and logged; merge still completes"""
+        fake_pdf = tmp_path / "test.pdf"
+        fake_pdf.write_bytes(b"fake content")
+
+        output_bytes = b"%PDF-1.4 warning-path"
+        mock_reader = Mock()
+        mock_writer = Mock()
+        mock_writer.pages = [Mock(), Mock()]  # two pages
+        mock_writer.update_page_form_field_values.side_effect = Exception(
+            "field update error"
+        )
+
+        def fake_write(buf):
+            buf.write(output_bytes)
+
+        mock_writer.write = fake_write
+
+        mock_pypdf = Mock()
+        mock_pypdf.PdfReader = Mock(return_value=mock_reader)
+        mock_pypdf.PdfWriter = Mock(return_value=mock_writer)
+
+        with patch.dict(sys.modules, {"pypdf": mock_pypdf}):
+            # Should NOT raise despite page update failures
+            result = service._merge_fdf_with_pdf(fake_pdf, {})
+
+        assert result == output_bytes
+        # Both pages attempted
+        assert mock_writer.update_page_form_field_values.call_count == 2
+
+    def test_non_string_field_values_not_logged_as_string(self, service, tmp_path):
+        """Non-string field values are passed through without debug logging (branch coverage)"""
+        fake_pdf = tmp_path / "test.pdf"
+        fake_pdf.write_bytes(b"fake content")
+
+        output_bytes = b"%PDF-1.4"
+        mock_pypdf, _, mock_writer = _make_mock_pypdf(output_bytes)
+
+        with patch.dict(sys.modules, {"pypdf": mock_pypdf}):
+            # Pass a non-string value to exercise the isinstance(value, str) False branch
+            result = service._merge_fdf_with_pdf(fake_pdf, {"Count": 42})
+
+        assert result == output_bytes

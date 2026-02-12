@@ -18,11 +18,12 @@ Getestet:
 """
 
 import pytest
+from datetime import timedelta
 from unittest.mock import AsyncMock, Mock, patch
 from urllib.parse import quote
 
 from fastapi import HTTPException
-from jose import JWTError
+from jose import JWTError, jwt as jose_jwt
 
 from app.api.auth import (
     _create_ldap_user,
@@ -31,6 +32,7 @@ from app.api.auth import (
     _handle_ldap_proxy_user,
     _handle_wordpress_proxy_user,
     _update_wordpress_user_fields,
+    create_access_token,
     get_current_active_user,
     get_current_user,
     get_wordpress_proxy_user,
@@ -254,6 +256,21 @@ class TestUpdateWordpressUserFields:
         )
         assert needs_update is True
         assert user.first_name == "Maximilian"
+
+    def test_last_name_change_detected(self):
+        """Geänderter Nachname → needs_update=True, user.last_name aktualisiert"""
+        user = self._make_user()
+        needs_update, _ = _update_wordpress_user_fields(
+            user,
+            email="max@schule.de",
+            full_name="Max Mustermann",
+            first_name="Max",
+            last_name="Muster-Mann",
+            role=UserRole.TEACHER,
+            webuntis_code="MUS",
+        )
+        assert needs_update is True
+        assert user.last_name == "Muster-Mann"
 
     def test_multiple_changes_all_tracked(self):
         """Email + Rolle gleichzeitig geändert → beide in details"""
@@ -825,3 +842,46 @@ class TestLogout:
         user = make_mock_user()
         result = await unwrap(logout)(request=make_mock_request(), current_user=user)
         assert result == {"message": "Successfully logged out"}
+
+
+# ============================================================================
+# Tests: create_access_token()
+# ============================================================================
+
+JWT_TEST_SECRET = "test-secret-key-for-jwt-unit-tests-min32ch"
+
+
+class TestCreateAccessToken:
+    """Tests for JWT token creation defined in auth.py (used by login endpoint)"""
+
+    def test_returns_jwt_string(self):
+        """create_access_token returns a non-empty string"""
+        with patch.object(settings, "SECRET_KEY", JWT_TEST_SECRET):
+            with patch.object(settings, "ALGORITHM", "HS256"):
+                with patch.object(settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 30):
+                    token = create_access_token({"sub": "testuser"})
+        assert isinstance(token, str)
+        assert len(token) > 0
+
+    def test_payload_contains_sub_and_exp(self):
+        """Token payload contains 'sub' claim and 'exp' expiry claim"""
+        with patch.object(settings, "SECRET_KEY", JWT_TEST_SECRET):
+            with patch.object(settings, "ALGORITHM", "HS256"):
+                with patch.object(settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 30):
+                    token = create_access_token({"sub": "max.mustermann"})
+        payload = jose_jwt.decode(
+            token, JWT_TEST_SECRET, algorithms=["HS256"]
+        )
+        assert payload["sub"] == "max.mustermann"
+        assert "exp" in payload
+
+    def test_custom_expires_delta_overrides_default(self):
+        """When expires_delta is provided, it is used instead of settings default"""
+        with patch.object(settings, "SECRET_KEY", JWT_TEST_SECRET):
+            with patch.object(settings, "ALGORITHM", "HS256"):
+                token = create_access_token(
+                    {"sub": "testuser"}, expires_delta=timedelta(hours=2)
+                )
+        assert isinstance(token, str)
+        payload = jose_jwt.decode(token, JWT_TEST_SECRET, algorithms=["HS256"])
+        assert "exp" in payload

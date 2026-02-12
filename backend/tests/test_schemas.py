@@ -34,6 +34,8 @@ from app.schemas.schemas import (
     AffectedLessonUpdate,
     AbsenceBase,
     AbsenceUpdate,
+    FetchLessonsRequest,
+    WebUntisLesson,
     sanitize_text_input,
 )
 
@@ -292,3 +294,88 @@ class TestAbsenceUpdateParseDate:
         assert update.start_date is not None
         assert update.start_date.hour == 9
         assert update.start_date.minute == 30
+
+
+# ---------------------------------------------------------------------------
+# TestAbsenceBaseParsDate  (start_date / end_date on AbsenceBase)
+# ---------------------------------------------------------------------------
+
+
+class TestAbsenceBaseParseDate:
+    """AbsenceBase.parse_date: date-only string gets T00:00:00 appended"""
+
+    def test_date_only_string_gets_time_appended(self):
+        """Plain date string (no T) triggers the normalization branch (line 173)"""
+        absence = AbsenceBase(
+            reason="sick",
+            start_date="2026-03-01",
+            end_date="2026-03-01",
+            start_period=1,
+            end_period=5,
+        )
+        assert absence.start_date.hour == 0
+        assert absence.start_date.minute == 0
+        assert absence.end_date.hour == 0
+
+
+# ---------------------------------------------------------------------------
+# TestFetchLessonsRequestParseDate
+# ---------------------------------------------------------------------------
+
+
+class TestFetchLessonsRequestParseDate:
+    """FetchLessonsRequest.parse_date: date-only and datetime strings handled"""
+
+    def test_date_only_string_gets_time_appended(self):
+        """Plain date string triggers T00:00:00 normalisation"""
+        req = FetchLessonsRequest(
+            start_date="2026-03-01",
+            end_date="2026-03-02",
+            start_period=1,
+            end_period=5,
+        )
+        assert req.start_date.hour == 0
+        assert req.end_date.hour == 0
+
+    def test_datetime_string_passes_through(self):
+        """Full datetime string with T passes through unchanged"""
+        req = FetchLessonsRequest(
+            start_date="2026-03-01T08:00:00",
+            end_date="2026-03-01T16:00:00",
+            start_period=1,
+            end_period=5,
+        )
+        assert req.start_date.hour == 8
+        assert req.end_date.hour == 16
+
+
+# ---------------------------------------------------------------------------
+# TestWebUntisLessonParseDate
+# ---------------------------------------------------------------------------
+
+
+class TestWebUntisLessonParseDate:
+    """WebUntisLesson.parse_date: date field normalisation"""
+
+    def test_date_only_string_gets_time_appended(self):
+        """Plain date string triggers T00:00:00 normalisation"""
+        lesson = WebUntisLesson(
+            date="2026-03-01",
+            period=1,
+            subject="Mathematik",
+            class_name="5A",
+            room="101",
+        )
+        assert lesson.date.hour == 0
+        assert lesson.date.minute == 0
+
+    def test_datetime_string_passes_through(self):
+        """Full datetime string with T passes through unchanged"""
+        lesson = WebUntisLesson(
+            date="2026-03-01T08:00:00",
+            period=2,
+            subject="Deutsch",
+            class_name="5B",
+            room="102",
+        )
+        assert lesson.date.hour == 8

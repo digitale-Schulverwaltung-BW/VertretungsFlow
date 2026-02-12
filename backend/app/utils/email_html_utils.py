@@ -38,6 +38,7 @@ _BTN_BLUE = (
 )
 
 _HEADER_GREEN = "color: #15803d; font-size: 20px; margin: 0 0 4px 0;"
+_HEADER_GREY = "color: #606060; font-size: 20px; margin: 0 0 4px 0;"
 _HEADER_BLUE = "color: #1d4ed8; font-size: 20px; margin: 0 0 4px 0;"
 _HEADER_RED = "color: #dc2626; font-size: 20px; margin: 0 0 4px 0;"
 _HEADER_GRAY = "color: #374151; font-size: 20px; margin: 0 0 4px 0;"
@@ -87,7 +88,7 @@ def submitted_html(
         HTML-String
     """
     header = (
-        f'<h2 style="{_HEADER_GREEN}">Neue Abwesenheitsmeldung</h2>'
+        f'<h2 style="{_HEADER_GREY}">Neue Abwesenheitsmeldung</h2>'
         f'<p style="{_SUBTITLE_STYLE}">Eine neue Abwesenheit wurde zur Genehmigung eingereicht.</p>'
     )
     content = (
