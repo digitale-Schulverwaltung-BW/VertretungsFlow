@@ -113,6 +113,47 @@ class TestSendEmail:
 
         assert result is False
 
+    @pytest.mark.asyncio
+    @patch("aiosmtplib.send", new_callable=AsyncMock)
+    async def test_attaches_html_part_when_provided(self, mock_smtp_send, service):
+        """Test that HTML body is attached as second MIME part when body_html is given"""
+        captured = []
+
+        async def capture(msg, **kwargs):
+            captured.append(msg)
+
+        mock_smtp_send.side_effect = capture
+
+        await service.send_email(
+            "lehrer@schule.de", "Betreff", "Plaintext", "<p>HTML</p>"
+        )
+
+        assert len(captured) == 1
+        msg = captured[0]
+        payloads = msg.get_payload()
+        assert len(payloads) == 2
+        assert payloads[0].get_content_type() == "text/plain"
+        assert payloads[1].get_content_type() == "text/html"
+
+    @pytest.mark.asyncio
+    @patch("aiosmtplib.send", new_callable=AsyncMock)
+    async def test_only_plaintext_when_no_html_provided(self, mock_smtp_send, service):
+        """Test that without body_html only one plain-text MIME part is attached"""
+        captured = []
+
+        async def capture(msg, **kwargs):
+            captured.append(msg)
+
+        mock_smtp_send.side_effect = capture
+
+        await service.send_email("lehrer@schule.de", "Betreff", "Nur Plaintext")
+
+        assert len(captured) == 1
+        msg = captured[0]
+        payloads = msg.get_payload()
+        assert len(payloads) == 1
+        assert payloads[0].get_content_type() == "text/plain"
+
 
 # ============================================================================
 # Test send_absence_submitted_notification()
