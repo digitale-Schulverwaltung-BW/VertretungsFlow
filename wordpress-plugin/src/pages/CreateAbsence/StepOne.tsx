@@ -288,6 +288,12 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   <option value="">Eigene Abwesenheit</option>
                   {teachers
                     .filter((t) => t.username !== currentUser.username)
+                    .sort((a, b) =>
+                      (a.webuntis_code || a.username).localeCompare(
+                        b.webuntis_code || b.username,
+                        'de'
+                      )
+                    )
                     .map((t) => (
                       <option key={t.username} value={t.username}>
                         {t.webuntis_code || t.username}
