@@ -58,15 +58,21 @@ async def fetch_lessons_from_webuntis(
 
     # Ziel-Lehrkraft bestimmen (Admin kann für andere Lehrkraft abrufen)
     target_teacher: Optional[User] = None
-    if fetch_request.teacher_id and current_user.role == UserRole.ADMIN:
+    if fetch_request.teacher_username and current_user.role == UserRole.ADMIN:
         target_teacher = (
             db.query(User)
-            .filter(User.id == fetch_request.teacher_id, User.is_active == True)
+            .filter(
+                User.username == fetch_request.teacher_username,
+                User.is_active == True,
+            )
             .first()
         )
         if not target_teacher:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Teacher not found"
+            # Teacher not yet in DB — use a transient object (not persisted here;
+            # auto-registration happens in absence_service when the absence is created)
+            target_teacher = User(
+                username=fetch_request.teacher_username,
+                webuntis_teacher_code=fetch_request.teacher_webuntis_code,
             )
     else:
         target_teacher = current_user

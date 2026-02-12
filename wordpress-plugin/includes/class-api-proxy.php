@@ -29,8 +29,12 @@ class AbsenzFlow_API_Proxy {
             return $result;
         }
 
-        // Check if this is our endpoint
-        if (strpos($_SERVER['REQUEST_URI'], '/absenzflow/v1/proxy') !== false) {
+        // Check if this is one of our endpoints
+        $uri = $_SERVER['REQUEST_URI'];
+        if (
+            strpos($uri, '/absenzflow/v1/proxy') !== false ||
+            strpos($uri, '/absenzflow/v1/teachers') !== false
+        ) {
             // Check if user is logged in via WordPress session
             if (is_user_logged_in()) {
                 // Allow cookie authentication for this endpoint
@@ -92,6 +96,20 @@ class AbsenzFlow_API_Proxy {
                     }
                 ),
             )
+        ));
+
+        // Teachers endpoint (returns WP users with WebUntis code, for admin teacher selection)
+        register_rest_route('absenzflow/v1', '/teachers', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_teachers'),
+            'permission_callback' => function() {
+                // Only admins (users with absenzflow_role = 'admin') may query this
+                if (!is_user_logged_in()) {
+                    return false;
+                }
+                $role = get_user_meta(get_current_user_id(), 'absenzflow_role', true);
+                return $role === 'admin';
+            },
         ));
 
         // PDF Form Download Proxy (auth-protected PDF download)
@@ -510,6 +528,42 @@ class AbsenzFlow_API_Proxy {
         header('Content-Length: ' . strlen($body));
         echo $body;
         exit;
+    }
+
+    /**
+     * Returns all WP users who have an AbsenzFlow WebUntis code set.
+     * Used by the admin teacher-selection combobox when creating an absence on behalf of another teacher.
+     *
+     * @return WP_REST_Response JSON array of {username, full_name, email, webuntis_code}
+     */
+    public function get_teachers() {
+        $users = get_users(array(
+            'meta_key'     => 'absenzflow_webuntis_code',
+            'meta_value'   => '',
+            'meta_compare' => '!=',
+            'fields'       => 'all',
+        ));
+
+        $result = array();
+        foreach ($users as $user) {
+            $first_name = get_user_meta($user->ID, 'first_name', true);
+            $last_name  = get_user_meta($user->ID, 'last_name', true);
+            if ($first_name && $last_name) {
+                $full_name = $first_name . ' ' . $last_name;
+            } elseif ($user->display_name && $user->display_name !== $user->user_login) {
+                $full_name = $user->display_name;
+            } else {
+                $full_name = $user->user_login;
+            }
+            $result[] = array(
+                'username'      => $user->user_login,
+                'full_name'     => $full_name,
+                'email'         => $user->user_email,
+                'webuntis_code' => get_user_meta($user->ID, 'absenzflow_webuntis_code', true),
+            );
+        }
+
+        return new WP_REST_Response($result, 200);
     }
 
     /**

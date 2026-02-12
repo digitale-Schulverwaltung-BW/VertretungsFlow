@@ -9,6 +9,7 @@ import type {
   LoginResponse,
   FetchLessonsRequest,
   CreateAbsenceRequest,
+  TeacherInfo,
   Attachment,
 } from '../types';
 
@@ -250,12 +251,25 @@ class APIClient {
   }
 
   /**
+   * Get teachers (admin only) — reads directly from WordPress user meta,
+   * returns all WP users with an absenzflow_webuntis_code set.
+   */
+  async getTeachers(): Promise<TeacherInfo[]> {
+    const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
+    const response = await axios.get('/wp-json/absenzflow/v1/teachers', {
+      withCredentials: true,
+      headers: { 'X-WP-Nonce': nonce || '' },
+    });
+    return response.data;
+  }
+
+  /**
    * Get users (admin only)
    */
   async getUsers(params?: Record<string, unknown>): Promise<User[]> {
     return this.request<User[]>({
       method: 'GET',
-      url: '/users',
+      url: '/admin/users',
       params,
     });
   }

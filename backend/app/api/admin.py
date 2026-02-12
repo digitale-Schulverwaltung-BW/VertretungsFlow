@@ -27,7 +27,7 @@ from app.schemas.schemas import (
     DashboardStats,
     AbsenceResponse,
 )
-from app.api.auth import get_current_active_user, require_role
+from app.api.auth import get_current_active_user, get_wordpress_proxy_user, require_role
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -42,9 +42,7 @@ async def list_users(
     request: Request,
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(
-        require_role([UserRole.ADMIN, UserRole.DEPARTMENT_HEAD])
-    ),
+    current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -61,6 +59,8 @@ async def list_users(
     Returns:
         Liste von Benutzern
     """
+    if current_user.role not in [UserRole.ADMIN, UserRole.DEPARTMENT_HEAD]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     users = db.query(User).offset(skip).limit(limit).all()
     return users
 

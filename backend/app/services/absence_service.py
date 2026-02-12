@@ -51,18 +51,31 @@ class AbsenceService:
 
         # Ziel-Lehrkraft bestimmen (Admin kann für andere Lehrkraft anlegen)
         target_teacher: Optional[User] = None
-        if absence_data.teacher_id and current_user.role == UserRole.ADMIN:
+        if absence_data.teacher_username and current_user.role == UserRole.ADMIN:
             target_teacher = (
                 db.query(User)
                 .filter(
-                    User.id == absence_data.teacher_id, User.is_active == True
+                    User.username == absence_data.teacher_username,
+                    User.is_active == True,
                 )
                 .first()
             )
             if not target_teacher:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Teacher not found",
+                # Auto-register teacher (they haven't logged in yet)
+                target_teacher = User(
+                    username=absence_data.teacher_username,
+                    full_name=absence_data.teacher_username,
+                    email=None,
+                    role=UserRole.TEACHER,
+                    webuntis_teacher_code=absence_data.teacher_webuntis_code,
+                    is_active=True,
+                )
+                db.add(target_teacher)
+                db.commit()
+                db.refresh(target_teacher)
+                logger.info(
+                    f"Auto-registered teacher {target_teacher.username} "
+                    f"(created by admin {current_user.username})"
                 )
             logger.info(
                 f"Admin {current_user.username} creates absence for {target_teacher.username}"

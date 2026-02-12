@@ -3,7 +3,7 @@ import { DayPicker, DateRange } from 'react-day-picker';
 import { de } from 'date-fns/locale';
 import { format } from 'date-fns';
 import 'react-day-picker/dist/style.css';
-import type { AbsenceReason, User } from '../../types';
+import type { AbsenceReason, User, TeacherInfo } from '../../types';
 import { ABSENCE_REASONS } from '../../constants';
 import api from '../../api/client';
 
@@ -19,7 +19,8 @@ export interface StepOneData {
   endLesson: number;
   excursionClasses?: string;
   personalReason?: string;
-  selectedTeacherId?: number;
+  selectedTeacherUsername?: string;
+  selectedTeacherWebuntisCode?: string;
 }
 
 const lessonNumbers = Array.from({ length: 16 }, (_, i) => i + 1);
@@ -36,16 +37,18 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   const [personalReason, setPersonalReason] = useState<string>('');
   const [checkingDuplicates, setCheckingDuplicates] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [teachers, setTeachers] = useState<User[]>([]);
-  const [selectedTeacherId, setSelectedTeacherId] = useState<number | undefined>(undefined);
+  const [teachers, setTeachers] = useState<TeacherInfo[]>([]);
+  const [selectedTeacher, setSelectedTeacher] = useState<TeacherInfo | undefined>(undefined);
 
   useEffect(() => {
-    api.getCurrentUser().then((user) => {
-      setCurrentUser(user);
-      if (user.role === 'admin') {
-        api.getUsers().then(setTeachers);
-      }
-    });
+    api.getCurrentUser()
+      .then((user) => {
+        setCurrentUser(user);
+        if (user.role === 'admin') {
+          api.getTeachers().then(setTeachers).catch(console.error);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   const handleStartDayClick = (day: Date) => {
@@ -140,9 +143,13 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
       setErrors([]);
 
       const existingAbsences = await api.getAbsences();
+      // When admin creates for another teacher, only check that teacher's absences
+      const targetUsername = selectedTeacher?.username ?? currentUser?.username;
       const overlapping = existingAbsences.filter(absence => {
         // Only check active absences (not rejected)
         if (absence.status === 'rejected') return false;
+        // Only check absences belonging to the target teacher
+        if (absence.teacher?.username !== targetUsername) return false;
 
         const existingStart = new Date(absence.start_date);
         const existingEnd = new Date(absence.end_date);
@@ -175,7 +182,8 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
         endLesson,
         excursionClasses: reason === 'excursion' ? excursionClasses : undefined,
         personalReason: reason === 'personal' || reason === 'other' ? personalReason : undefined,
-        selectedTeacherId,
+        selectedTeacherUsername: selectedTeacher?.username,
+        selectedTeacherWebuntisCode: selectedTeacher?.webuntis_code,
       });
     } catch (err) {
       console.error('Error checking for duplicates:', err);
@@ -255,55 +263,61 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Lehrkraft (nur für Admins) */}
-          {currentUser?.role === 'admin' && (
-            <div>
+          {/* Lehrkraft + Grund — nebeneinander wenn Admin, sonst nur Grund */}
+          <div className="flex flex-wrap gap-6">
+            {currentUser?.role === 'admin' && (
+              <div className="flex-1 min-w-0 max-w-xs ">
+                <label
+                  htmlFor="teacherSelect"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Lehrkraft
+                </label>
+                <select
+                  id="teacherSelect"
+                  value={selectedTeacher?.username ?? ''}
+                  onChange={(e) =>
+                    setSelectedTeacher(
+                      e.target.value
+                        ? teachers.find((t) => t.username === e.target.value)
+                        : undefined
+                    )
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Eigene Abwesenheit</option>
+                  {teachers
+                    .filter((t) => t.username !== currentUser.username)
+                    .map((t) => (
+                      <option key={t.username} value={t.username}>
+                        {t.webuntis_code || t.username}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+
+            {/* Grund */}
+            <div className="flex-1 min-w-0 max-w-xs">
               <label
-                htmlFor="teacherSelect"
+                htmlFor="reason"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Lehrkraft
+                Grund<span className="text-red-500">*</span>
               </label>
               <select
-                id="teacherSelect"
-                value={selectedTeacherId ?? ''}
-                onChange={(e) =>
-                  setSelectedTeacherId(e.target.value ? Number(e.target.value) : undefined)
-                }
-                className="max-w-xs w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                id="reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value as AbsenceReason)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">Eigene Abwesenheit</option>
-                {teachers
-                  .filter((t) => t.id !== currentUser.id)
-                  .map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.webuntis_teacher_code || t.username}
-                    </option>
-                  ))}
+                {ABSENCE_REASONS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
               </select>
             </div>
-          )}
-
-          {/* Grund */}
-          <div>
-            <label
-              htmlFor="reason"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Grund<span className="text-red-500">*</span>
-            </label>
-            <select
-              id="reason"
-              value={reason}
-              onChange={(e) => setReason(e.target.value as AbsenceReason)}
-              className="max-w-xs w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {ABSENCE_REASONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
           </div>
 
           {/* Exkursion: Klassen-Input */}

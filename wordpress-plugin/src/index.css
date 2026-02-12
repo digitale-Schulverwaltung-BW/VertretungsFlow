@@ -225,7 +225,6 @@
 
 /* --- Max-width containers --- */
 #absenzflow-root .af-card  { max-width:  896px !important; width: 100%; } /* max-w-4xl = 56rem */
-#absenzflow-root .max-w-7xl { max-width: 1280px !important; }              /* 80rem */
 
 /*
  * DatePicker: responsive layout via viewport media query.

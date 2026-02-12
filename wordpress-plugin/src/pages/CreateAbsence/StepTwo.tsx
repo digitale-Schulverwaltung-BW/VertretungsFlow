@@ -57,7 +57,8 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         end_date: format(stepOneData.endDate, 'yyyy-MM-dd'),
         start_period: stepOneData.startLesson,
         end_period: stepOneData.endLesson,
-        teacher_id: stepOneData.selectedTeacherId,
+        teacher_username: stepOneData.selectedTeacherUsername,
+        teacher_webuntis_code: stepOneData.selectedTeacherWebuntisCode,
       });
 
       setLoadingProgress(`${response.length} Stunden gefunden, bereite Anzeige vor...`);
@@ -183,7 +184,8 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
         excursion_classes: stepOneData.excursionClasses,
         personal_reason: stepOneData.personalReason,
         admin_notes: adminNotes || undefined,
-        teacher_id: stepOneData.selectedTeacherId,
+        teacher_username: stepOneData.selectedTeacherUsername,
+        teacher_webuntis_code: stepOneData.selectedTeacherWebuntisCode,
         affected_lessons: lessons.map((lesson) => ({
           date: lesson.date,
           period: lesson.period,
@@ -233,7 +235,9 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
     <div className="max-w-7xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-lg p-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-8">
-          Abwesenheit vom {dateTitle}
+          {stepOneData.selectedTeacherUsername
+            ? `Abwesenheit von ${stepOneData.selectedTeacherWebuntisCode || stepOneData.selectedTeacherUsername} vom ${dateTitle}`
+            : `Abwesenheit vom ${dateTitle}`}
         </h1>
 
         {error && (

@@ -76,12 +76,20 @@ export interface LoginResponse {
   token_type: string;
 }
 
+export interface TeacherInfo {
+  username: string;
+  full_name: string;
+  email: string;
+  webuntis_code: string;
+}
+
 export interface FetchLessonsRequest {
   start_date: string;
   end_date: string;
   start_period: number;
   end_period: number;
-  teacher_id?: number;
+  teacher_username?: string;
+  teacher_webuntis_code?: string;
 }
 
 export interface CreateAbsenceRequest {
@@ -93,7 +101,8 @@ export interface CreateAbsenceRequest {
   excursion_classes?: string;
   personal_reason?: string;
   admin_notes?: string;
-  teacher_id?: number;
+  teacher_username?: string;
+  teacher_webuntis_code?: string;
   affected_lessons: Array<{
     date: string;
     period: number;
