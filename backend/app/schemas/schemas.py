@@ -210,7 +210,9 @@ class AbsenceCreate(AbsenceBase):
     """Absence Creation Schema"""
 
     affected_lessons: Optional[List[AffectedLessonBase]] = None
-    teacher_username: Optional[str] = None  # Admin only: create absence for another teacher
+    teacher_username: Optional[
+        str
+    ] = None  # Admin only: create absence for another teacher
     teacher_webuntis_code: Optional[str] = None  # Admin only: for auto-registration
 
 
@@ -319,8 +321,12 @@ class FetchLessonsRequest(BaseModel):
     end_date: datetime
     start_period: int = Field(..., ge=1, le=16)
     end_period: int = Field(..., ge=1, le=16)
-    teacher_username: Optional[str] = None  # Admin only: fetch lessons for another teacher
-    teacher_webuntis_code: Optional[str] = None  # Admin only: WebUntis code for that teacher
+    teacher_username: Optional[
+        str
+    ] = None  # Admin only: fetch lessons for another teacher
+    teacher_webuntis_code: Optional[
+        str
+    ] = None  # Admin only: WebUntis code for that teacher
 
     @field_validator("start_date", "end_date", mode="before")
     @classmethod

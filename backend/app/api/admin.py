@@ -60,7 +60,9 @@ async def list_users(
         Liste von Benutzern
     """
     if current_user.role not in [UserRole.ADMIN, UserRole.DEPARTMENT_HEAD]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
     users = db.query(User).offset(skip).limit(limit).all()
     return users
 
