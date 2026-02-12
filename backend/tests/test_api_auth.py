@@ -869,9 +869,7 @@ class TestCreateAccessToken:
             with patch.object(settings, "ALGORITHM", "HS256"):
                 with patch.object(settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 30):
                     token = create_access_token({"sub": "max.mustermann"})
-        payload = jose_jwt.decode(
-            token, JWT_TEST_SECRET, algorithms=["HS256"]
-        )
+        payload = jose_jwt.decode(token, JWT_TEST_SECRET, algorithms=["HS256"])
         assert payload["sub"] == "max.mustermann"
         assert "exp" in payload
 

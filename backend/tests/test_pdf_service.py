@@ -534,9 +534,7 @@ class TestMergeFdfWithPdf:
         mock_writer.clone_reader_document_root.assert_called_once_with(mock_reader)
         mock_writer.update_page_form_field_values.assert_called_once()
 
-    def test_page_update_failure_logs_warning_and_continues(
-        self, service, tmp_path
-    ):
+    def test_page_update_failure_logs_warning_and_continues(self, service, tmp_path):
         """Exception during page field update is caught and logged; merge still completes"""
         fake_pdf = tmp_path / "test.pdf"
         fake_pdf.write_bytes(b"fake content")

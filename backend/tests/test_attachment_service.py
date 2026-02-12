@@ -313,7 +313,9 @@ class TestSaveFile:
         mock_file.filename = "upload.pdf"
         mock_file.content_type = "application/pdf"
 
-        with patch("app.services.attachment_service.uuid.uuid4", return_value=fixed_uuid):
+        with patch(
+            "app.services.attachment_service.uuid.uuid4", return_value=fixed_uuid
+        ):
             with pytest.raises(HTTPException) as exc_info:
                 await service.save_file(mock_file, b"content", absence_id=1)
 
