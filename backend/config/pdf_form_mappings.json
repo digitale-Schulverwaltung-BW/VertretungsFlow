@@ -55,7 +55,7 @@
         "Telefon (privat) (Angabe freiwillig)": "",
 
         "_comment3": "=== Angaben zur Dienstreise (Abschnitt 2) ===",
-        "Text10": "{{ absence.admin_notes }}",        
+        "Text10": "{{ absence.personal_reason }}",
         "Text11": "+++++ bitte vervollständigen",
 
         "_comment4": "=== Reisedaten ===",
@@ -128,6 +128,7 @@
       "  {{ absence.end_date | format_date('%d.%m.%Y') }} - Enddatum",
       "  {{ absence.duration_days }} - Dauer in Tagen (inklusiv)",
       "  {{ absence.excursion_classes }} - Klassen (nur bei Exkursion)",
+      "  {{ absence.personal_reason }} - Begründung/Anlass (bei personal, other, official)",
       "  {{ absence.admin_notes }} - Bemerkungen",
       "",
       "  === Derived from Lessons ===",

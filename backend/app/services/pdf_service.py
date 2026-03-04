@@ -193,6 +193,7 @@ class PDFService:
                 "end_date": absence.end_date,
                 "duration_days": duration_days,
                 "excursion_classes": absence.excursion_classes or "",
+                "personal_reason": absence.personal_reason or "",
                 "admin_notes": absence.admin_notes or "",
             },
             "lessons_time_start": lessons_time_start or "",
