@@ -116,7 +116,10 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
       newErrors.push('Bitte wählen Sie einen Datumszeitraum aus.');
     }
 
-    if (endLesson < startLesson) {
+    const isSingleDay =
+      dateRange?.from && dateRange?.to &&
+      dateRange.from.toDateString() === dateRange.to.toDateString();
+    if (isSingleDay && endLesson < startLesson) {
       newErrors.push('Die Endstunde muss nach der Startstunde liegen.');
     }
 

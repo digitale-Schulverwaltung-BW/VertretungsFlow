@@ -40,7 +40,7 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
       const daysDiff = Math.ceil(
         (stepOneData.endDate.getTime() - stepOneData.startDate.getTime()) / (1000 * 60 * 60 * 24)
       ) + 1;
-      const periodsPerDay = stepOneData.endLesson - stepOneData.startLesson + 1;
+      const periodsPerDay = Math.abs(stepOneData.endLesson - stepOneData.startLesson) + 1;
       const estimatedItems = daysDiff * periodsPerDay;
 
       // Progress phases
