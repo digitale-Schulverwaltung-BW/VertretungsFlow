@@ -392,7 +392,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
             </div>
           )}
 
-          {/* Datum-Range */}
+          {/* Datum-Range + Stunden */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Zeitraum
@@ -414,6 +414,19 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   modifiers={startPickerModifiers}
                   modifiersClassNames={modifiersClassNames}
                 />
+                <div className="mt-2 flex items-center gap-2">
+                  <label htmlFor="startLesson" className="text-xs text-gray-600">ab Stunde</label>
+                  <select
+                    id="startLesson"
+                    value={startLesson}
+                    onChange={(e) => setStartLesson(Number(e.target.value))}
+                    className="w-20 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    {lessonNumbers.map((num) => (
+                      <option key={num} value={num}>{num}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className={`flex-shrink-0 transition-opacity ${!dateRange?.from ? 'opacity-40 pointer-events-none' : ''}`}>
                 <label className="block text-xs text-gray-600 mb-1">bis:</label>
@@ -430,52 +443,21 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   modifiers={endPickerModifiers}
                   modifiersClassNames={modifiersClassNames}
                 />
+                <div className="mt-2 flex items-center gap-2">
+                  <label htmlFor="endLesson" className="text-xs text-gray-600">bis Stunde</label>
+                  <select
+                    id="endLesson"
+                    value={endLesson}
+                    onChange={(e) => setEndLesson(Number(e.target.value))}
+                    className="w-20 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    {lessonNumbers.map((num) => (
+                      <option key={num} value={num}>{num}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-            </div>
-          </div>
-
-          {/* Stunden */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Stunden
-            </label>
-            <div className="flex items-end gap-3">
-              <div>
-                <label htmlFor="startLesson" className="block text-xs text-gray-600 mb-1">
-                  von
-                </label>
-                <select
-                  id="startLesson"
-                  value={startLesson}
-                  onChange={(e) => setStartLesson(Number(e.target.value))}
-                  className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {lessonNumbers.map((num) => (
-                    <option key={num} value={num}>
-                      {num}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <span className="pb-2 text-gray-400">–</span>
-              <div>
-                <label htmlFor="endLesson" className="block text-xs text-gray-600 mb-1">
-                  bis
-                </label>
-                <select
-                  id="endLesson"
-                  value={endLesson}
-                  onChange={(e) => setEndLesson(Number(e.target.value))}
-                  className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {lessonNumbers.map((num) => (
-                    <option key={num} value={num}>
-                      {num}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
           </div>
 
