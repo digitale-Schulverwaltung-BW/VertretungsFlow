@@ -498,10 +498,15 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
                                 type="button"
                                 onClick={() => handleCopyToAll(0)}
                                 disabled={!lesson.notes.trim()}
-                                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-500"
+                                className="p-2 bg-transparent hover:bg-transparent text-gray-500 hover:!text-gray-700 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                 title="Für alle übernehmen"
                               >
-                                📝
+                                <span className="flex items-center gap-0.5">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                  <span className="text-sm leading-none">📝</span>
+                                </span>
                               </button>
                             )}
                           </div>
