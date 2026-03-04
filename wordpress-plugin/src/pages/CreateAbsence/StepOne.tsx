@@ -128,7 +128,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
       newErrors.push('Bitte geben Sie die betroffenen Klassen an.');
     }
 
-    if ((reason === 'personal' || reason === 'other') && !personalReason.trim()) {
+    if ((reason === 'personal' || reason === 'other' || reason === 'official') && !personalReason.trim()) {
       newErrors.push('Bitte geben Sie eine Begründung an.');
     }
 
@@ -181,7 +181,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
         startLesson,
         endLesson,
         excursionClasses: reason === 'excursion' ? excursionClasses : undefined,
-        personalReason: reason === 'personal' || reason === 'other' ? personalReason : undefined,
+        personalReason: reason === 'personal' || reason === 'other' || reason === 'official' ? personalReason : undefined,
         selectedTeacherUsername: selectedTeacher?.username,
         selectedTeacherWebuntisCode: selectedTeacher?.webuntis_code,
       });
@@ -368,6 +368,27 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
             </div>
           )}
 
+          {/* Dienstlich: Anlass der Reise */}
+          {reason === 'official' && (
+            <div>
+              <label
+                htmlFor="personalReason"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Anlass der Reise <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="personalReason"
+                value={personalReason}
+                onChange={(e) => setPersonalReason(e.target.value)}
+                placeholder="z.B. Dienstbesprechung"
+                className="max-w-sm w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+          )}
+
           {/* Datum-Range */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -391,7 +412,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   modifiersClassNames={modifiersClassNames}
                 />
               </div>
-              <div className="flex-shrink-0">
+              <div className={`flex-shrink-0 transition-opacity ${!dateRange?.from ? 'opacity-40 pointer-events-none' : ''}`}>
                 <label className="block text-xs text-gray-600 mb-1">bis:</label>
                 <DayPicker
                   mode="range"
