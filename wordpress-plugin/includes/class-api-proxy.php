@@ -219,7 +219,7 @@ class AbsenzFlow_API_Proxy {
                 'X-WordPress-Dept-Heads-Can-Complete' => $dept_heads_can_complete
             ),
             'timeout' => 30,
-            'sslverify' => false // Allow self-signed certs in development
+            'sslverify' => $this->get_ssl_verify()
         );
 
         // JWT Token hinzufügen falls vorhanden (für direkte Backend-Auth)
@@ -336,7 +336,7 @@ class AbsenzFlow_API_Proxy {
             CURLOPT_POSTFIELDS => $post_data,
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false, // Allow self-signed certs
+            CURLOPT_SSL_VERIFYPEER => $this->get_ssl_verify(),
             CURLOPT_TIMEOUT => 30
         ));
 
@@ -411,7 +411,7 @@ class AbsenzFlow_API_Proxy {
         curl_setopt_array($ch, array(
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYPEER => $this->get_ssl_verify(),
             CURLOPT_TIMEOUT => 60,
             CURLOPT_HEADER => true // Include headers in output
         ));
@@ -509,7 +509,7 @@ class AbsenzFlow_API_Proxy {
         curl_setopt_array($ch, array(
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYPEER => $this->get_ssl_verify(),
             CURLOPT_TIMEOUT => 60,
             CURLOPT_HEADER => true // Include headers in output
         ));
@@ -601,6 +601,17 @@ class AbsenzFlow_API_Proxy {
         }
 
         return new WP_REST_Response($result, 200);
+    }
+
+    /**
+     * Returns whether SSL certificate verification is enabled.
+     * Defaults to true (secure) when the option has not been explicitly set.
+     *
+     * @return bool
+     */
+    private function get_ssl_verify() {
+        $options = get_option('absenzflow_options');
+        return !isset($options['ssl_verify']) || (bool)$options['ssl_verify'];
     }
 
     /**
