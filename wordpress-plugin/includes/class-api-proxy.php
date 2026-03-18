@@ -41,7 +41,9 @@ class AbsenzFlow_API_Proxy {
                 return true;
             }
             // Debug: log why auth failed
-            error_log('AbsenzFlow: Cookie auth failed - user not logged in. User ID: ' . get_current_user_id());
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('AbsenzFlow: Cookie auth failed - user not logged in. User ID: ' . get_current_user_id());
+            }
         }
 
         return $result;
@@ -138,19 +140,22 @@ class AbsenzFlow_API_Proxy {
      * Proxy Request zum Backend
      */
     public function proxy_request($request) {
-        // Debug logging
-        error_log('AbsenzFlow Proxy: Request received');
-        error_log('User logged in: ' . (is_user_logged_in() ? 'yes' : 'no'));
-        error_log('User ID: ' . get_current_user_id());
-        error_log('Current user: ' . (is_user_logged_in() ? wp_get_current_user()->user_login : 'none'));
+        // Debug logging (only when WP_DEBUG is enabled)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow Proxy: Request received');
+            error_log('User logged in: ' . (is_user_logged_in() ? 'yes' : 'no'));
+            error_log('User ID: ' . get_current_user_id());
+            error_log('Current user: ' . (is_user_logged_in() ? wp_get_current_user()->user_login : 'none'));
+        }
 
         $options = get_option('absenzflow_options');
         $api_url = $options['api_url'];
         $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
 
-        // DEBUG: Log secret (first 10 chars only)
-        error_log('AbsenzFlow Proxy: API Secret (first 10 chars): ' . substr($api_secret, 0, 10) . '...');
-        error_log('AbsenzFlow Proxy: API Secret length: ' . strlen($api_secret));
+        // Security: only log whether the secret is configured, never its value
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow Proxy: API Secret configured: ' . (!empty($api_secret) ? 'yes' : 'NO'));
+        }
 
         if (empty($api_url)) {
             return new WP_Error('no_api_url', 'API URL nicht konfiguriert', array('status' => 500));
@@ -167,8 +172,22 @@ class AbsenzFlow_API_Proxy {
         $params = $request->get_param('params');
         $token = $request->get_param('token');
 
+        // Security: Validate endpoint against allowlist to prevent SSRF
+        $endpoint = ltrim($endpoint, '/');
+        $allowed_prefixes = array('absences', 'auth', 'admin', 'pdf-forms');
+        $is_allowed = false;
+        foreach ($allowed_prefixes as $prefix) {
+            if (strpos($endpoint, $prefix) === 0) {
+                $is_allowed = true;
+                break;
+            }
+        }
+        if (!$is_allowed || strpos($endpoint, '..') !== false || strpos($endpoint, '://') !== false) {
+            return new WP_Error('invalid_endpoint', 'Invalid API endpoint', array('status' => 400));
+        }
+
         // Request an Backend
-        $url = rtrim($api_url, '/') . '/' . ltrim($endpoint, '/');
+        $url = rtrim($api_url, '/') . '/' . $endpoint;
 
         // Query params für GET-Requests
         if (!empty($params) && is_array($params)) {
@@ -214,7 +233,9 @@ class AbsenzFlow_API_Proxy {
         }
 
         // Request ausführen
-        error_log('AbsenzFlow Proxy: Calling backend URL: ' . $url);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow Proxy: Calling backend URL: ' . $url);
+        }
         $response = wp_remote_request($url, $args);
 
         if (is_wp_error($response)) {
@@ -225,10 +246,12 @@ class AbsenzFlow_API_Proxy {
         $status_code = wp_remote_retrieve_response_code($response);
         $response_body = wp_remote_retrieve_body($response);
 
-        // DEBUG: Log response
-        error_log('AbsenzFlow Proxy: Backend response status: ' . $status_code);
-        if ($status_code >= 400) {
-            error_log('AbsenzFlow Proxy: Backend error response: ' . substr($response_body, 0, 200));
+        // Debug: Log response (only when WP_DEBUG is enabled)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow Proxy: Backend response status: ' . $status_code);
+            if ($status_code >= 400) {
+                error_log('AbsenzFlow Proxy: Backend error response: ' . substr($response_body, 0, 200));
+            }
         }
 
         // Response zurückgeben
@@ -242,9 +265,11 @@ class AbsenzFlow_API_Proxy {
      * Proxy File Upload (multipart/form-data)
      */
     public function proxy_file_upload($request) {
-        error_log('AbsenzFlow File Upload Proxy: Request received');
-        error_log('User logged in: ' . (is_user_logged_in() ? 'yes' : 'no'));
-        error_log('User ID: ' . get_current_user_id());
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow File Upload Proxy: Request received');
+            error_log('User logged in: ' . (is_user_logged_in() ? 'yes' : 'no'));
+            error_log('User ID: ' . get_current_user_id());
+        }
 
         $options = get_option('absenzflow_options');
         $api_url = $options['api_url'];
@@ -325,8 +350,10 @@ class AbsenzFlow_API_Proxy {
             return new WP_Error('curl_error', $curl_error, array('status' => 500));
         }
 
-        error_log('AbsenzFlow File Upload: Response status: ' . $status_code);
-        error_log('AbsenzFlow File Upload: Response body: ' . substr($response_body, 0, 200));
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow File Upload: Response status: ' . $status_code);
+            error_log('AbsenzFlow File Upload: Response body: ' . substr($response_body, 0, 200));
+        }
 
         // Return response
         return new WP_REST_Response(
@@ -339,7 +366,9 @@ class AbsenzFlow_API_Proxy {
      * Proxy File Download (streaming with auth)
      */
     public function proxy_file_download($request) {
-        error_log('AbsenzFlow File Download Proxy: Request received');
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow File Download Proxy: Request received');
+        }
 
         $options = get_option('absenzflow_options');
         $api_url = $options['api_url'];
@@ -431,7 +460,9 @@ class AbsenzFlow_API_Proxy {
      * Proxy PDF Form Download (streaming with auth)
      */
     public function proxy_pdf_download($request) {
-        error_log('AbsenzFlow PDF Download Proxy: Request received');
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow PDF Download Proxy: Request received');
+        }
 
         $options = get_option('absenzflow_options');
         $api_url = $options['api_url'];
@@ -452,7 +483,9 @@ class AbsenzFlow_API_Proxy {
         // Build backend URL
         $url = rtrim($api_url, '/') . '/absences/' . $absence_id . '/pdf-forms/' . $form_type;
 
-        error_log('AbsenzFlow PDF Download: URL: ' . $url);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow PDF Download: URL: ' . $url);
+        }
 
         // URL-encode names to handle UTF-8 characters (äöüß) in HTTP headers
         $first_name = get_user_meta($current_user->ID, 'first_name', true);
@@ -496,11 +529,15 @@ class AbsenzFlow_API_Proxy {
         $headers_str = substr($response, 0, $header_size);
         $body = substr($response, $header_size);
 
-        error_log('AbsenzFlow PDF Download: Status: ' . $status_code . ', Body size: ' . strlen($body));
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AbsenzFlow PDF Download: Status: ' . $status_code . ', Body size: ' . strlen($body));
+        }
 
         // If error, return JSON error
         if ($status_code !== 200) {
-            error_log('AbsenzFlow PDF Download: Error response: ' . substr($body, 0, 200));
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('AbsenzFlow PDF Download: Error response: ' . substr($body, 0, 200));
+            }
             return new WP_REST_Response(
                 json_decode($body, true),
                 $status_code

@@ -4,6 +4,8 @@ File upload/download/delete operations for absences
 """
 
 import logging
+import re
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Request, File, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -61,10 +63,15 @@ async def upload_attachment(
     # Datei speichern (delegiert an Service)
     saved_file = await attachment_service.save_file(file, file_content, absence_id)
 
+    # Sanitize original filename: strip path components and dangerous characters
+    safe_filename = re.sub(r"[^\w\s\-.]", "_", Path(file.filename or "upload").name)[
+        :255
+    ]
+
     # Speichere Metadaten in DB
     attachment = AbsenceAttachment(
         absence_id=absence_id,
-        filename=file.filename,
+        filename=safe_filename,
         stored_filename=saved_file.stored_filename,
         file_path=str(saved_file.file_path),
         mime_type=file.content_type,
