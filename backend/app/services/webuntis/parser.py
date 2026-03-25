@@ -51,6 +51,7 @@ def parse_timetable(
                 continue
 
             # Filter: Pausenaufsichten (kein Fach und keine Klasse) überspringen
+            # Alternativ: lstype=="bs"
             if not entry.get("su") and not entry.get("kl"):
                 logger.info(
                     f"⏭️ Überspringe Entry {i+1}: Pausenaufsicht (kein Fach, keine Klasse)"
