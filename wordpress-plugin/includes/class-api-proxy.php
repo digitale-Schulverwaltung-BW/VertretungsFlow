@@ -196,7 +196,7 @@ class AbsenzFlow_API_Proxy {
                 'X-WordPress-First-Name' => rawurlencode($first_name),
                 'X-WordPress-Last-Name' => rawurlencode($last_name),
                 'X-WordPress-Role' => $this->map_wp_role_to_absenzflow($current_user),
-                'X-WordPress-WebUntis-Code' => get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
+                'X-WordPress-WebUntis-Code' => rawurlencode(get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)),
                 'X-WordPress-Dept-Heads-Can-Complete' => $dept_heads_can_complete
             ),
             'timeout' => 30,
@@ -302,7 +302,7 @@ class AbsenzFlow_API_Proxy {
             'X-WordPress-First-Name: ' . rawurlencode($first_name),
             'X-WordPress-Last-Name: ' . rawurlencode($last_name),
             'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
-            'X-WordPress-WebUntis-Code: ' . get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
+            'X-WordPress-WebUntis-Code: ' . rawurlencode(get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)),
             'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
         );
 
@@ -373,7 +373,7 @@ class AbsenzFlow_API_Proxy {
             'X-WordPress-First-Name: ' . rawurlencode($first_name),
             'X-WordPress-Last-Name: ' . rawurlencode($last_name),
             'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
-            'X-WordPress-WebUntis-Code: ' . get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
+            'X-WordPress-WebUntis-Code: ' . rawurlencode(get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)),
             'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
         );
 
@@ -467,7 +467,7 @@ class AbsenzFlow_API_Proxy {
             'X-WordPress-First-Name: ' . rawurlencode($first_name),
             'X-WordPress-Last-Name: ' . rawurlencode($last_name),
             'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
-            'X-WordPress-WebUntis-Code: ' . get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true),
+            'X-WordPress-WebUntis-Code: ' . rawurlencode(get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)),
             'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
         );
 

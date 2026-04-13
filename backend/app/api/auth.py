@@ -456,7 +456,7 @@ def _handle_wordpress_proxy_user(
     """
     user_email = email
     user_role = map_wordpress_role(role) if role else UserRole.TEACHER
-    webuntis_code_clean = webuntis_code.strip() if webuntis_code else None
+    webuntis_code_clean = _decode_wordpress_name(webuntis_code)
 
     # Decode first and last names
     first_name_decoded = _decode_wordpress_name(first_name)
