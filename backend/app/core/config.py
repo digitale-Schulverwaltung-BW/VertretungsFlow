@@ -82,6 +82,9 @@ class Settings(BaseSettings):
     ABSENCE_RETENTION_DAYS: int = 90
     ABSENCE_AUTO_DELETE_ENABLED: bool = True
 
+    # Notification Configuration
+    NOTIFY_DEPT_HEADS_ON_SUBMISSION: bool = True
+
     model_config = {
         "env_file": ".env",
         "case_sensitive": True,

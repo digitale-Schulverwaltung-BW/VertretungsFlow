@@ -220,28 +220,32 @@ def deleted_html(
     start_date: str,
     end_date: str,
     absence_id: int,
+    deleted_by_name: str = "",
 ) -> str:
     """
-    HTML-Template: Abwesenheit zurückgezogen (an Abteilungsleitung + Planer)
+    HTML-Template: Abwesenheit gelöscht (an Admins)
 
     Args:
-        teacher_name: Name der Lehrkraft
+        teacher_name: Name der betroffenen Lehrkraft
         reason: Abwesenheitsgrund (bereits übersetzt)
         start_date: Startdatum (DD.MM.YYYY)
         end_date: Enddatum (DD.MM.YYYY)
         absence_id: ID der gelöschten Abwesenheit
+        deleted_by_name: Name der Person, die gelöscht hat
 
     Returns:
         HTML-String
     """
+    deleter = deleted_by_name or teacher_name
     header = (
-        f'<h2 style="{_HEADER_GRAY}">Abwesenheitsmeldung zurückgezogen</h2>'
+        f'<h2 style="{_HEADER_GRAY}">Abwesenheitsmeldung gelöscht</h2>'
         f'<p style="{_SUBTITLE_STYLE}">'
-        f"{teacher_name} hat eine Abwesenheitsmeldung zurückgezogen.</p>"
+        f"{deleter} hat die Abwesenheitsmeldung von {teacher_name} gelöscht.</p>"
     )
     content = (
         f'<table style="{_TABLE_STYLE}">'
         + _detail_row("Lehrkraft", teacher_name)
+        + _detail_row("Gelöscht von", deleter)
         + _detail_row("Abwesenheits-ID", f"#{absence_id}")
         + _detail_row("Grund", reason)
         + _detail_row("Von", start_date)
@@ -249,5 +253,46 @@ def deleted_html(
         + "</table>"
         + f'<p style="color: #6b7280; font-size: 13px; margin-top: 16px;">'
         f"Die Meldung wurde aus dem AbsenzFlow-System entfernt.</p>"
+    )
+    return _wrap(header, content)
+
+
+def deleted_teacher_html(
+    teacher_name: str,
+    reason: str,
+    start_date: str,
+    end_date: str,
+    absence_id: int,
+    deleted_by_name: str,
+) -> str:
+    """
+    HTML-Template: Abwesenheit gelöscht (an betroffene Lehrkraft)
+
+    Args:
+        teacher_name: Name der Lehrkraft
+        reason: Abwesenheitsgrund (bereits übersetzt)
+        start_date: Startdatum (DD.MM.YYYY)
+        end_date: Enddatum (DD.MM.YYYY)
+        absence_id: ID der gelöschten Abwesenheit
+        deleted_by_name: Name der Person, die gelöscht hat
+
+    Returns:
+        HTML-String
+    """
+    header = (
+        f'<h2 style="{_HEADER_RED}">Ihre Abwesenheitsmeldung wurde gelöscht</h2>'
+        f'<p style="{_SUBTITLE_STYLE}">'
+        f"Ihre Abwesenheitsmeldung wurde von {deleted_by_name} entfernt.</p>"
+    )
+    content = (
+        f'<table style="{_TABLE_STYLE}">'
+        + _detail_row("Abwesenheits-ID", f"#{absence_id}")
+        + _detail_row("Grund", reason)
+        + _detail_row("Von", start_date)
+        + _detail_row("Bis", end_date)
+        + _detail_row("Gelöscht von", deleted_by_name)
+        + "</table>"
+        + f'<p style="color: #6b7280; font-size: 13px; margin-top: 16px;">'
+        f"Falls Sie Fragen haben, wenden Sie sich bitte an die Schulleitung.</p>"
     )
     return _wrap(header, content)
