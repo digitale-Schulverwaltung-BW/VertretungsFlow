@@ -207,7 +207,7 @@ class AbsenceNotificationService:
 
             # Notify teacher only when: future absence, not yet approved, deleted by someone else
             teacher_email = None
-            is_future = absence.start_date >= date.today()
+            is_future = absence.start_date.date() >= date.today()
             is_not_yet_approved = absence.status == AbsenceStatus.SUBMITTED
             deleted_by_other = absence.teacher_id != current_user.id
             if is_future and is_not_yet_approved and deleted_by_other:
