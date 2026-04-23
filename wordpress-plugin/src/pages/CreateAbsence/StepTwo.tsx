@@ -27,10 +27,6 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchLessons();
-  }, []);
-
   const fetchLessons = async () => {
     try {
       setLoading(true);
@@ -79,6 +75,10 @@ const StepTwo: React.FC<StepTwoProps> = ({ stepOneData, onBack, onSubmit }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchLessons();
+  }, []);
 
   const handleCheckboxChange = (index: number, checked: boolean) => {
     const newLessons = [...lessons];

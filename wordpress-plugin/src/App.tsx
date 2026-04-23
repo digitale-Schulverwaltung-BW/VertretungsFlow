@@ -50,10 +50,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const config = window.absenzflowConfig;
 
-  useEffect(() => {
-    initializeApp();
-  }, []);
-
   const initializeApp = async () => {
     try {
       // Set API base URL from WordPress config
@@ -79,6 +75,10 @@ function App() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    initializeApp();
+  }, []);
 
   if (loading) {
     return (
