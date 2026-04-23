@@ -5,7 +5,7 @@ Pure parsing and transformation functions for WebUntis timetable data
 
 import logging
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, cast
 
 from app.schemas.schemas import WebUntisLesson
 
@@ -160,7 +160,7 @@ def merge_consecutive_lessons(lessons: List[WebUntisLesson]) -> List[WebUntisLes
             and lesson.class_name == current_block["lesson"].class_name
             and lesson.subject == current_block["lesson"].subject
             and lesson.room == current_block["lesson"].room
-            and lesson.period == current_block["end_period"] + 1
+            and lesson.period == cast(int, current_block["end_period"]) + 1
         ):
             # Aufeinanderfolgende Stunde mit gleicher Klasse/Fach -> erweitern
             current_block["end_period"] = lesson.period
