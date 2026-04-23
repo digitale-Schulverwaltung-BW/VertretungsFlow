@@ -491,6 +491,7 @@ def _make_mock_pypdf(output_bytes: bytes):
     mock_reader = Mock()
     mock_writer = Mock()
     mock_writer.pages = [Mock()]
+    mock_writer._root_object = {}
 
     def fake_write(buf):
         buf.write(output_bytes)
@@ -543,6 +544,7 @@ class TestMergeFdfWithPdf:
         mock_reader = Mock()
         mock_writer = Mock()
         mock_writer.pages = [Mock(), Mock()]  # two pages
+        mock_writer._root_object = {}
         mock_writer.update_page_form_field_values.side_effect = Exception(
             "field update error"
         )
