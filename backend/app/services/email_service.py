@@ -333,10 +333,10 @@ Grund: {reason}
 Von: {start_date}
 Bis: {end_date}
 
-Die Meldung wurde aus dem AbsenzFlow-System entfernt.
+Die Meldung wurde aus dem VertretungsFlow-System entfernt.
 
 Mit freundlichen Grüßen,
-AbsenzFlow System"""
+VertretungsFlow System"""
 
         admin_html = deleted_html(
             teacher_name, reason, start_date, end_date, absence_id, deleted_by_name

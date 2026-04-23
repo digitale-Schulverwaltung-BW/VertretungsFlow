@@ -98,6 +98,15 @@ class AbsenzFlow_Admin {
             'absenzflow_main_section'
         );
 
+        // SSL Verify Field
+        add_settings_field(
+            'ssl_verify',
+            'SSL-Zertifikat verifizieren',
+            array($this, 'ssl_verify_field_callback'),
+            'absenzflow-settings',
+            'absenzflow_main_section'
+        );
+
         // Permissions Section
         add_settings_section(
             'absenzflow_permissions_section',
@@ -129,6 +138,9 @@ class AbsenzFlow_Admin {
         if (isset($input['api_secret'])) {
             $sanitized['api_secret'] = sanitize_text_field($input['api_secret']);
         }
+
+        // Checkbox: ssl_verify (default: true for security)
+        $sanitized['ssl_verify'] = isset($input['ssl_verify']) ? 1 : 0;
 
         // Checkbox: dept_heads_can_complete
         $sanitized['dept_heads_can_complete'] = isset($input['dept_heads_can_complete']) ? 1 : 0;
@@ -163,6 +175,21 @@ class AbsenzFlow_Admin {
 
         echo '<input type="password" name="absenzflow_options[api_secret]" value="' . esc_attr($api_secret) . '" class="regular-text" />';
         echo '<p class="description">Shared Secret für sichere Kommunikation mit dem Backend. Muss identisch mit WORDPRESS_PROXY_SECRET im Backend sein.</p>';
+    }
+
+    /**
+     * SSL Verify Field
+     */
+    public function ssl_verify_field_callback() {
+        $options = get_option('absenzflow_options');
+        // Default to checked (SSL verified) when option is not yet set — secure by default
+        $checked = !isset($options['ssl_verify']) || $options['ssl_verify'] ? 'checked' : '';
+
+        echo '<label>';
+        echo '<input type="checkbox" name="absenzflow_options[ssl_verify]" value="1" ' . $checked . ' />';
+        echo ' SSL-Zertifikate bei Backend-Verbindungen prüfen';
+        echo '</label>';
+        echo '<p class="description">Empfohlen für Produktionsumgebungen. Deaktivieren Sie diese Option nur, wenn Sie selbstsignierte Zertifikate in Entwicklungsumgebungen verwenden.</p>';
     }
 
     /**
@@ -377,6 +404,7 @@ class AbsenzFlow_Admin {
 
         // Handle refresh action
         if (isset($_POST['refresh_cache']) && check_admin_referer('absenzflow_refresh_cache')) {
+            $ssl_verify = !isset($options['ssl_verify']) || (bool)$options['ssl_verify'];
             $response = wp_remote_post($api_url . '/absences/admin/webuntis-cache/refresh', array(
                 'headers' => array(
                     'Content-Type' => 'application/json',
@@ -385,7 +413,8 @@ class AbsenzFlow_Admin {
                     'X-WordPress-Email' => wp_get_current_user()->user_email,
                     'X-WordPress-Role' => 'admin',
                 ),
-                'timeout' => 30
+                'timeout' => 30,
+                'sslverify' => $ssl_verify
             ));
 
             if (is_wp_error($response)) {
@@ -403,6 +432,7 @@ class AbsenzFlow_Admin {
         }
 
         // Get cache status
+        $ssl_verify = !isset($options['ssl_verify']) || (bool)$options['ssl_verify'];
         $response = wp_remote_get($api_url . '/absences/admin/webuntis-cache/status', array(
             'headers' => array(
                 'Content-Type' => 'application/json',
@@ -411,7 +441,8 @@ class AbsenzFlow_Admin {
                 'X-WordPress-Email' => wp_get_current_user()->user_email,
                 'X-WordPress-Role' => 'admin',
             ),
-            'timeout' => 15
+            'timeout' => 15,
+            'sslverify' => $ssl_verify
         ));
 
         $status = null;

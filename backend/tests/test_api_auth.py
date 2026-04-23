@@ -23,7 +23,8 @@ from unittest.mock import AsyncMock, Mock, patch
 from urllib.parse import quote
 
 from fastapi import HTTPException
-from jose import JWTError, jwt as jose_jwt
+import jwt as jose_jwt
+from jwt.exceptions import PyJWTError as JWTError
 
 from app.api.auth import (
     _create_ldap_user,

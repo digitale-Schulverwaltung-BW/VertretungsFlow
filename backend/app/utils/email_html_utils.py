@@ -3,6 +3,8 @@ E-Mail HTML Templates
 Pure Functions für die Generierung von HTML-E-Mail-Inhalten
 """
 
+from html import escape as _esc
+
 # Gemeinsame Inline-Styles (viele Mail-Clients ignorieren <style>-Tags)
 _BODY_STYLE = (
     "font-family: Arial, sans-serif; background: #f3f4f6; margin: 0; padding: 20px;"
@@ -93,12 +95,12 @@ def submitted_html(
     )
     content = (
         f'<table style="{_TABLE_STYLE}">'
-        + _detail_row("Lehrkraft", teacher_name)
-        + _detail_row("Grund", reason)
-        + _detail_row("Von", start_date)
-        + _detail_row("Bis", end_date)
+        + _detail_row("Lehrkraft", _esc(teacher_name))
+        + _detail_row("Grund", _esc(reason))
+        + _detail_row("Von", _esc(start_date))
+        + _detail_row("Bis", _esc(end_date))
         + "</table>"
-        + f'<a href="{absence_url}" style="{_BTN_GREEN}">Abwesenheit genehmigen</a>'
+        + f'<a href="{_esc(absence_url)}" style="{_BTN_GREEN}">Abwesenheit genehmigen</a>'
     )
     return _wrap(header, content)
 
@@ -121,10 +123,10 @@ def approved_teacher_html(absence_id: int, approver_name: str) -> str:
     content = (
         f'<table style="{_TABLE_STYLE}">'
         + _detail_row("Abwesenheits-ID", f"#{absence_id}")
-        + _detail_row("Genehmigt von", approver_name)
+        + _detail_row("Genehmigt von", _esc(approver_name))
         + "</table>"
         + f'<p style="color: #374151; font-size: 14px; margin-top: 16px;">'
-        f"Ihre Abwesenheit wurde von {approver_name} genehmigt und an die "
+        f"Ihre Abwesenheit wurde von {_esc(approver_name)} genehmigt und an die "
         f"Vertretungsplanung weitergeleitet.</p>"
     )
     return _wrap(header, content)
@@ -154,9 +156,9 @@ def approved_planner_html(
     content = (
         f'<table style="{_TABLE_STYLE}">'
         + _detail_row("Abwesenheits-ID", f"#{absence_id}")
-        + _detail_row("Genehmigt von", approver_name)
+        + _detail_row("Genehmigt von", _esc(approver_name))
         + "</table>"
-        + f'<a href="{absence_url}" style="{_BTN_GREEN}">Erledigt melden</a>'
+        + f'<a href="{_esc(absence_url)}" style="{_BTN_GREEN}">Erledigt melden</a>'
     )
     return _wrap(header, content)
 
@@ -182,7 +184,7 @@ def completed_html(absence_id: int, absence_url: str) -> str:
         + _detail_row("Abwesenheits-ID", f"#{absence_id}")
         + _detail_row("Status", "Erledigt")
         + "</table>"
-        + f'<a href="{absence_url}" style="{_BTN_BLUE}">Details ansehen</a>'
+        + f'<a href="{_esc(absence_url)}" style="{_BTN_BLUE}">Details ansehen</a>'
     )
     return _wrap(header, content)
 
@@ -206,10 +208,10 @@ def rejected_html(absence_id: int, rejector_name: str) -> str:
     content = (
         f'<table style="{_TABLE_STYLE}">'
         + _detail_row("Abwesenheits-ID", f"#{absence_id}")
-        + _detail_row("Abgelehnt von", rejector_name)
+        + _detail_row("Abgelehnt von", _esc(rejector_name))
         + "</table>"
         + f'<p style="color: #374151; font-size: 14px; margin-top: 16px;">'
-        f"Bitte wenden Sie sich bei Rückfragen direkt an {rejector_name}.</p>"
+        f"Bitte wenden Sie sich bei Rückfragen direkt an {_esc(rejector_name)}.</p>"
     )
     return _wrap(header, content)
 
@@ -247,9 +249,9 @@ def deleted_html(
         + _detail_row("Lehrkraft", teacher_name)
         + _detail_row("Gelöscht von", deleter)
         + _detail_row("Abwesenheits-ID", f"#{absence_id}")
-        + _detail_row("Grund", reason)
-        + _detail_row("Von", start_date)
-        + _detail_row("Bis", end_date)
+        + _detail_row("Grund", _esc(reason))
+        + _detail_row("Von", _esc(start_date))
+        + _detail_row("Bis", _esc(end_date))
         + "</table>"
         + f'<p style="color: #6b7280; font-size: 13px; margin-top: 16px;">'
         f"Die Meldung wurde aus dem AbsenzFlow-System entfernt.</p>"

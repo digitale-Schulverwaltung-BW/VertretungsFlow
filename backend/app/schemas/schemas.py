@@ -9,6 +9,19 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from app.models.models import UserRole, AbsenceStatus
 
 
+# ============ Security: Allowed Absence Reasons ============
+
+ALLOWED_REASONS = {
+    "sick",
+    "training",
+    "excursion",
+    "personal",
+    "other",
+    "official",
+    "exam",
+}
+
+
 # ============ Security: Text Sanitization ============
 
 
@@ -162,6 +175,16 @@ class AbsenceBase(BaseModel):
     excursion_classes: Optional[str] = None
     personal_reason: Optional[str] = None
     admin_notes: Optional[str] = None
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v):
+        """Security: Only allow known absence reasons to prevent conditional validator bypass"""
+        if v not in ALLOWED_REASONS:
+            raise ValueError(
+                f"Invalid reason '{v}'. Must be one of: {', '.join(sorted(ALLOWED_REASONS))}"
+            )
+        return v
 
     @field_validator("start_date", "end_date", mode="before")
     @classmethod

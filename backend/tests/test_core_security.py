@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-from jose import jwt
+import jwt
 
 from app.core.config import settings
 from app.core.security import (
@@ -31,19 +31,18 @@ TEST_ALGO = "HS256"
 
 
 class TestVerifyPassword:
-    def test_correct_password_delegates_to_bcrypt_context(self):
-        # Unit test: verify_password is a thin wrapper around pwd_context.verify
-        # Avoid calling real bcrypt (passlib/bcrypt version incompatibility in container)
-        with patch("app.core.security.pwd_context") as mock_ctx:
-            mock_ctx.verify.return_value = True
+    def test_correct_password_returns_true(self):
+        # Unit test: verify_password delegates to bcrypt.checkpw
+        with patch("app.core.security.bcrypt") as mock_bcrypt:
+            mock_bcrypt.checkpw.return_value = True
             result = verify_password("mypassword", "$2b$12$fakehash")
 
         assert result is True
-        mock_ctx.verify.assert_called_once_with("mypassword", "$2b$12$fakehash")
+        mock_bcrypt.checkpw.assert_called_once_with(b"mypassword", b"$2b$12$fakehash")
 
-    def test_wrong_password_delegates_false_from_context(self):
-        with patch("app.core.security.pwd_context") as mock_ctx:
-            mock_ctx.verify.return_value = False
+    def test_wrong_password_returns_false(self):
+        with patch("app.core.security.bcrypt") as mock_bcrypt:
+            mock_bcrypt.checkpw.return_value = False
             result = verify_password("wrongpassword", "$2b$12$fakehash")
 
         assert result is False
@@ -55,20 +54,25 @@ class TestVerifyPassword:
 
 
 class TestGetPasswordHash:
-    def test_delegates_to_bcrypt_context(self):
-        fake_hash = "$2b$12$fakehashedvalue"
-        with patch("app.core.security.pwd_context") as mock_ctx:
-            mock_ctx.hash.return_value = fake_hash
+    def test_delegates_to_bcrypt(self):
+        fake_salt = b"$2b$12$fakesalt"
+        fake_hash = b"$2b$12$fakehashedvalue"
+        with patch("app.core.security.bcrypt") as mock_bcrypt:
+            mock_bcrypt.gensalt.return_value = fake_salt
+            mock_bcrypt.hashpw.return_value = fake_hash
             result = get_password_hash("secret123")
 
-        assert result == fake_hash
-        mock_ctx.hash.assert_called_once_with("secret123")
+        assert result == "$2b$12$fakehashedvalue"
+        mock_bcrypt.gensalt.assert_called_once()
+        mock_bcrypt.hashpw.assert_called_once_with(b"secret123", fake_salt)
 
-    def test_returns_context_output(self):
-        with patch("app.core.security.pwd_context") as mock_ctx:
-            mock_ctx.hash.return_value = "$2b$12$somebcrypthash"
+    def test_returns_string(self):
+        with patch("app.core.security.bcrypt") as mock_bcrypt:
+            mock_bcrypt.gensalt.return_value = b"$2b$12$salt"
+            mock_bcrypt.hashpw.return_value = b"$2b$12$somebcrypthash"
             result = get_password_hash("anypassword")
 
+        assert isinstance(result, str)
         assert result == "$2b$12$somebcrypthash"
 
 
