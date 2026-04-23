@@ -16,6 +16,7 @@ from app.utils.email_html_utils import (
     completed_html,
     rejected_html,
     deleted_html,
+    deleted_teacher_html,
 )
 
 logger = logging.getLogger(__name__)
@@ -295,32 +296,37 @@ VertretungsFlow System
     async def send_absence_deleted_notification(
         self,
         teacher_name: str,
-        dept_head_emails: List[str],
-        planner_emails: List[str],
+        deleted_by_name: str,
+        admin_emails: List[str],
         absence_id: int,
         reason: str,
         start_date: str,
         end_date: str,
+        teacher_email: Optional[str] = None,
     ) -> bool:
         """
-        Benachrichtigung wenn Abwesenheit durch Lehrkraft gelöscht wurde
+        Benachrichtigung wenn eine Abwesenheit gelöscht wurde
 
         Args:
-            teacher_name: Name der Lehrkraft
-            dept_head_emails: E-Mails der Abteilungsleiter
-            planner_emails: E-Mails der Vertretungsplaner
+            teacher_name: Name der betroffenen Lehrkraft
+            deleted_by_name: Name der Person, die gelöscht hat
+            admin_emails: E-Mails der Admins (immer benachrichtigt)
             absence_id: ID der gelöschten Abwesenheit
             reason: Grund
             start_date: Startdatum
             end_date: Enddatum
+            teacher_email: E-Mail der Lehrkraft (nur wenn Absenz in Zukunft & nicht genehmigt)
 
         Returns:
             True wenn erfolgreich
         """
-        subject = f"Abwesenheitsmeldung von {teacher_name} wurde gelöscht"
-        body = f"""Hallo,
+        success = True
 
-{teacher_name} hat eine Abwesenheitsmeldung zurückgezogen:
+        # Admin-Benachrichtigung (immer)
+        admin_subject = f"Abwesenheitsmeldung von {teacher_name} wurde gelöscht"
+        admin_body = f"""Hallo,
+
+{deleted_by_name} hat die Abwesenheitsmeldung von {teacher_name} gelöscht:
 
 Abwesenheits-ID: {absence_id}
 Grund: {reason}
@@ -332,12 +338,37 @@ Die Meldung wurde aus dem VertretungsFlow-System entfernt.
 Mit freundlichen Grüßen,
 VertretungsFlow System"""
 
-        html_body = deleted_html(teacher_name, reason, start_date, end_date, absence_id)
-        recipients = dept_head_emails + planner_emails
+        admin_html = deleted_html(
+            teacher_name, reason, start_date, end_date, absence_id, deleted_by_name
+        )
+        for email in admin_emails:
+            result = await self.send_email(email, admin_subject, admin_body, admin_html)
+            if not result:
+                success = False
 
-        success = True
-        for email in recipients:
-            result = await self.send_email(email, subject, body, html_body)
+        # Lehrkraft-Benachrichtigung (nur wenn Bedingung erfüllt)
+        if teacher_email:
+            teacher_subject = "Ihre Abwesenheitsmeldung wurde gelöscht"
+            teacher_body = f"""Hallo {teacher_name},
+
+Ihre Abwesenheitsmeldung wurde von {deleted_by_name} aus dem System entfernt:
+
+Abwesenheits-ID: {absence_id}
+Grund: {reason}
+Von: {start_date}
+Bis: {end_date}
+
+Falls Sie Fragen haben, wenden Sie sich bitte an die Schulleitung.
+
+Mit freundlichen Grüßen,
+AbsenzFlow System"""
+
+            teacher_html = deleted_teacher_html(
+                teacher_name, reason, start_date, end_date, absence_id, deleted_by_name
+            )
+            result = await self.send_email(
+                teacher_email, teacher_subject, teacher_body, teacher_html
+            )
             if not result:
                 success = False
 

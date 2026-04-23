@@ -50,6 +50,14 @@ def parse_timetable(
                 )
                 continue
 
+            # Filter: Pausenaufsichten (kein Fach und keine Klasse) überspringen
+            # Alternativ: lstype=="bs"
+            if not entry.get("su") and not entry.get("kl"):
+                logger.info(
+                    f"⏭️ Überspringe Entry {i+1}: Pausenaufsicht (kein Fach, keine Klasse)"
+                )
+                continue
+
             # Datum parsen (Format: YYYYMMDD)
             date_str = str(entry.get("date", ""))
             date = datetime.strptime(date_str, "%Y%m%d")

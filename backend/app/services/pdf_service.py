@@ -326,6 +326,7 @@ class PDFService:
         """
         try:
             from pypdf import PdfReader, PdfWriter
+            from pypdf.generic import BooleanObject, NameObject
         except ImportError as e:
             logger.error(f"PDF libraries not available: {e}")
             raise HTTPException(
@@ -340,20 +341,29 @@ class PDFService:
         # Clone the entire document including AcroForm (form field definitions)
         writer.clone_reader_document_root(reader)
 
-        # pypdf 5.x handles string encoding automatically - just pass plain strings
-        # The library will choose the appropriate encoding (PDFDocEncoding or UTF-16BE)
+        # Set NeedAppearances=True so Acrobat Reader regenerates appearance streams
+        # on open. Without this, Acrobat on Windows shows fields with wrong cursor
+        # position or refuses input, while macOS Preview is more forgiving.
+        if "/AcroForm" in writer._root_object:
+            writer._root_object["/AcroForm"][
+                NameObject("/NeedAppearances")
+            ] = BooleanObject(True)
+        else:
+            logger.warning("PDF has no AcroForm dictionary — cannot set NeedAppearances")
+
         logger.debug(f"Filling {len(filled_fields)} fields with values")
         for key, value in filled_fields.items():
             if isinstance(value, str):
                 logger.debug(f"Field '{key}' = '{value}'")
 
-        # Use filled_fields directly - pypdf handles encoding
-        fixed_fields = filled_fields
-
-        # Update form fields for each page
+        # Update form fields for each page; auto_regenerate=False prevents pypdf
+        # from writing potentially malformed appearance streams — Acrobat will use
+        # its own renderer once NeedAppearances is set.
         for page_num, page in enumerate(writer.pages):
             try:
-                writer.update_page_form_field_values(page, fixed_fields)
+                writer.update_page_form_field_values(
+                    page, filled_fields, auto_regenerate=False
+                )
                 logger.debug(f"Updated form fields on page {page_num + 1}")
             except Exception as e:
                 logger.warning(f"Could not update fields on page {page_num + 1}: {e}")
