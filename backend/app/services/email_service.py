@@ -145,12 +145,12 @@ Grund: {reason}
 Von: {start_date}
 Bis: {end_date}
 
-Bitte prüfen und genehmigen Sie die Abwesenheit im AbsenzFlow-System.
+Bitte prüfen und genehmigen Sie die Abwesenheit im VertretungsFlow-System.
 
 Link: {settings.FRONTEND_URL}/#/absence/{absence_id}
 
 Mit freundlichen Grüßen,
-AbsenzFlow System
+VertretungsFlow System
         """
 
         html_body = submitted_html(
@@ -201,7 +201,7 @@ Hallo,
 Ihre Abwesenheitsmeldung (ID: {absence_id}) wurde von {approver_name} genehmigt.
 
 Mit freundlichen Grüßen,
-AbsenzFlow System
+VertretungsFlow System
         """
 
         await self.send_email(
@@ -221,7 +221,7 @@ Die Abwesenheit #{absence_id} wurde von {approver_name} genehmigt und ist nun be
 Link: {absence_url}
 
 Mit freundlichen Grüßen,
-AbsenzFlow System
+VertretungsFlow System
         """
 
         for email in planner_emails:
@@ -257,7 +257,7 @@ Ihre Abwesenheitsmeldung (ID: {absence_id}) wurde in den Vertretungsplan eingetr
 Link: {absence_url}
 
 Mit freundlichen Grüßen,
-AbsenzFlow System
+VertretungsFlow System
         """
 
         return await self.send_email(
@@ -285,7 +285,7 @@ Hallo,
 Ihre Abwesenheitsmeldung (ID: {absence_id}) wurde von {rejector_name} abgelehnt.
 
 Mit freundlichen Grüßen,
-AbsenzFlow System
+VertretungsFlow System
         """
 
         return await self.send_email(
@@ -327,10 +327,10 @@ Grund: {reason}
 Von: {start_date}
 Bis: {end_date}
 
-Die Meldung wurde aus dem AbsenzFlow-System entfernt.
+Die Meldung wurde aus dem VertretungsFlow-System entfernt.
 
 Mit freundlichen Grüßen,
-AbsenzFlow System"""
+VertretungsFlow System"""
 
         html_body = deleted_html(teacher_name, reason, start_date, end_date, absence_id)
         recipients = dept_head_emails + planner_emails
