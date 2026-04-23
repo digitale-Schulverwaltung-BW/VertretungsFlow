@@ -526,7 +526,7 @@ class TestMergeFdfWithPdf:
         output_bytes = b"%PDF-1.4 result"
         mock_pypdf, mock_reader, mock_writer = _make_mock_pypdf(output_bytes)
 
-        with patch.dict(sys.modules, {"pypdf": mock_pypdf}):
+        with patch.dict(sys.modules, {"pypdf": mock_pypdf, "pypdf.generic": Mock()}):
             result = service._merge_fdf_with_pdf(fake_pdf, {"Name": "Max"})
 
         assert result == output_bytes
@@ -556,7 +556,7 @@ class TestMergeFdfWithPdf:
         mock_pypdf.PdfReader = Mock(return_value=mock_reader)
         mock_pypdf.PdfWriter = Mock(return_value=mock_writer)
 
-        with patch.dict(sys.modules, {"pypdf": mock_pypdf}):
+        with patch.dict(sys.modules, {"pypdf": mock_pypdf, "pypdf.generic": Mock()}):
             # Should NOT raise despite page update failures
             result = service._merge_fdf_with_pdf(fake_pdf, {})
 
@@ -572,7 +572,7 @@ class TestMergeFdfWithPdf:
         output_bytes = b"%PDF-1.4"
         mock_pypdf, _, mock_writer = _make_mock_pypdf(output_bytes)
 
-        with patch.dict(sys.modules, {"pypdf": mock_pypdf}):
+        with patch.dict(sys.modules, {"pypdf": mock_pypdf, "pypdf.generic": Mock()}):
             # Pass a non-string value to exercise the isinstance(value, str) False branch
             result = service._merge_fdf_with_pdf(fake_pdf, {"Count": 42})
 
