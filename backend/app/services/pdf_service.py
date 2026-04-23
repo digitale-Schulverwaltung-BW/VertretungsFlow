@@ -138,9 +138,7 @@ class PDFService:
                 logger.warning("⚠️ WebUntis Timegrid leer, nutze Config Fallback")
                 timegrid = {}
         except Exception as e:
-            logger.warning(
-                f"⚠️ WebUntis Timegrid Exception: {e}, nutze Config Fallback"
-            )
+            logger.warning(f"⚠️ WebUntis Timegrid Exception: {e}, nutze Config Fallback")
             timegrid = {}
 
         # Extract time from absence periods (from StepOne)
@@ -345,11 +343,13 @@ class PDFService:
         # on open. Without this, Acrobat on Windows shows fields with wrong cursor
         # position or refuses input, while macOS Preview is more forgiving.
         if "/AcroForm" in writer._root_object:
-            writer._root_object["/AcroForm"][
-                NameObject("/NeedAppearances")
-            ] = BooleanObject(True)
+            writer._root_object["/AcroForm"][NameObject("/NeedAppearances")] = (
+                BooleanObject(True)
+            )
         else:
-            logger.warning("PDF has no AcroForm dictionary — cannot set NeedAppearances")
+            logger.warning(
+                "PDF has no AcroForm dictionary — cannot set NeedAppearances"
+            )
 
         logger.debug(f"Filling {len(filled_fields)} fields with values")
         for key, value in filled_fields.items():
