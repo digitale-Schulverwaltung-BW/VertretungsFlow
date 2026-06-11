@@ -131,7 +131,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
       newErrors.push('Bitte geben Sie die betroffenen Klassen an.');
     }
 
-    if ((reason === 'personal' || reason === 'other' || reason === 'official') && !personalReason.trim()) {
+    if ((reason === 'personal' || reason === 'other' || reason === 'official' || reason === 'exam' || reason === 'training') && !personalReason.trim()) {
       newErrors.push('Bitte geben Sie eine Begründung an.');
     }
 
@@ -399,7 +399,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                 htmlFor="personalReason"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Prüfung:
+                Prüfung <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -408,6 +408,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                 onChange={(e) => setPersonalReason(e.target.value)}
                 placeholder="z.B. IHK, HK etc"
                 className="max-w-sm w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
               />
             </div>
           )}
@@ -419,7 +420,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                 htmlFor="personalReason"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Fortbildung:
+                Fortbildung <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -428,6 +429,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                 onChange={(e) => setPersonalReason(e.target.value)}
                 placeholder="z.B. LFB-online-Nr. oder Thema/Veranstalter"
                 className="max-w-sm w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
               />
             </div>
           )}

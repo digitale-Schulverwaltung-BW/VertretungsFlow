@@ -1,6 +1,6 @@
-.PHONY: help up down restart rebuild
+.PHONY: help up down restart rebuild frontend-restart
 
-COMPOSE = "docker compose"  # projektspezifisch anpassen, z.B. docker-compose -f docker-compose.prod.yml
+COMPOSE = docker compose  # projektspezifisch anpassen, z.B. docker-compose -f docker-compose.prod.yml
 
 help: ## Verfügbare Befehle anzeigen
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -19,7 +19,7 @@ rebuild: ## Container stoppen, neu bauen und starten
 	$(COMPOSE) build
 	$(COMPOSE) up -d
 
-frontend-restart: ## Frontend neu starten nach Update
-	cd wordpress-plugin
-	npm install
+frontend-restart: ## Frontend neu bauen (install + build)
+	cd wordpress-plugin && \
+	npm install && \
 	npm run build
