@@ -262,10 +262,15 @@ const AbsenceDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Privat/Sonstiges: Begründung */}
+          {/* Zusatzinfos je nach Grund */}
           {absence.personal_reason && (
             <div>
-              <h3 className="text-sm font-bold text-blue-600 mb-1">Begründung</h3>
+              <h3 className="text-sm font-bold text-blue-600 mb-1">
+                {absence.reason === 'official' ? 'Anlass der Reise'
+                  : absence.reason === 'exam' ? 'Prüfung, z.B. IHK, HK usw.'
+                  : absence.reason === 'training' ? 'Fortbildung Nr./Thema'
+                  : 'Begründung'}
+              </h3>
               <p className="text-lg text-gray-900">{absence.personal_reason}</p>
             </div>
           )}

@@ -184,7 +184,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
         startLesson,
         endLesson,
         excursionClasses: reason === 'excursion' ? excursionClasses : undefined,
-        personalReason: reason === 'personal' || reason === 'other' || reason === 'official' ? personalReason : undefined,
+        personalReason: (reason === 'personal' || reason === 'other' || reason === 'official' || reason === 'exam' || reason === 'training') ? personalReason : undefined,
         selectedTeacherUsername: selectedTeacher?.username,
         selectedTeacherWebuntisCode: selectedTeacher?.webuntis_code,
       });
@@ -388,6 +388,46 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                 placeholder="z.B. Dienstbesprechung"
                 className="max-w-sm w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
+              />
+            </div>
+          )}
+
+          {/* Prüfung: Details */}
+          {reason === 'exam' && (
+            <div>
+              <label
+                htmlFor="personalReason"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Prüfung:
+              </label>
+              <input
+                type="text"
+                id="personalReason"
+                value={personalReason}
+                onChange={(e) => setPersonalReason(e.target.value)}
+                placeholder="z.B. IHK, HK etc"
+                className="max-w-sm w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          )}
+
+          {/* Fortbildung: Details */}
+          {reason === 'training' && (
+            <div>
+              <label
+                htmlFor="personalReason"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Fortbildung:
+              </label>
+              <input
+                type="text"
+                id="personalReason"
+                value={personalReason}
+                onChange={(e) => setPersonalReason(e.target.value)}
+                placeholder="z.B. LFB-online-Nr. oder Thema/Veranstalter"
+                className="max-w-sm w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
           )}
