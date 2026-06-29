@@ -132,12 +132,16 @@ class TestFetchLessonsFromWebuntis:
                     "app.api.webuntis.is_lesson_in_period",
                     side_effect=[True, False],
                 ):
-                    result = await unwrap(fetch_lessons_from_webuntis)(
-                        request=Mock(),
-                        fetch_request=fetch_req,
-                        current_user=teacher,
-                        db=db,
-                    )
+                    with patch(
+                        "app.api.webuntis.clip_lesson_to_period",
+                        side_effect=lambda lesson, *_: lesson,
+                    ):
+                        result = await unwrap(fetch_lessons_from_webuntis)(
+                            request=Mock(),
+                            fetch_request=fetch_req,
+                            current_user=teacher,
+                            db=db,
+                        )
 
         assert result == [lessons[0]]
 
@@ -162,12 +166,16 @@ class TestFetchLessonsFromWebuntis:
                     "app.api.webuntis.is_lesson_in_period",
                     return_value=True,
                 ):
-                    result = await unwrap(fetch_lessons_from_webuntis)(
-                        request=Mock(),
-                        fetch_request=fetch_req,
-                        current_user=teacher,
-                        db=db,
-                    )
+                    with patch(
+                        "app.api.webuntis.clip_lesson_to_period",
+                        side_effect=lambda lesson, *_: lesson,
+                    ):
+                        result = await unwrap(fetch_lessons_from_webuntis)(
+                            request=Mock(),
+                            fetch_request=fetch_req,
+                            current_user=teacher,
+                            db=db,
+                        )
 
         assert result == lessons
 
