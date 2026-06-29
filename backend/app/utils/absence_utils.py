@@ -82,13 +82,17 @@ def is_lesson_in_period(
     if not (start_date.date() <= lesson.date.date() <= end_date.date()):
         return False
 
+    # For merged lesson blocks, use end_period for overlap checks so that a block
+    # starting before start_period is still included when it extends into the range.
+    lesson_end = lesson.end_period if lesson.end_period is not None else lesson.period
+
     # Filter nach Periode
     if start_date.date() == end_date.date():
-        # Eintägige Abwesenheit
-        return start_period <= lesson.period <= end_period
+        # Eintägige Abwesenheit: Block muss den angefragten Bereich überlappen
+        return lesson.period <= end_period and lesson_end >= start_period
     elif lesson.date.date() == start_date.date():
-        # Erster Tag
-        return lesson.period >= start_period
+        # Erster Tag: Block endet nach oder bei start_period
+        return lesson_end >= start_period
     elif lesson.date.date() == end_date.date():
         # Letzter Tag
         return lesson.period <= end_period
