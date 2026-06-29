@@ -99,3 +99,46 @@ def is_lesson_in_period(
     else:
         # Tage dazwischen
         return True
+
+
+def clip_lesson_to_period(
+    lesson: WebUntisLesson,
+    start_date: datetime,
+    end_date: datetime,
+    start_period: int,
+    end_period: int,
+) -> WebUntisLesson:
+    """
+    Clips a merged lesson block to the intersection with the requested period range.
+
+    A block spanning periods 1-4 requested from 2-8 becomes period=2, end_period=4.
+    Single-period lessons and blocks already within range are returned unchanged.
+    start_time/end_time are cleared when the respective boundary is clipped to
+    avoid storing times that no longer match the actual periods shown.
+    """
+    lesson_end = lesson.end_period if lesson.end_period is not None else lesson.period
+
+    new_start = lesson.period
+    new_end = lesson_end
+
+    if start_date.date() == end_date.date():
+        new_start = max(lesson.period, start_period)
+        new_end = min(lesson_end, end_period)
+    elif lesson.date.date() == start_date.date():
+        new_start = max(lesson.period, start_period)
+    elif lesson.date.date() == end_date.date():
+        new_end = min(lesson_end, end_period)
+
+    if new_start == lesson.period and new_end == lesson_end:
+        return lesson
+
+    return WebUntisLesson(
+        date=lesson.date,
+        period=new_start,
+        end_period=new_end if new_end != new_start else None,
+        start_time=lesson.start_time if new_start == lesson.period else None,
+        end_time=lesson.end_time if new_end == lesson_end else None,
+        subject=lesson.subject,
+        class_name=lesson.class_name,
+        room=lesson.room,
+    )

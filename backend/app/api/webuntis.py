@@ -15,7 +15,11 @@ from app.models.models import User, UserRole
 from app.schemas.schemas import FetchLessonsRequest, WebUntisLesson
 from app.api.auth import get_wordpress_proxy_user
 from app.services.webuntis_service import webuntis_service
-from app.utils.absence_utils import validate_date_range, is_lesson_in_period
+from app.utils.absence_utils import (
+    validate_date_range,
+    is_lesson_in_period,
+    clip_lesson_to_period,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +90,7 @@ async def fetch_lessons_from_webuntis(
         webuntis_code=target_teacher.webuntis_teacher_code,
     )
 
-    # Filtern nach Perioden (delegiert an Utils)
+    # Filtern nach Perioden und Blöcke auf den angefragten Bereich kürzen
     filtered_lessons = []
     for lesson in lessons:
         if is_lesson_in_period(
@@ -96,6 +100,14 @@ async def fetch_lessons_from_webuntis(
             fetch_request.start_period,
             fetch_request.end_period,
         ):
-            filtered_lessons.append(lesson)
+            filtered_lessons.append(
+                clip_lesson_to_period(
+                    lesson,
+                    fetch_request.start_date,
+                    fetch_request.end_date,
+                    fetch_request.start_period,
+                    fetch_request.end_period,
+                )
+            )
 
     return filtered_lessons

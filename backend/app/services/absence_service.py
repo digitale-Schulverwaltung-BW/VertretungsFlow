@@ -21,7 +21,11 @@ from app.schemas.schemas import AbsenceCreate
 from app.services.webuntis_service import webuntis_service
 from app.services.attachment_service import attachment_service
 from app.services.absence_notification_service import absence_notification_service
-from app.utils.absence_utils import validate_date_range, is_lesson_in_period
+from app.utils.absence_utils import (
+    validate_date_range,
+    is_lesson_in_period,
+    clip_lesson_to_period,
+)
 from app.core.audit import audit_absence_approved, audit_absence_completed, audit_log
 
 logger = logging.getLogger(__name__)
@@ -150,20 +154,27 @@ class AbsenceService:
                 absence_data.start_period,
                 absence_data.end_period,
             ):
-                # Suche nach Lehrkraft-Inputs für diese Stunde
-                key = (lesson.date.date(), lesson.period)
+                clipped = clip_lesson_to_period(
+                    lesson,
+                    absence_data.start_date,
+                    absence_data.end_date,
+                    absence_data.start_period,
+                    absence_data.end_period,
+                )
+                # Key uses clipped period so it matches what the frontend sent
+                key = (clipped.date.date(), clipped.period)
                 inputs = lesson_inputs.get(key, {})
 
                 affected_lesson = AffectedLesson(
                     absence_id=db_absence.id,
-                    date=lesson.date,
-                    period=lesson.period,
-                    end_period=lesson.end_period,  # Für Doppelstunden
-                    start_time=lesson.start_time,  # WebUntis startTime (e.g., 730 = 07:30)
-                    end_time=lesson.end_time,  # WebUntis endTime (e.g., 815 = 08:15)
-                    subject=lesson.subject,
-                    class_name=lesson.class_name,
-                    room=lesson.room,
+                    date=clipped.date,
+                    period=clipped.period,
+                    end_period=clipped.end_period,
+                    start_time=clipped.start_time,
+                    end_time=clipped.end_time,
+                    subject=clipped.subject,
+                    class_name=clipped.class_name,
+                    room=clipped.room,
                     notes=inputs.get("notes"),
                     can_be_canceled=inputs.get("can_be_canceled", False),
                 )
