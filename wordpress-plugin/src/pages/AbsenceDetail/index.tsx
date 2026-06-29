@@ -187,7 +187,7 @@ const AbsenceDetail: React.FC = () => {
       {/* Header */}
       <div className="mb-6">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate(-1)}
           className="text-white-600 hover:text-white-800 mb-4 flex items-center"
         >
           ← Zurück zum Dashboard

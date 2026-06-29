@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { parse, isValid } from 'date-fns';
 import api from '../../api/client';
 import type { User, Absence } from '../../types';
 import StatCard from '../../components/dashboard/StatCard';
@@ -13,11 +15,22 @@ interface PlannerViewProps {
 }
 
 const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [calendarExpanded, setCalendarExpanded] = useState(false);
-  const [absencesExpanded, setAbsencesExpanded] = useState(false);
+  const [calendarExpanded, setCalendarExpanded] = useState(() => searchParams.get('cal') === '1');
+  const [absencesExpanded, setAbsencesExpanded] = useState(() => searchParams.get('list') === '1');
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
+    const raw = searchParams.get('month');
+    if (raw) {
+      const parsed = parse(raw, 'yyyy-MM', new Date());
+      if (isValid(parsed)) return parsed;
+    }
+    return new Date();
+  });
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDayAbsences, setSelectedDayAbsences] = useState<Absence[]>([]);
@@ -59,8 +72,37 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
     return false;
   });
 
+  const updateParams = (patch: Record<string, string | null>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === null) next.delete(key);
+        else next.set(key, value);
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  const handleCalendarToggle = () => {
+    const next = !calendarExpanded;
+    setCalendarExpanded(next);
+    updateParams({ cal: next ? '1' : null });
+  };
+
+  const handleAbsencesToggle = () => {
+    const next = !absencesExpanded;
+    setAbsencesExpanded(next);
+    updateParams({ list: next ? '1' : null });
+  };
+
+  const handleMonthChange = (month: Date) => {
+    setCurrentMonth(month);
+    const formatted = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+    updateParams({ month: formatted });
+  };
+
   const handleAbsenceAction = (absence: Absence) => {
-    window.location.hash = `/absence/${absence.id}`;
+    navigate(`/absence/${absence.id}`);
   };
 
   const handleDayClick = (date: Date, dayAbsences: Absence[]) => {
@@ -70,7 +112,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
   };
 
   const handleAbsenceClick = (absence: Absence) => {
-    window.location.hash = `/absence/${absence.id}`;
+    navigate(`/absence/${absence.id}`);
   };
 
   const handleStatCardClick = (status: string, title: string) => {
@@ -147,7 +189,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
       {/* Kalender (Expandable) */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <button
-          onClick={() => setCalendarExpanded(!calendarExpanded)}
+          onClick={handleCalendarToggle}
           className="group w-full flex items-center justify-between text-left hover:bg-gray-700 rounded-lg px-2 -mx-2 -my-1 transition-colors"
         >
           <h2 className="text-lg font-semibold text-gray-900 group-hover:text-white">
@@ -160,7 +202,12 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
 
         {calendarExpanded && (
           <div className="mt-4">
-            <Calendar absences={absences} onDayClick={handleDayClick} />
+            <Calendar
+              absences={absences}
+              currentMonth={currentMonth}
+              onMonthChange={handleMonthChange}
+              onDayClick={handleDayClick}
+            />
           </div>
         )}
       </div>
@@ -168,7 +215,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
       {/* Alle Abwesenheiten (Expandable) */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <button
-          onClick={() => setAbsencesExpanded(!absencesExpanded)}
+          onClick={handleAbsencesToggle}
           className="group w-full flex items-center justify-between text-left hover:bg-gray-700 rounded-lg px-2 -mx-2 -my-1 transition-colors"
         >
           <h2 className="text-lg font-semibold text-gray-900 group-hover:text-white">

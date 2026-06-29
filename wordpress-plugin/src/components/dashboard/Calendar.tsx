@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { Absence } from '../../types';
 import {
   format,
@@ -17,11 +17,12 @@ import { de } from 'date-fns/locale';
 
 interface CalendarProps {
   absences: Absence[];
+  currentMonth: Date;
+  onMonthChange: (month: Date) => void;
   onDayClick?: (date: Date, absences: Absence[]) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ absences, onDayClick }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+const Calendar: React.FC<CalendarProps> = ({ absences, currentMonth, onMonthChange, onDayClick }) => {
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -71,11 +72,11 @@ const Calendar: React.FC<CalendarProps> = ({ absences, onDayClick }) => {
   };
 
   const previousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+    onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   };
 
   const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
   };
 
   // Füge Padding-Tage am Anfang hinzu (Montag = 0)
