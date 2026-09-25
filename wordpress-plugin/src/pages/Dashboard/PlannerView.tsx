@@ -23,6 +23,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
   const [error, setError] = useState<string | null>(null);
   const [calendarExpanded, setCalendarExpanded] = useState(() => searchParams.get('cal') === '1');
   const [absencesExpanded, setAbsencesExpanded] = useState(() => searchParams.get('list') === '1');
+  const [showCompleted, setShowCompleted] = useState(() => searchParams.get('completed') === '1');
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
     const raw = searchParams.get('month');
     if (raw) {
@@ -61,6 +62,10 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
     totalLessons: absences.reduce((sum, a) => sum + (a.affected_lessons?.length || 0), 0)
   };
 
+  const visibleAbsences = showCompleted
+    ? absences
+    : absences.filter(a => a.status !== 'completed');
+
   // To-Do Liste: Absenzen die Aktion benötigen
   const todoAbsences = absences.filter(a => {
     if (user.role === 'dept_head') {
@@ -93,6 +98,12 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
     const next = !absencesExpanded;
     setAbsencesExpanded(next);
     updateParams({ list: next ? '1' : null });
+  };
+
+  const handleShowCompletedToggle = () => {
+    const next = !showCompleted;
+    setShowCompleted(next);
+    updateParams({ completed: next ? '1' : null });
   };
 
   const handleMonthChange = (month: Date) => {
@@ -219,7 +230,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
           className="group w-full flex items-center justify-between text-left hover:bg-gray-700 rounded-lg px-2 -mx-2 -my-1 transition-colors"
         >
           <h2 className="text-lg font-semibold text-gray-900 group-hover:text-white">
-            Alle Abwesenheiten ({absences.length})
+            Alle Abwesenheiten ({visibleAbsences.length})
           </h2>
           <span className="text-gray-500 group-hover:text-white">
             {absencesExpanded ? '▼' : '▶'}
@@ -228,7 +239,18 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
 
         {absencesExpanded && (
           <div className="mt-4">
-            <AbsenceTable absences={absences} onAbsenceClick={handleAbsenceClick} />
+            <div className="flex items-center justify-end mb-3">
+              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showCompleted}
+                  onChange={handleShowCompletedToggle}
+                  className="rounded border-gray-300"
+                />
+                Erledigte anzeigen
+              </label>
+            </div>
+            <AbsenceTable absences={visibleAbsences} onAbsenceClick={handleAbsenceClick} />
           </div>
         )}
       </div>
