@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import api from '../../api/client';
 import type { User, Absence } from '../../types';
 import AbsenceTable from '../../components/dashboard/AbsenceTable';
@@ -54,8 +55,20 @@ const TeacherView: React.FC<TeacherViewProps> = ({ _user }) => {
       await api.deleteAbsence(absence.id);
       setAbsences((prev) => prev.filter((a) => a.id !== absence.id));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Fehler beim Löschen der Abwesenheit';
-      alert(message);
+      if (axios.isAxiosError(err) && err.response?.status === 403) {
+        alert(
+          'Diese Abwesenheit wurde inzwischen genehmigt und kann daher nicht mehr selbst ' +
+          'gelöscht werden. Bitte wenden Sie sich an die Verwaltung.'
+        );
+        // Liste neu laden, damit der Status (und der Löschen-Button) aktuell ist
+        const data = await api.getAbsences();
+        setAbsences(data);
+      } else {
+        const message =
+          (axios.isAxiosError(err) && err.response?.data?.detail) ||
+          (err instanceof Error ? err.message : 'Fehler beim Löschen der Abwesenheit');
+        alert(message);
+      }
     } finally {
       setDeletingId(null);
     }

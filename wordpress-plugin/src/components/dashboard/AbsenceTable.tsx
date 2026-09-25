@@ -45,6 +45,11 @@ const AbsenceTable: React.FC<AbsenceTableProps> = ({
     return format(new Date(dateStr), 'dd.MM.yyyy', { locale: de });
   };
 
+  // Lehrkräfte dürfen eigene Abwesenheiten nur im Entwurf/eingereicht-Status löschen
+  // (muss mit permission_service.can_delete_absence im Backend übereinstimmen)
+  const isDeletableByTeacher = (absence: Absence) =>
+    absence.status === 'draft' || absence.status === 'submitted';
+
   if (absences.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -76,7 +81,7 @@ const AbsenceTable: React.FC<AbsenceTableProps> = ({
               <span>{getAbsenceReasonLabel(absence.reason)}</span>
               <span>{absence.affected_lessons?.length || 0} Stunden</span>
             </div>
-            {onDeleteAbsence && absence.status !== 'completed' && (
+            {onDeleteAbsence && isDeletableByTeacher(absence) && (
               <div className="mt-3 flex justify-end">
                 <button
                   onClick={(e) => onDeleteAbsence(absence, e)}
@@ -143,7 +148,7 @@ const AbsenceTable: React.FC<AbsenceTableProps> = ({
                 </td>
                 {onDeleteAbsence && (
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {absence.status !== 'completed' && (
+                    {isDeletableByTeacher(absence) && (
                       <button
                         onClick={(e) => onDeleteAbsence(absence, e)}
                         disabled={deletingId === absence.id}

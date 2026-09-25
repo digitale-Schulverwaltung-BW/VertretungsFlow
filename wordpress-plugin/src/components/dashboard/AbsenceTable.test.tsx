@@ -155,4 +155,19 @@ describe('AbsenceTable', () => {
 
     expect(screen.getAllByText('testuser').length).toBeGreaterThan(0)
   })
+
+  it('only shows the delete button for draft/submitted absences', () => {
+    const absences: Absence[] = [
+      { ...mockAbsence, id: 1, status: 'draft' },
+      { ...mockAbsence, id: 2, status: 'submitted' },
+      { ...mockAbsence, id: 3, status: 'approved' },
+      { ...mockAbsence, id: 4, status: 'completed' },
+      { ...mockAbsence, id: 5, status: 'rejected' },
+    ]
+
+    render(<AbsenceTable absences={absences} onDeleteAbsence={vi.fn()} />)
+
+    // Card- und Tabellen-Layout rendern je einen Button pro löschbarer Absenz
+    expect(screen.getAllByTitle('Abwesenheit löschen')).toHaveLength(4)
+  })
 })
