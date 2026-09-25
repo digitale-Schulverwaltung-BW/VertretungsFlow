@@ -8,6 +8,9 @@ pydantic-settings>=2.6.0,<3.0.0
 sqlalchemy>=2.0.36,<3.0.0
 alembic>=1.14.0,<2.0.0
 psycopg2-binary>=2.9.10,<3.0.0
+# psycopg (v3): manche Umgebungen (z.B. CI) setzen DATABASE_URL mit
+# postgresql+psycopg://; ohne dieses Paket schlägt dort create_engine() fehl
+psycopg[binary]>=3.1,<4.0.0
 
 # Authentication & Security
 PyJWT[crypto]>=2.8.0,<3.0.0
