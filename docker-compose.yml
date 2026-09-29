@@ -63,6 +63,9 @@ services:
       ABSENCE_RETENTION_DAYS: ${ABSENCE_RETENTION_DAYS:-90}
       ABSENCE_AUTO_DELETE_ENABLED: ${ABSENCE_AUTO_DELETE_ENABLED:-true}
 
+      # Minimum advance notice for absence reports (calendar days, 0 = off)
+      ABSENCE_MIN_ADVANCE_DAYS: ${ABSENCE_MIN_ADVANCE_DAYS:-0}
+
       # File Upload
       UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
     volumes:

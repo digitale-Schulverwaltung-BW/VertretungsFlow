@@ -12,6 +12,7 @@ from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.models import User, Absence, AffectedLesson, UserRole, AbsenceStatus
 from app.schemas.schemas import (
@@ -56,6 +57,22 @@ async def create_absence(
     """
     # Delegiert an absence_service
     return await absence_service.create_absence(absence, current_user, db)
+
+
+@router.get("/config")
+@limiter.limit("60/minute")
+async def get_absence_config(
+    request: Request, current_user: User = Depends(get_wordpress_proxy_user)
+):
+    """
+    Gibt die für das Frontend relevanten Absenz-Einstellungen zurück
+
+    Returns:
+        min_advance_days: Mindestvorlauf in Tagen (0 für Planer/Admins und wenn
+        deaktiviert)
+    """
+    exempt = current_user.role in (UserRole.ADMIN, UserRole.PLANNER)
+    return {"min_advance_days": 0 if exempt else settings.ABSENCE_MIN_ADVANCE_DAYS}
 
 
 @router.get("/", response_model=List[AbsenceResponse])

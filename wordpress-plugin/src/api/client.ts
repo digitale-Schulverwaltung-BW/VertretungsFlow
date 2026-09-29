@@ -147,6 +147,16 @@ class APIClient {
   }
 
   /**
+   * Get absence settings (minimum advance notice in days, 0 = no restriction)
+   */
+  async getAbsenceConfig(): Promise<{ min_advance_days: number }> {
+    return this.request<{ min_advance_days: number }>({
+      method: 'GET',
+      url: '/absences/config',
+    });
+  }
+
+  /**
    * Create absence
    */
   async createAbsence(data: CreateAbsenceRequest): Promise<Absence> {

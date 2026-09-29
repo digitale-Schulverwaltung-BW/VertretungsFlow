@@ -3,9 +3,10 @@ Absence Utilities
 Pure functions for absence validation and lesson filtering
 """
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from fastapi import HTTPException, status
 
+from app.models.models import UserRole
 from app.schemas.schemas import WebUntisLesson
 
 
@@ -46,6 +47,35 @@ def validate_date_range(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="End period must be after or equal to start period",
             )
+
+
+def validate_min_advance(start_date: datetime, min_days: int, role: UserRole) -> None:
+    """
+    Validates that the absence starts at least min_days calendar days ahead
+
+    Planners and admins are exempt. min_days <= 0 disables the check.
+
+    Args:
+        start_date: Start date of the absence
+        min_days: Minimum advance notice in calendar days
+        role: Role of the user creating the absence
+
+    Raises:
+        HTTPException: If the absence starts too soon
+    """
+    if min_days <= 0 or role in (UserRole.ADMIN, UserRole.PLANNER):
+        return
+
+    earliest = date.today() + timedelta(days=min_days)
+    if start_date.date() < earliest:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Absenzen müssen mindestens {min_days} Tage im Voraus gemeldet "
+                "werden. Bei kurzfristigen Meldungen wenden Sie sich bitte "
+                "persönlich an das Vertretungsplanungs-Team."
+            ),
+        )
 
 
 def is_lesson_in_period(

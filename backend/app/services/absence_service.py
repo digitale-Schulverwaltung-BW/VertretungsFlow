@@ -23,9 +23,11 @@ from app.services.attachment_service import attachment_service
 from app.services.absence_notification_service import absence_notification_service
 from app.utils.absence_utils import (
     validate_date_range,
+    validate_min_advance,
     is_lesson_in_period,
     clip_lesson_to_period,
 )
+from app.core.config import settings
 from app.core.audit import audit_absence_approved, audit_absence_completed, audit_log
 
 logger = logging.getLogger(__name__)
@@ -93,6 +95,11 @@ class AbsenceService:
             absence_data.end_date,
             absence_data.start_period,
             absence_data.end_period,
+        )
+        validate_min_advance(
+            absence_data.start_date,
+            settings.ABSENCE_MIN_ADVANCE_DAYS,
+            current_user.role,
         )
 
         # Abwesenheit in DB erstellen

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { DayPicker, DateRange } from 'react-day-picker';
+import React, { useState, useEffect, useMemo } from 'react';
+import { DayPicker, DayButton, DateRange } from 'react-day-picker';
+import type { DayButtonProps } from 'react-day-picker';
 import { de } from 'date-fns/locale';
-import { format } from 'date-fns';
+import { format, addDays, startOfDay } from 'date-fns';
 import 'react-day-picker/dist/style.css';
 import type { AbsenceReason, User, TeacherInfo } from '../../types';
 import { ABSENCE_REASONS } from '../../constants';
@@ -39,8 +40,27 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [teachers, setTeachers] = useState<TeacherInfo[]>([]);
   const [selectedTeacher, setSelectedTeacher] = useState<TeacherInfo | undefined>(undefined);
+  const [minAdvanceDays, setMinAdvanceDays] = useState<number>(0);
+  const [showTooSoonNotice, setShowTooSoonNotice] = useState(false);
+
+  const today = startOfDay(new Date());
+  const earliestDate = addDays(today, minAdvanceDays);
+  const tooSoonMessage = `Absenzen müssen mindestens ${minAdvanceDays} Tage im Voraus gemeldet werden. Bei kurzfristigen Meldungen wenden Sie sich bitte persönlich an das Vertretungsplanungs-Team.`;
+  const isTooSoon = (day: Date) => minAdvanceDays > 0 && day >= today && day < earliestDate;
+
+  // Kalendertage vor dem frühesten Datum: klickbar, aber mit Hinweis statt Auswahl
+  const TooSoonAwareDayButton = useMemo(() => {
+    const Component = (props: DayButtonProps) => (
+      <DayButton {...props} title={props.modifiers.tooSoon ? tooSoonMessage : undefined} />
+    );
+    return Component;
+  }, [tooSoonMessage]);
 
   useEffect(() => {
+    api.getAbsenceConfig()
+      .then((cfg) => setMinAdvanceDays(cfg.min_advance_days))
+      .catch(console.error);
+
     api.getCurrentUser()
       .then((user) => {
         setCurrentUser(user);
@@ -52,6 +72,12 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
   }, []);
 
   const handleStartDayClick = (day: Date) => {
+    if (isTooSoon(day)) {
+      setShowTooSoonNotice(true);
+      return;
+    }
+    setShowTooSoonNotice(false);
+
     // Einzelklick im linken Picker: immer nur Start-Datum setzen
     const newStartDate = day;
 
@@ -72,12 +98,22 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
 
     // Nur bei Range-Drag (beide Werte gesetzt und unterschiedlich)
     if (range.from && range.to && range.from.getTime() !== range.to.getTime()) {
+      if (isTooSoon(range.from) || isTooSoon(range.to)) {
+        setShowTooSoonNotice(true);
+        return;
+      }
       setDateRange(range);
     }
     // Bei Einzelklick wird onDayClick aufgerufen, nicht hier
   };
 
   const handleEndDayClick = (day: Date) => {
+    if (isTooSoon(day)) {
+      setShowTooSoonNotice(true);
+      return;
+    }
+    setShowTooSoonNotice(false);
+
     // Einzelklick im rechten Picker: immer nur End-Datum setzen
     const newEndDate = day;
 
@@ -98,6 +134,10 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
 
     // Nur bei Range-Drag (beide Werte gesetzt und unterschiedlich)
     if (range.from && range.to && range.from.getTime() !== range.to.getTime()) {
+      if (isTooSoon(range.from) || isTooSoon(range.to)) {
+        setShowTooSoonNotice(true);
+        return;
+      }
       setDateRange(range);
     }
     // Bei Einzelklick wird onDayClick aufgerufen, nicht hier
@@ -125,6 +165,8 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
 
     if (dateRange?.from && dateRange.from < new Date()) {
       newErrors.push('Das Startdatum muss in der Zukunft liegen.');
+    } else if (dateRange?.from && minAdvanceDays > 0 && dateRange.from < earliestDate) {
+      newErrors.push(tooSoonMessage);
     }
 
     if (reason === 'excursion' && !excursionClasses.trim()) {
@@ -201,17 +243,22 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     dateRange?.to &&
     dateRange.from.getTime() !== dateRange.to.getTime();
 
+  const tooSoonMatcher = minAdvanceDays > 0 ? [{ from: today, to: addDays(earliestDate, -1) }] : [];
+
   const startPickerModifiers = {
     primary: dateRange?.from ? [dateRange.from] : [],
     secondary: isRangeSelected && dateRange?.to ? [dateRange.to] : [],
+    tooSoon: tooSoonMatcher,
   };
 
   const endPickerModifiers = {
     primary: isRangeSelected && dateRange?.to ? [dateRange.to] : [],
     secondary: dateRange?.from ? [dateRange.from] : [],
+    tooSoon: tooSoonMatcher,
   };
 
   const modifiersClassNames = {
+    tooSoon: '!text-gray-300 line-through cursor-not-allowed',
     primary: '!bg-blue-600 !text-white font-bold rounded-full',
     secondary: '!bg-gray-200 !text-gray-400 rounded-full opacity-30',
   };
@@ -439,6 +486,16 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Zeitraum
             </label>
+            {minAdvanceDays > 0 && (
+              <p
+                className={`text-xs mb-2 ${showTooSoonNotice ? 'text-red-600 font-medium' : 'text-gray-500'}`}
+                role={showTooSoonNotice ? 'alert' : undefined}
+              >
+                {showTooSoonNotice
+                  ? tooSoonMessage
+                  : `Absenzen sind frühestens ab ${format(earliestDate, 'd.M.yyyy', { locale: de })} möglich (mind. ${minAdvanceDays} Tage Vorlauf). Bei kurzfristigen Meldungen bitte persönlich beim Vertretungsplanungs-Team melden.`}
+              </p>
+            )}
             <div className="af-date-pickers-root">
             <div className="af-date-pickers pb-1">
               <div className="flex-shrink-0">
@@ -455,6 +512,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   disabled={{ before: new Date() }}
                   modifiers={startPickerModifiers}
                   modifiersClassNames={modifiersClassNames}
+                  components={{ DayButton: TooSoonAwareDayButton }}
                 />
                 <div className="mt-2 flex items-center gap-2">
                   <label htmlFor="startLesson" className="text-xs text-gray-600">ab Stunde</label>
@@ -484,6 +542,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
                   disabled={{ before: new Date() }}
                   modifiers={endPickerModifiers}
                   modifiersClassNames={modifiersClassNames}
+                  components={{ DayButton: TooSoonAwareDayButton }}
                 />
                 <div className="mt-2 flex items-center gap-2">
                   <label htmlFor="endLesson" className="text-xs text-gray-600">bis Stunde</label>
