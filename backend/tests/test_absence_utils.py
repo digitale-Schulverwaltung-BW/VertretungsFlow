@@ -3,13 +3,18 @@ Tests for absence_utils.py
 Tests absence validation and lesson filtering logic
 """
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 import pytest
 from fastapi import HTTPException
 
 from app.schemas.schemas import WebUntisLesson
-from app.utils.absence_utils import is_lesson_in_period, validate_date_range
+from app.models.models import UserRole
+from app.utils.absence_utils import (
+    is_lesson_in_period,
+    validate_date_range,
+    validate_min_advance,
+)
 
 
 # ============================================================================
@@ -293,3 +298,32 @@ class TestIsLessonInPeriod:
 
         # Filtering is based on period, not start_time/end_time
         assert is_lesson_in_period(lesson, start, end, start_period=1, end_period=6)
+
+
+# ============================================================================
+# Test validate_min_advance()
+# ============================================================================
+
+
+class TestValidateMinAdvance:
+    """Test minimum advance notice validation"""
+
+    @staticmethod
+    def _in_days(days: int) -> datetime:
+        d = date.today() + timedelta(days=days)
+        return datetime(d.year, d.month, d.day, 8, 0)
+
+    def test_disabled_when_zero(self):
+        validate_min_advance(self._in_days(0), 0, UserRole.TEACHER)
+
+    def test_too_soon_raises(self):
+        with pytest.raises(HTTPException) as exc:
+            validate_min_advance(self._in_days(2), 3, UserRole.TEACHER)
+        assert exc.value.status_code == 400
+
+    def test_exactly_min_days_is_ok(self):
+        validate_min_advance(self._in_days(3), 3, UserRole.TEACHER)
+
+    @pytest.mark.parametrize("role", [UserRole.ADMIN, UserRole.PLANNER])
+    def test_exempt_roles(self, role):
+        validate_min_advance(self._in_days(0), 3, role)

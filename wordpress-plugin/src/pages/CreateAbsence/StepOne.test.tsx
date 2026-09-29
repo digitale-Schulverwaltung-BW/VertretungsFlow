@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import StepOne from './StepOne'
+import api from '../../api/client'
 
 vi.mock('../../api/client', () => ({
   default: {
@@ -16,6 +17,7 @@ vi.mock('../../api/client', () => ({
     }),
     getUsers: vi.fn().mockResolvedValue([]),
     getAbsences: vi.fn().mockResolvedValue([]),
+    getAbsenceConfig: vi.fn().mockResolvedValue({ min_advance_days: 0 }),
   },
 }))
 
@@ -24,6 +26,25 @@ describe('StepOne - Absence Wizard Step 1', () => {
 
   beforeEach(() => {
     mockOnNext = vi.fn()
+  })
+
+  describe('Minimum advance notice', () => {
+    it('shows no hint when min_advance_days is 0', async () => {
+      render(<StepOne onNext={mockOnNext} />)
+
+      await waitFor(() => expect(api.getAbsenceConfig).toHaveBeenCalled())
+      expect(screen.queryByText(/Vorlauf/i)).not.toBeInTheDocument()
+    })
+
+    it('shows the hint and marks too-soon days when min_advance_days > 0', async () => {
+      vi.mocked(api.getAbsenceConfig).mockResolvedValueOnce({ min_advance_days: 3 })
+      render(<StepOne onNext={mockOnNext} />)
+
+      expect(await screen.findByText(/mind\. 3 Tage Vorlauf/i)).toBeInTheDocument()
+      expect(
+        document.querySelectorAll('button[title*="mindestens 3 Tage im Voraus"]').length
+      ).toBeGreaterThan(0)
+    })
   })
 
   describe('Form Rendering', () => {
