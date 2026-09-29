@@ -68,7 +68,7 @@ services:
       - ./backend/uploads:/app/uploads  # Only uploads, not full backend source
       # ⚠️ NO SOURCE CODE MOUNT - Production uses built image
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_PORT:-8001}:8001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,7 +77,7 @@ services:
       - absenzflow-shared  # Für WordPress-Zugriff
     restart: unless-stopped
     # Production command (no --reload)
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 4
 
   # pgAdmin (DISABLED in production - use docker exec for DB access)
   # To enable for emergency DB access: docker-compose -f docker-compose.prod.yml --profile admin up
