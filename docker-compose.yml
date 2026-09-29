@@ -68,7 +68,7 @@ services:
     volumes:
       - ./backend:/app  # Full source mount for hot-reload
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       postgres:
         condition: service_healthy
