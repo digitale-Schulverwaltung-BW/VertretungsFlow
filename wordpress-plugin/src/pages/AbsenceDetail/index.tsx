@@ -248,8 +248,9 @@ const AbsenceDetail: React.FC = () => {
                 disabled={!hasPrevious}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center"
                 title="Vorherige Abwesenheit"
+                aria-label="Vorherige Abwesenheit"
               >
-                ← Zurück
+                ←
               </button>
               <span className="text-sm text-gray-500">
                 {currentIndex + 1} / {allAbsences.length}
@@ -259,8 +260,9 @@ const AbsenceDetail: React.FC = () => {
                 disabled={!hasNext}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center"
                 title="Nächste Abwesenheit"
+                aria-label="Nächste Abwesenheit"
               >
-                Weiter →
+                →
               </button>
               {isAdminOrPlanner && (
                 <button
