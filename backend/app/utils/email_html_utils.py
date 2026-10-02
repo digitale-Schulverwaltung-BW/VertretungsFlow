@@ -4,6 +4,7 @@ Pure Functions für die Generierung von HTML-E-Mail-Inhalten
 """
 
 from html import escape as _esc
+from typing import Optional
 
 # Gemeinsame Inline-Styles (viele Mail-Clients ignorieren <style>-Tags)
 _BODY_STYLE = (
@@ -26,6 +27,10 @@ _TD_LABEL_STYLE = (
     "vertical-align: top; width: 120px;"
 )
 _TD_VALUE_STYLE = "padding: 8px 0; font-weight: 500;"
+_FEEDBACK_STYLE = (
+    "margin: 16px 0; padding: 12px 16px; background: #f9fafb; "
+    "border-left: 4px solid #9ca3af; font-size: 14px; color: #374151;"
+)
 _DIVIDER_STYLE = "border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;"
 
 _BTN_GREEN = (
@@ -163,13 +168,28 @@ def approved_planner_html(
     return _wrap(header, content)
 
 
-def completed_html(absence_id: int, absence_url: str) -> str:
+def _feedback_block(feedback: Optional[str]) -> str:
+    """Rückmeldungs-Box für Lehrkraft-Mails (leer wenn kein Text vorhanden)"""
+    if not feedback:
+        return ""
+    return (
+        f'<div style="{_FEEDBACK_STYLE}">'
+        f'<div style="font-weight: bold; margin-bottom: 4px;">Rückmeldung:</div>'
+        f'{_esc(feedback).replace(chr(10), "<br>")}'
+        f"</div>"
+    )
+
+
+def completed_html(
+    absence_id: int, absence_url: str, feedback: Optional[str] = None
+) -> str:
     """
     HTML-Template: Abwesenheit eingetragen (an Lehrkraft)
 
     Args:
         absence_id: ID der Abwesenheit
         absence_url: Direktlink zur Abwesenheit
+        feedback: Optionale Rückmeldung der Vertretungsplanung
 
     Returns:
         HTML-String
@@ -184,18 +204,22 @@ def completed_html(absence_id: int, absence_url: str) -> str:
         + _detail_row("Abwesenheits-ID", f"#{absence_id}")
         + _detail_row("Status", "Erledigt")
         + "</table>"
+        + _feedback_block(feedback)
         + f'<a href="{_esc(absence_url)}" style="{_BTN_BLUE}">Details ansehen</a>'
     )
     return _wrap(header, content)
 
 
-def rejected_html(absence_id: int, rejector_name: str) -> str:
+def rejected_html(
+    absence_id: int, rejector_name: str, feedback: Optional[str] = None
+) -> str:
     """
     HTML-Template: Abwesenheit abgelehnt (an Lehrkraft)
 
     Args:
         absence_id: ID der Abwesenheit
         rejector_name: Name der ablehnenden Person
+        feedback: Optionale Begründung/Rückmeldung der ablehnenden Person
 
     Returns:
         HTML-String
@@ -210,6 +234,7 @@ def rejected_html(absence_id: int, rejector_name: str) -> str:
         + _detail_row("Abwesenheits-ID", f"#{absence_id}")
         + _detail_row("Abgelehnt von", _esc(rejector_name))
         + "</table>"
+        + _feedback_block(feedback)
         + f'<p style="color: #374151; font-size: 14px; margin-top: 16px;">'
         f"Bitte wenden Sie sich bei Rückfragen direkt an {_esc(rejector_name)}.</p>"
     )

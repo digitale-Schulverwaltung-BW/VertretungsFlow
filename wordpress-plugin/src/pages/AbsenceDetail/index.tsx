@@ -6,6 +6,16 @@ import api from '../../api/client';
 import type { Absence, User } from '../../types';
 import { getAbsenceReasonLabel } from '../../constants';
 
+interface NavEntry {
+  id: number;
+  status: string;
+}
+
+const MAX_FEEDBACK_LENGTH = 2000;
+
+// Unerledigt = noch Handlungsbedarf für die Vertretungsplanung
+const isOpen = (status: string) => status === 'submitted' || status === 'approved';
+
 const AbsenceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -14,7 +24,8 @@ const AbsenceDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [allAbsenceIds, setAllAbsenceIds] = useState<number[]>([]);
+  const [allAbsences, setAllAbsences] = useState<NavEntry[]>([]);
+  const [feedback, setFeedback] = useState('');
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
 
   useEffect(() => {
@@ -35,9 +46,10 @@ const AbsenceDetail: React.FC = () => {
         setUser(userData);
 
         // Extract IDs and find current index
-        const ids = allAbsences.map(a => a.id!);
-        setAllAbsenceIds(ids);
-        setCurrentIndex(ids.indexOf(parseInt(id)));
+        const entries = allAbsences.map(a => ({ id: a.id!, status: a.status }));
+        setAllAbsences(entries);
+        setCurrentIndex(entries.findIndex(e => e.id === parseInt(id)));
+        setFeedback('');
       } catch (err: any) {
         setError(err.message || 'Fehler beim Laden der Abwesenheit');
       } finally {
@@ -48,15 +60,23 @@ const AbsenceDetail: React.FC = () => {
     loadData();
   }, [id]);
 
+  // Status des aktuellen Eintrags in der Navigationsliste aktuell halten
+  const updateNavStatus = (status: string) => {
+    setAllAbsences(prev => prev.map((e, i) => (i === currentIndex ? { ...e, status } : e)));
+  };
+
   const handleApprove = async (approved: boolean) => {
     if (!absence || !id) return;
 
     setActionLoading(true);
     try {
-      await api.approveAbsence(parseInt(id), approved);
+      // Rückmeldung wird nur bei Ablehnung per E-Mail mitgeschickt
+      await api.approveAbsence(parseInt(id), approved, approved ? undefined : feedback.trim() || undefined);
       // Reload absence data
       const updated = await api.getAbsence(parseInt(id));
       setAbsence(updated);
+      updateNavStatus(updated.status);
+      setFeedback('');
     } catch (err: any) {
       alert(err.message || 'Fehler beim Genehmigen der Abwesenheit');
     } finally {
@@ -69,10 +89,12 @@ const AbsenceDetail: React.FC = () => {
 
     setActionLoading(true);
     try {
-      await api.completeAbsence(parseInt(id));
+      await api.completeAbsence(parseInt(id), feedback.trim() || undefined);
       // Reload absence data
       const updated = await api.getAbsence(parseInt(id));
       setAbsence(updated);
+      updateNavStatus(updated.status);
+      setFeedback('');
     } catch (err: any) {
       alert(err.message || 'Fehler beim Eintragen der Abwesenheit');
     } finally {
@@ -123,19 +145,29 @@ const AbsenceDetail: React.FC = () => {
   const canDelete = isAdminOrPlanner;
 
   const hasPrevious = currentIndex > 0;
-  const hasNext = currentIndex >= 0 && currentIndex < allAbsenceIds.length - 1;
+  const hasNext = currentIndex >= 0 && currentIndex < allAbsences.length - 1;
 
-  const handlePrevious = () => {
-    if (hasPrevious) {
-      navigate(`/absence/${allAbsenceIds[currentIndex - 1]}`);
+  // Nächste/vorige unerledigte Absenz relativ zur aktuellen Position
+  const nextOpenIndex = currentIndex < 0
+    ? -1
+    : allAbsences.findIndex((e, i) => i > currentIndex && isOpen(e.status));
+  let previousOpenIndex = -1;
+  for (let i = currentIndex - 1; i >= 0; i--) {
+    if (isOpen(allAbsences[i].status)) {
+      previousOpenIndex = i;
+      break;
+    }
+  }
+  const openCount = allAbsences.filter(e => isOpen(e.status)).length;
+
+  const goToIndex = (index: number) => {
+    if (index >= 0 && index < allAbsences.length) {
+      navigate(`/absence/${allAbsences[index].id}`);
     }
   };
 
-  const handleNext = () => {
-    if (hasNext) {
-      navigate(`/absence/${allAbsenceIds[currentIndex + 1]}`);
-    }
-  };
+  const handlePrevious = () => hasPrevious && goToIndex(currentIndex - 1);
+  const handleNext = () => hasNext && goToIndex(currentIndex + 1);
 
   const handleDelete = async () => {
     if (!absence || !id) return;
@@ -199,8 +231,18 @@ const AbsenceDetail: React.FC = () => {
           </div>
 
           {/* Navigation Buttons */}
-          {allAbsenceIds.length > 1 && (
+          {allAbsences.length > 1 && (
             <div className="flex items-center space-x-2">
+              {isAdminOrPlanner && (
+                <button
+                  onClick={() => goToIndex(previousOpenIndex)}
+                  disabled={previousOpenIndex < 0}
+                  className="px-3 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                  title={`Vorherige unerledigte Abwesenheit (${openCount} unerledigt)`}
+                >
+                  ⇤ Unerledigt
+                </button>
+              )}
               <button
                 onClick={handlePrevious}
                 disabled={!hasPrevious}
@@ -210,7 +252,7 @@ const AbsenceDetail: React.FC = () => {
                 ← Zurück
               </button>
               <span className="text-sm text-gray-500">
-                {currentIndex + 1} / {allAbsenceIds.length}
+                {currentIndex + 1} / {allAbsences.length}
               </span>
               <button
                 onClick={handleNext}
@@ -220,6 +262,16 @@ const AbsenceDetail: React.FC = () => {
               >
                 Weiter →
               </button>
+              {isAdminOrPlanner && (
+                <button
+                  onClick={() => goToIndex(nextOpenIndex)}
+                  disabled={nextOpenIndex < 0}
+                  className="px-3 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                  title={`Nächste unerledigte Abwesenheit (${openCount} unerledigt)`}
+                >
+                  Unerledigt ⇥
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -417,6 +469,27 @@ const AbsenceDetail: React.FC = () => {
       {(canApprove || canComplete || canDelete) && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Aktionen</h2>
+
+          {(canApprove || canComplete) && (
+            <div className="mb-4">
+              <label htmlFor="feedback" className="block text-sm font-bold text-blue-600 mb-1">
+                Rückmeldung an die Lehrkraft (optional)
+              </label>
+              <textarea
+                id="feedback"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                maxLength={MAX_FEEDBACK_LENGTH}
+                rows={3}
+                disabled={actionLoading}
+                placeholder="Wird in der E-Mail an die Lehrkraft mitgeschickt – bei „Ablehnen“ und „Als erledigt markieren“."
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {feedback.length} / {MAX_FEEDBACK_LENGTH}
+              </p>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-4">
             {canApprove && (

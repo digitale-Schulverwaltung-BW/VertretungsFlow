@@ -39,7 +39,6 @@ from app.schemas.schemas import (
     sanitize_text_input,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -379,3 +378,31 @@ class TestWebUntisLessonParseDate:
             room="102",
         )
         assert lesson.date.hour == 8
+
+
+class TestAbsenceFeedbackSchemas:
+    """Optionale Rückmeldung bei Ablehnung / Erledigt"""
+
+    def test_approval_feedback_optional(self):
+        from app.schemas.schemas import AbsenceApproval
+
+        assert AbsenceApproval(approved=False).feedback is None
+
+    def test_approval_feedback_stripped(self):
+        from app.schemas.schemas import AbsenceApproval
+
+        assert (
+            AbsenceApproval(approved=False, feedback="  Hallo \n").feedback == "Hallo"
+        )
+
+    def test_blank_feedback_becomes_none(self):
+        from app.schemas.schemas import AbsenceCompletion
+
+        assert AbsenceCompletion(feedback="   ").feedback is None
+
+    def test_feedback_max_length(self):
+        from pydantic import ValidationError
+        from app.schemas.schemas import AbsenceCompletion
+
+        with pytest.raises(ValidationError):
+            AbsenceCompletion(feedback="x" * 2001)

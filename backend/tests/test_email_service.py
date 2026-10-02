@@ -16,7 +16,6 @@ import aiosmtplib
 
 from app.services.email_service import EmailService
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -360,6 +359,54 @@ class TestSendAbsenceCompletedNotification:
             )
 
         assert result is False
+
+
+class TestFeedbackInEmails:
+    """Rückmeldung landet in Plaintext- und HTML-Teil"""
+
+    @pytest.mark.asyncio
+    async def test_completed_feedback_in_both_parts(self, service):
+        with patch.object(
+            service, "send_email", new_callable=AsyncMock, return_value=True
+        ) as mock_send:
+            await service.send_absence_completed_notification(
+                teacher_email="max@schule.de",
+                absence_id=42,
+                feedback="Vertretung: Hr. X",
+            )
+
+        args = mock_send.call_args[0]
+        assert "Vertretung: Hr. X" in args[2]
+        assert "Vertretung: Hr. X" in args[3]
+
+    @pytest.mark.asyncio
+    async def test_rejected_feedback_in_both_parts(self, service):
+        with patch.object(
+            service, "send_email", new_callable=AsyncMock, return_value=True
+        ) as mock_send:
+            await service.send_absence_rejected_notification(
+                teacher_email="max@schule.de",
+                absence_id=42,
+                rejector_name="Frau Planer",
+                feedback="Klausur an diesem Tag",
+            )
+
+        args = mock_send.call_args[0]
+        assert "Klausur an diesem Tag" in args[2]
+        assert "Klausur an diesem Tag" in args[3]
+
+    @pytest.mark.asyncio
+    async def test_without_feedback_no_feedback_section(self, service):
+        with patch.object(
+            service, "send_email", new_callable=AsyncMock, return_value=True
+        ) as mock_send:
+            await service.send_absence_completed_notification(
+                teacher_email="max@schule.de", absence_id=42
+            )
+
+        args = mock_send.call_args[0]
+        assert "Rückmeldung" not in args[2]
+        assert "Rückmeldung" not in args[3]
 
 
 # ============================================================================

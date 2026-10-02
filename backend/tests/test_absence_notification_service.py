@@ -16,7 +16,6 @@ from unittest.mock import Mock, AsyncMock, patch
 
 from app.services.absence_notification_service import AbsenceNotificationService
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -339,8 +338,25 @@ class TestSendCompletedNotification:
         await service.send_completed_notification(mock_absence, mock_db)
 
         mock_email_svc.send_absence_completed_notification.assert_called_once_with(
-            teacher_email="max.mustermann@schule.de", absence_id=42
+            teacher_email="max.mustermann@schule.de", absence_id=42, feedback=None
         )
+
+    @pytest.mark.asyncio
+    @patch("app.services.absence_notification_service.email_service")
+    async def test_passes_feedback_to_email(
+        self, mock_email_svc, service, mock_absence, mock_db
+    ):
+        """Feedback wird an den E-Mail-Service durchgereicht"""
+        mock_email_svc.send_absence_completed_notification = AsyncMock(
+            return_value=True
+        )
+
+        await service.send_completed_notification(
+            mock_absence, mock_db, feedback="Danke!"
+        )
+
+        call_kwargs = mock_email_svc.send_absence_completed_notification.call_args[1]
+        assert call_kwargs["feedback"] == "Danke!"
 
     @pytest.mark.asyncio
     @patch("app.services.absence_notification_service.email_service")
@@ -408,6 +424,22 @@ class TestSendRejectedNotification:
         call_kwargs = mock_email_svc.send_absence_rejected_notification.call_args[1]
         assert call_kwargs["teacher_email"] == "max.mustermann@schule.de"
         assert call_kwargs["absence_id"] == 42
+        assert call_kwargs["feedback"] is None
+
+    @pytest.mark.asyncio
+    @patch("app.services.absence_notification_service.email_service")
+    async def test_passes_feedback_to_email(
+        self, mock_email_svc, service, mock_absence, mock_approver, mock_db
+    ):
+        """Feedback wird an den E-Mail-Service durchgereicht"""
+        mock_email_svc.send_absence_rejected_notification = AsyncMock(return_value=True)
+
+        await service.send_rejected_notification(
+            mock_absence, mock_approver, mock_db, feedback="Zu kurzfristig"
+        )
+
+        call_kwargs = mock_email_svc.send_absence_rejected_notification.call_args[1]
+        assert call_kwargs["feedback"] == "Zu kurzfristig"
 
     @pytest.mark.asyncio
     @patch("app.services.absence_notification_service.email_service")

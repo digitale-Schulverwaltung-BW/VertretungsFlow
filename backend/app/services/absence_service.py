@@ -204,6 +204,7 @@ class AbsenceService:
         current_user: User,
         db: Session,
         request: Request,
+        feedback: Optional[str] = None,
     ) -> str:
         """
         Approves or rejects an absence
@@ -214,6 +215,8 @@ class AbsenceService:
             current_user: Current user
             db: Database session
             request: HTTP request (for audit logging)
+            feedback: Optional feedback for the teacher (included in the
+                rejection email, ignored on approval)
 
         Returns:
             Success message
@@ -282,13 +285,18 @@ class AbsenceService:
 
             # Send email notification
             await absence_notification_service.send_rejected_notification(
-                absence, current_user, db
+                absence, current_user, db, feedback=feedback
             )
 
             return "Absence rejected"
 
     async def complete_absence(
-        self, absence_id: int, current_user: User, db: Session, request: Request
+        self,
+        absence_id: int,
+        current_user: User,
+        db: Session,
+        request: Request,
+        feedback: Optional[str] = None,
     ) -> str:
         """
         Marks absence as completed/entered
@@ -298,6 +306,7 @@ class AbsenceService:
             current_user: Current user
             db: Database session
             request: HTTP request (for audit logging)
+            feedback: Optional feedback for the teacher (included in the email)
 
         Returns:
             Success message
@@ -353,7 +362,9 @@ class AbsenceService:
         db.commit()
 
         # Send email notification to teacher
-        await absence_notification_service.send_completed_notification(absence, db)
+        await absence_notification_service.send_completed_notification(
+            absence, db, feedback=feedback
+        )
 
         return "Absence marked as completed, attachments deleted"
 

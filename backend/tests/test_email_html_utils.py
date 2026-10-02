@@ -21,7 +21,6 @@ from app.utils.email_html_utils import (
     submitted_html,
 )
 
-
 # ============================================================================
 # Helpers
 # ============================================================================
@@ -210,6 +209,30 @@ class TestCompletedHtml:
         html = completed_html(42, "http://example.com/absence/42")
         assert "Erledigt melden" not in html
         assert "Abwesenheit genehmigen" not in html
+
+
+class TestFeedbackInHtml:
+    """Optionale Rückmeldung in completed_html / rejected_html"""
+
+    def test_completed_includes_feedback(self):
+        html = completed_html(42, "http://x/42", "Bitte Raum 12 beachten")
+        assert "Rückmeldung" in html
+        assert "Raum 12" in html
+
+    def test_rejected_includes_feedback(self):
+        html = rejected_html(42, "Frau Planer", "Zu kurzfristig")
+        assert "Zu kurzfristig" in html
+
+    def test_no_feedback_no_block(self):
+        assert "Rückmeldung" not in completed_html(42, "http://x/42")
+        assert "Rückmeldung" not in rejected_html(42, "Frau Planer")
+        assert "Rückmeldung" not in completed_html(42, "http://x/42", "")
+
+    def test_feedback_is_escaped_and_keeps_linebreaks(self):
+        html = completed_html(42, "http://x/42", "<script>x</script>\nZeile 2")
+        assert "<script>" not in html
+        assert "&lt;script&gt;" in html
+        assert "<br>Zeile 2" in html
 
 
 # ============================================================================

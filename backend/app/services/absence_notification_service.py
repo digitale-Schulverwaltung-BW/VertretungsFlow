@@ -4,7 +4,7 @@ Business logic for sending absence-related email notifications
 """
 
 import logging
-from typing import cast
+from typing import Optional, cast
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -111,18 +111,23 @@ class AbsenceNotificationService:
                 f"Email notification error for approved absence {absence.id}: {e}"
             )
 
-    async def send_completed_notification(self, absence: Absence, db: Session) -> None:
+    async def send_completed_notification(
+        self, absence: Absence, db: Session, feedback: Optional[str] = None
+    ) -> None:
         """
         Sends email notification when absence is completed
 
         Args:
             absence: Absence object
             db: Database session
+            feedback: Optional feedback from the planner to the teacher
         """
         try:
             if absence.teacher and absence.teacher.email:
                 success = await email_service.send_absence_completed_notification(
-                    teacher_email=absence.teacher.email, absence_id=absence.id
+                    teacher_email=absence.teacher.email,
+                    absence_id=absence.id,
+                    feedback=feedback,
                 )
 
                 if not success:
@@ -143,7 +148,11 @@ class AbsenceNotificationService:
             )
 
     async def send_rejected_notification(
-        self, absence: Absence, current_user: User, db: Session
+        self,
+        absence: Absence,
+        current_user: User,
+        db: Session,
+        feedback: Optional[str] = None,
     ) -> None:
         """
         Sends email notification when absence is rejected
@@ -152,6 +161,7 @@ class AbsenceNotificationService:
             absence: Absence object
             current_user: User who rejected the absence
             db: Database session
+            feedback: Optional feedback from the rejector to the teacher
         """
         try:
             if absence.teacher and absence.teacher.email:
@@ -159,6 +169,7 @@ class AbsenceNotificationService:
                     teacher_email=absence.teacher.email,
                     absence_id=absence.id,
                     rejector_name=current_user.full_name or current_user.username,
+                    feedback=feedback,
                 )
 
                 if not success:

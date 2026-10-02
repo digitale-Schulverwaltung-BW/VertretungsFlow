@@ -4,7 +4,7 @@ CRUD Operations für Abwesenheitsmeldungen
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session, selectinload, joinedload
 from slowapi import Limiter
@@ -20,6 +20,7 @@ from app.schemas.schemas import (
     AbsenceResponse,
     AbsenceUpdate,
     AbsenceApproval,
+    AbsenceCompletion,
     AffectedLessonUpdate,
     AffectedLessonResponse,
 )
@@ -272,7 +273,12 @@ async def approve_absence(
 
     # Delegiert an absence_service
     message = await absence_service.approve_absence(
-        absence_id, approval.approved, current_user, db, request
+        absence_id,
+        approval.approved,
+        current_user,
+        db,
+        request,
+        feedback=approval.feedback,
     )
 
     return {"message": message}
@@ -283,6 +289,7 @@ async def approve_absence(
 async def complete_absence(
     request: Request,
     absence_id: int,
+    completion: Optional[AbsenceCompletion] = None,
     current_user: User = Depends(get_wordpress_proxy_user),
     db: Session = Depends(get_db),
 ):
@@ -293,6 +300,7 @@ async def complete_absence(
 
     Args:
         absence_id: ID der Abwesenheit
+        completion: Optionale Rückmeldung an die Lehrkraft (geht in die E-Mail)
         request: HTTP Request (für Header)
         current_user: Aktueller User
         db: Database Session
@@ -314,7 +322,11 @@ async def complete_absence(
 
     # Delegiert an absence_service
     message = await absence_service.complete_absence(
-        absence_id, current_user, db, request
+        absence_id,
+        current_user,
+        db,
+        request,
+        feedback=completion.feedback if completion else None,
     )
 
     return {"message": message}

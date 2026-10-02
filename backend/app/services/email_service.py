@@ -22,6 +22,13 @@ from app.utils.email_html_utils import (
 logger = logging.getLogger(__name__)
 
 
+def _feedback_text(feedback: Optional[str]) -> str:
+    """Rückmeldung als Textblock für die Plaintext-Mail (leer wenn nicht vorhanden)"""
+    if not feedback:
+        return ""
+    return f"\nRückmeldung:\n{feedback}\n"
+
+
 class EmailService:
     """Service für E-Mail-Versand"""
 
@@ -236,7 +243,7 @@ VertretungsFlow System
         return True
 
     async def send_absence_completed_notification(
-        self, teacher_email: str, absence_id: int
+        self, teacher_email: str, absence_id: int, feedback: Optional[str] = None
     ) -> bool:
         """
         Benachrichtigung wenn Abwesenheit als erledigt markiert wurde
@@ -244,6 +251,7 @@ VertretungsFlow System
         Args:
             teacher_email: E-Mail der Lehrkraft
             absence_id: ID der Abwesenheit
+            feedback: Optionale Rückmeldung der Vertretungsplanung
 
         Returns:
             True wenn erfolgreich
@@ -254,7 +262,7 @@ VertretungsFlow System
 Hallo,
 
 Ihre Abwesenheitsmeldung (ID: {absence_id}) wurde in den Vertretungsplan eingetragen.
-
+{_feedback_text(feedback)}
 Link: {absence_url}
 
 Mit freundlichen Grüßen,
@@ -262,11 +270,18 @@ VertretungsFlow System
         """
 
         return await self.send_email(
-            teacher_email, subject, body, completed_html(absence_id, absence_url)
+            teacher_email,
+            subject,
+            body,
+            completed_html(absence_id, absence_url, feedback),
         )
 
     async def send_absence_rejected_notification(
-        self, teacher_email: str, absence_id: int, rejector_name: str
+        self,
+        teacher_email: str,
+        absence_id: int,
+        rejector_name: str,
+        feedback: Optional[str] = None,
     ) -> bool:
         """
         Benachrichtigung wenn Abwesenheit abgelehnt wird
@@ -275,6 +290,7 @@ VertretungsFlow System
             teacher_email: E-Mail der Lehrkraft
             absence_id: ID der Abwesenheit
             rejector_name: Name des Ablehnenden
+            feedback: Optionale Begründung/Rückmeldung des Ablehnenden
 
         Returns:
             True wenn erfolgreich
@@ -284,13 +300,16 @@ VertretungsFlow System
 Hallo,
 
 Ihre Abwesenheitsmeldung (ID: {absence_id}) wurde von {rejector_name} abgelehnt.
-
+{_feedback_text(feedback)}
 Mit freundlichen Grüßen,
 VertretungsFlow System
         """
 
         return await self.send_email(
-            teacher_email, subject, body, rejected_html(absence_id, rejector_name)
+            teacher_email,
+            subject,
+            body,
+            rejected_html(absence_id, rejector_name, feedback),
         )
 
     async def send_absence_deleted_notification(

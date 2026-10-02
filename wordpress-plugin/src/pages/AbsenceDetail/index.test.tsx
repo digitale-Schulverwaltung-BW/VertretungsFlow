@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import AbsenceDetail from './index'
@@ -322,5 +322,95 @@ describe('AbsenceDetail - Phase 1: Basic Rendering & States', () => {
         expect(screen.getByText(/API Error/i)).toBeInTheDocument()
       })
     })
+  })
+})
+
+describe('AbsenceDetail - Unerledigt-Navigation & Rückmeldung', () => {
+  const list = (statuses: Array<[number, Absence['status']]>): Absence[] =>
+    statuses.map(([id, status]) => ({ ...mockAbsence, id, status }))
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    window.absenzflowConfig = {
+      apiUrl: 'http://localhost:8000/api',
+      useProxy: true,
+      nonce: 'test-nonce',
+      deptHeadsCanComplete: false,
+      currentUser: mockPlanner,
+    }
+  })
+
+  const setup = (current: number, all: Array<[number, Absence['status']]>, user: User = mockPlanner) => {
+    const absences = list(all)
+    vi.mocked(api.getAbsence).mockResolvedValue(absences.find(a => a.id === current)!)
+    vi.mocked(api.getCurrentUser).mockResolvedValue(user)
+    vi.mocked(api.getAbsences).mockResolvedValue(absences)
+    return renderWithRouter(String(current))
+  }
+
+  it('hides unresolved-navigation for teachers', async () => {
+    setup(1, [[1, 'submitted'], [2, 'submitted']], mockTeacher)
+    await waitFor(() => expect(screen.getByText('Abwesenheit Details')).toBeInTheDocument())
+    expect(screen.queryByText(/Unerledigt/)).not.toBeInTheDocument()
+  })
+
+  it('jumps to next unresolved absence, skipping completed/rejected', async () => {
+    setup(1, [[1, 'submitted'], [2, 'completed'], [3, 'rejected'], [4, 'approved']])
+    await waitFor(() => expect(screen.getByText('1 / 4')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /Unerledigt ⇥/ }))
+
+    await waitFor(() => expect(api.getAbsence).toHaveBeenCalledWith(4))
+  })
+
+  it('jumps to previous unresolved absence', async () => {
+    setup(4, [[1, 'approved'], [2, 'completed'], [3, 'completed'], [4, 'submitted']])
+    await waitFor(() => expect(screen.getByText('4 / 4')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /⇤ Unerledigt/ }))
+
+    await waitFor(() => expect(api.getAbsence).toHaveBeenCalledWith(1))
+  })
+
+  it('disables jump buttons when no unresolved absence in that direction', async () => {
+    setup(2, [[1, 'completed'], [2, 'submitted'], [3, 'completed']])
+    await waitFor(() => expect(screen.getByText('2 / 3')).toBeInTheDocument())
+
+    expect(screen.getByRole('button', { name: /Unerledigt ⇥/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /⇤ Unerledigt/ })).toBeDisabled()
+  })
+
+  it('sends feedback with "Als erledigt markieren"', async () => {
+    vi.mocked(api.completeAbsence).mockResolvedValue(mockCompletedAbsence)
+    setup(1, [[1, 'approved']])
+    const textarea = await screen.findByLabelText(/Rückmeldung an die Lehrkraft/)
+
+    fireEvent.change(textarea, { target: { value: '  Vertretung: Hr. X ' } })
+    fireEvent.click(screen.getByRole('button', { name: /Als erledigt markieren/ }))
+
+    await waitFor(() => expect(api.completeAbsence).toHaveBeenCalledWith(1, 'Vertretung: Hr. X'))
+  })
+
+  it('sends feedback on rejection but not on approval', async () => {
+    vi.mocked(api.approveAbsence).mockResolvedValue(mockAbsence)
+    setup(1, [[1, 'submitted']])
+    const textarea = await screen.findByLabelText(/Rückmeldung an die Lehrkraft/)
+
+    fireEvent.change(textarea, { target: { value: 'Zu kurzfristig' } })
+    fireEvent.click(screen.getByRole('button', { name: /Genehmigen/ }))
+    await waitFor(() => expect(api.approveAbsence).toHaveBeenCalledWith(1, true, undefined))
+
+    fireEvent.change(textarea, { target: { value: 'Zu kurzfristig' } })
+    fireEvent.click(screen.getByRole('button', { name: /Ablehnen/ }))
+    await waitFor(() => expect(api.approveAbsence).toHaveBeenCalledWith(1, false, 'Zu kurzfristig'))
+  })
+
+  it('sends undefined when feedback is empty', async () => {
+    vi.mocked(api.completeAbsence).mockResolvedValue(mockCompletedAbsence)
+    setup(1, [[1, 'approved']])
+
+    fireEvent.click(await screen.findByRole('button', { name: /Als erledigt markieren/ }))
+
+    await waitFor(() => expect(api.completeAbsence).toHaveBeenCalledWith(1, undefined))
   })
 })

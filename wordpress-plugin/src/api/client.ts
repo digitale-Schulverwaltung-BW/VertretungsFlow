@@ -231,22 +231,23 @@ class APIClient {
   async approveAbsence(
     absenceId: number,
     approved: boolean,
-    comment?: string
+    feedback?: string
   ): Promise<Absence> {
     return this.request<Absence>({
       method: 'POST',
       url: `/absences/${absenceId}/approve`,
-      data: { approved, comment },
+      data: { approved, feedback },
     });
   }
 
   /**
    * Complete absence (planner)
    */
-  async completeAbsence(absenceId: number): Promise<Absence> {
+  async completeAbsence(absenceId: number, feedback?: string): Promise<Absence> {
     return this.request<Absence>({
       method: 'POST',
       url: `/absences/${absenceId}/complete`,
+      data: { feedback },
     });
   }
 

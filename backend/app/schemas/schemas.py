@@ -8,7 +8,6 @@ from typing import Optional, List, Union
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from app.models.models import UserRole, AbsenceStatus
 
-
 # ============ Security: Allowed Absence Reasons ============
 
 ALLOWED_REASONS = {
@@ -331,7 +330,25 @@ class AbsenceApproval(BaseModel):
     """Absence Approval/Rejection Schema"""
 
     approved: bool
-    notes: Optional[str] = None
+    feedback: Optional[str] = Field(default=None, max_length=2000)
+
+    @field_validator("feedback")
+    @classmethod
+    def normalize_feedback(cls, v: Optional[str]) -> Optional[str]:
+        """Leere/Whitespace-Rückmeldung wird zu None"""
+        return (v.strip() or None) if v else None
+
+
+class AbsenceCompletion(BaseModel):
+    """Absence Completion Schema (optionale Rückmeldung an die Lehrkraft)"""
+
+    feedback: Optional[str] = Field(default=None, max_length=2000)
+
+    @field_validator("feedback")
+    @classmethod
+    def normalize_feedback(cls, v: Optional[str]) -> Optional[str]:
+        """Leere/Whitespace-Rückmeldung wird zu None"""
+        return (v.strip() or None) if v else None
 
 
 # ============ WebUntis Schemas ============
