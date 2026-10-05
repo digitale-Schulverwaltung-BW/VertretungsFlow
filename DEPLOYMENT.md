@@ -6,6 +6,7 @@ Diese Anleitung erklärt, wie man VertretungsFlow sicher in verschiedenen Umgebu
 
 - [Umgebungsübersicht](#umgebungsübersicht)
 - [Production-Deployment](#production-deployment)
+- [Upgrade von AbsenzFlow auf VertretungsFlow](#upgrade-von-absenzflow-auf-vertretungsflow)
 - [Sicherheits-Checkliste](#sicherheits-checkliste)
 - [Development-Setup](#development-setup)
 - [Datenbankzugriff](#datenbankzugriff)
@@ -170,6 +171,74 @@ docker-compose -f docker-compose.prod.yml logs backend | grep "Security validati
 
 # Erwartet: "✅ Security validation passed - no default secrets detected"
 ```
+
+---
+
+## Upgrade von AbsenzFlow auf VertretungsFlow
+
+Gilt für Installationen, die noch unter dem alten Namen AbsenzFlow laufen
+(Plugin-Version < 1.1.0). Eine Neuinstallation braucht diesen Abschnitt nicht.
+
+### Was die Migration macht
+
+Die Klasse `VertretungsFlow_Migration` (`wordpress-plugin/includes/class-migration.php`)
+läuft **automatisch** bei der ersten WordPress-Anfrage nach dem Kopieren der neuen
+Plugin-Dateien (Hook `plugins_loaded`). Das Plugin muss weder deaktiviert noch neu
+aktiviert werden; Ordner und Hauptdatei (`absenzflow/absenzflow.php`) bleiben gleich.
+
+| Alt | Neu |
+|-----|-----|
+| Option `absenzflow_options` (API-URL, Proxy-Secret, Einstellungen) | `vertretungsflow_options` |
+| User-Meta `absenzflow_role` | `vertretungsflow_role` |
+| User-Meta `absenzflow_webuntis_code` | `vertretungsflow_webuntis_code` |
+
+- Die Werte werden **kopiert**, die alten Einträge bleiben erhalten (Rollback möglich).
+- Bereits vorhandene neue Werte werden nie überschrieben.
+- Abgeschlossen ist die Migration, sobald die Option `vertretungsflow_db_version` den Wert `1.1.0` hat.
+- Der Shortcode `[absenzflow]` und der REST-Namespace `absenzflow/v1` funktionieren als Alias weiter.
+- Das Backend/die PostgreSQL-Datenbank ist nicht betroffen (keine Schemaänderung).
+
+### Ablauf
+
+1. **Backup** der WordPress-Datenbank (mindestens `wp_options` und `wp_usermeta`).
+2. **Frontend bauen:** `cd wordpress-plugin && npm run build`
+3. **Plugin-Dateien kopieren** nach `wp-content/plugins/absenzflow/`:
+   `absenzflow.php`, `includes/` (inkl. `class-migration.php`), `assets/` und `build/`.
+   `build/` und die PHP-Dateien immer zusammen ausrollen.
+4. **Backend aktualisieren:** `docker-compose up -d --build backend`.
+   In der `.env` ggf. `APP_NAME=VertretungsFlow` anpassen (ein alter Wert überschreibt den neuen Default).
+5. **Eine beliebige Seite aufrufen** (Frontend oder WP-Admin) – das löst die Migration aus.
+6. **Caches leeren** (Page-Cache, CDN); bei OPcache mit `validate_timestamps=0`
+   PHP-FPM/Apache neu starten, sonst wird die neue PHP-Datei nicht geladen.
+
+### Prüfen
+
+```bash
+wp option get vertretungsflow_db_version   # erwartet: 1.1.0
+wp user meta list <USER_ID> --keys=vertretungsflow_role,vertretungsflow_webuntis_code
+```
+
+Ohne WP-CLI:
+
+```sql
+SELECT option_name FROM wp_options WHERE option_name LIKE 'vertretungsflow%';
+SELECT meta_key, COUNT(*) FROM wp_usermeta WHERE meta_key LIKE '%flow_%' GROUP BY meta_key;
+```
+
+Die Anzahl der `vertretungsflow_*`-Meta-Keys muss der Anzahl der alten `absenzflow_*`-Keys entsprechen.
+Zusätzlich im WP-Admin unter *Rollenverwaltung* und *Einstellungen* prüfen, dass Rollen,
+WebUntis-Kürzel, API-URL und Proxy-Secret vorhanden sind.
+
+### Rollback
+
+Alte Plugin-Version zurückspielen – die alten Optionen und Meta-Keys sind unverändert.
+Änderungen, die in der Zwischenzeit mit der neuen Version gespeichert wurden (z.B. neue Rollen),
+stehen nur in den neuen Keys und gehen beim Rollback nicht mit zurück.
+
+### Aufräumen
+
+Das Löschen der alten `absenzflow_*`-Einträge ist noch nicht automatisiert und
+bleibt einem späteren Release vorbehalten.
 
 ---
 
