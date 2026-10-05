@@ -1,5 +1,5 @@
 /**
- * TypeScript Types for AbsenzFlow
+ * TypeScript Types for VertretungsFlow
  */
 
 export type UserRole = 'teacher' | 'dept_head' | 'planner' | 'admin';

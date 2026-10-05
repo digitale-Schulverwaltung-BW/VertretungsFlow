@@ -1,8 +1,8 @@
-# SEC-AUDIT.md - AbsenzFlow Security Audit Report
+# SEC-AUDIT.md - VertretungsFlow Security Audit Report
 
 ## Executive Summary
 
-The AbsenzFlow codebase demonstrates strong security practices with comprehensive authentication, authorization, and input validation. However, the hardcoded default secrets and debug mode configurations represent significant security risks that must be addressed before production deployment.
+The VertretungsFlow codebase demonstrates strong security practices with comprehensive authentication, authorization, and input validation. However, the hardcoded default secrets and debug mode configurations represent significant security risks that must be addressed before production deployment.
 
 The architecture shows good understanding of security principles, particularly in file upload handling, API security, and audit logging. With the recommended fixes, this application can achieve a strong security posture suitable for production use in educational environments.
 
@@ -281,7 +281,7 @@ Files:
 
 Security Posture: GOOD with Critical Issues
 
-The AbsenzFlow codebase demonstrates strong security practices with comprehensive authentication, authorization, and input validation. The architecture shows good understanding of security principles, particularly in file upload handling, API security, and audit logging.
+The VertretungsFlow codebase demonstrates strong security practices with comprehensive authentication, authorization, and input validation. The architecture shows good understanding of security principles, particularly in file upload handling, API security, and audit logging.
 
 Key Strengths:
 - Well-implemented WordPress proxy authentication

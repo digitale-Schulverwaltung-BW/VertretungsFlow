@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: AbsenzFlow
+ * Plugin Name: VertretungsFlow
  * Plugin URI: https://github.com/your-org/absenzflow
  * Description: Abwesenheitsmanagement für Schulen mit WebUntis-Integration
  * Version: 1.0.1
@@ -21,7 +21,7 @@ define('ABSENZFLOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ABSENZFLOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 /**
- * AbsenzFlow Plugin Hauptklasse
+ * VertretungsFlow Plugin Hauptklasse
  */
 class AbsenzFlow_Plugin {
     

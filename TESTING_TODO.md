@@ -1,6 +1,6 @@
 # Frontend Testing TODO
 
-Comprehensive testing checklist for AbsenzFlow frontend. Check off items as you complete them.
+Comprehensive testing checklist for VertretungsFlow frontend. Check off items as you complete them.
 
 ## ✅ Completed
 

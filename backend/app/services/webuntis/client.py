@@ -57,7 +57,7 @@ class WebUntisAPIClient:
                     "params": {
                         "user": self.username,
                         "password": "***",  # Password in Logs nicht anzeigen
-                        "client": "AbsenzFlow",
+                        "client": "VertretungsFlow",
                     },
                     "jsonrpc": "2.0",
                 }

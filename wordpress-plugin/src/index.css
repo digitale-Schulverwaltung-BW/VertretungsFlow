@@ -11,7 +11,7 @@
 }
 
 /*
- * CSS Isolation Layer for AbsenzFlow
+ * CSS Isolation Layer for VertretungsFlow
  * Protects against WordPress theme style interference
  * Uses a minimal, targeted approach to avoid breaking Tailwind styling
  */
@@ -179,7 +179,7 @@
  *   w-20      = 5rem  =   50px  (instead of  80px)
  *
  * Fix: px-based !important overrides for all critical Tailwind utilities
- * used in AbsenzFlow components. Components keep standard Tailwind classes.
+ * used in VertretungsFlow components. Components keep standard Tailwind classes.
  */
 
 /* --- Typography --- */

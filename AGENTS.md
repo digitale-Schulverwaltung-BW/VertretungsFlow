@@ -1,6 +1,6 @@
-# AGENTS.md - AbsenzFlow Development Guide
+# AGENTS.md - VertretungsFlow Development Guide
 
-This document provides essential information for agentic coding agents working with the AbsenzFlow repository.
+This document provides essential information for agentic coding agents working with the VertretungsFlow repository.
 
 ## Build, Lint, and Test Commands
 
@@ -396,4 +396,4 @@ docker-compose logs backend | grep -i error
 
 ## Last Updated
 - 2026-02-06
-- Based on AbsenzFlow architecture and recent service refactorings
+- Based on VertretungsFlow architecture and recent service refactorings

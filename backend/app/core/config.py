@@ -1,5 +1,5 @@
 """
-Konfiguration für AbsenzFlow
+Konfiguration für VertretungsFlow
 Lädt Umgebungsvariablen aus .env
 """
 
@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     """Application Settings"""
 
     # Application
-    APP_NAME: str = "AbsenzFlow"
+    APP_NAME: str = "VertretungsFlow"
     FRONTEND_URL: str = (
         "http://localhost:3000"  # WordPress page with [absenzflow] shortcode
     )

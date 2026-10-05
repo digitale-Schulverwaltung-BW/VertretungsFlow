@@ -1,5 +1,5 @@
 /**
- * API Client for AbsenzFlow Backend
+ * API Client for VertretungsFlow Backend
  */
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type {

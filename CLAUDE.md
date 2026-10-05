@@ -1,10 +1,10 @@
-# CLAUDE.md - AbsenzFlow Development Guide
+# CLAUDE.md - VertretungsFlow Development Guide
 
-Dieses Dokument hilft Claude (und anderen Entwicklern) beim Arbeiten mit dem AbsenzFlow-Projekt.
+Dieses Dokument hilft Claude (und anderen Entwicklern) beim Arbeiten mit dem VertretungsFlow-Projekt.
 
 ## Projektübersicht
 
-**AbsenzFlow** ist ein Absenzverwaltungssystem für Schulen mit:
+**VertretungsFlow** ist ein Absenzverwaltungssystem für Schulen mit:
 - **FastAPI Backend** (Python) für Geschäftslogik und Datenhaltung
 - **React Frontend** (TypeScript) als WordPress-Plugin
 - **PostgreSQL** Datenbank
@@ -29,7 +29,7 @@ Das System nutzt **WordPress-Cookie-Authentication** über einen Proxy:
    - `X-WordPress-Secret`: Shared Secret zur Authentifizierung
    - `X-WordPress-User`: Username
    - `X-WordPress-Email`: E-Mail
-   - `X-WordPress-Role`: AbsenzFlow-Rolle (admin/teacher/dept_head/planner)
+   - `X-WordPress-Role`: VertretungsFlow-Rolle (admin/teacher/dept_head/planner)
    - `X-WordPress-WebUntis-Code`: WebUntis-Kürzel des Users
 4. Backend validiert Secret und erstellt/aktualisiert User automatisch
 
@@ -404,7 +404,7 @@ docker-compose logs backend | grep -i upload
 
 **WordPress-Logs:**
 ```bash
-tail -f /pfad/zu/wordpress/wp-content/debug.log | grep AbsenzFlow
+tail -f /pfad/zu/wordpress/wp-content/debug.log | grep VertretungsFlow
 ```
 
 ## Debugging
@@ -413,7 +413,7 @@ tail -f /pfad/zu/wordpress/wp-content/debug.log | grep AbsenzFlow
 
 **Checkliste:**
 1. Ist `WORDPRESS_PROXY_SECRET` in Backend `.env` gesetzt?
-2. Ist derselbe Wert in WordPress Admin (Einstellungen → AbsenzFlow) eingetragen?
+2. Ist derselbe Wert in WordPress Admin (Einstellungen → VertretungsFlow) eingetragen?
 3. Wurde Backend nach `.env`-Änderung neu gestartet?
 4. Ist Secret in `docker-compose.yml` unter `backend.environment` gelistet?
 

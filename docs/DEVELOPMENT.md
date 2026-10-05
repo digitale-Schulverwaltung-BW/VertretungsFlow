@@ -1,6 +1,6 @@
-# AbsenzFlow Entwickler Guide
+# VertretungsFlow Entwickler Guide
 
-Anleitung für Entwickler die an AbsenzFlow arbeiten möchten.
+Anleitung für Entwickler die an VertretungsFlow arbeiten möchten.
 
 ## 🏗️ Projekt-Setup
 

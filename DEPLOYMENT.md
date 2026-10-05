@@ -1,6 +1,6 @@
-# AbsenzFlow Deployment-Anleitung
+# VertretungsFlow Deployment-Anleitung
 
-Diese Anleitung erklärt, wie man AbsenzFlow sicher in verschiedenen Umgebungen bereitstellt.
+Diese Anleitung erklärt, wie man VertretungsFlow sicher in verschiedenen Umgebungen bereitstellt.
 
 ## 📋 Inhaltsverzeichnis
 
@@ -15,7 +15,7 @@ Diese Anleitung erklärt, wie man AbsenzFlow sicher in verschiedenen Umgebungen 
 
 ## Umgebungsübersicht
 
-AbsenzFlow bietet zwei Docker-Compose-Konfigurationen:
+VertretungsFlow bietet zwei Docker-Compose-Konfigurationen:
 
 | Datei | Zweck | Sicherheit | Use Case |
 |------|---------|----------------|----------|
@@ -43,7 +43,7 @@ AbsenzFlow bietet zwei Docker-Compose-Konfigurationen:
 Vor dem Deployment in Production sicherstellen:
 
 1. ✅ Gültige `.env` Datei mit sicheren Secrets vorhanden
-2. ✅ WordPress installiert und AbsenzFlow-Plugin konfiguriert
+2. ✅ WordPress installiert und VertretungsFlow-Plugin konfiguriert
 3. ✅ WordPress Proxy Secret stimmt zwischen WordPress Admin und `.env` überein
 4. ✅ Datenbank-Backups konfiguriert
 5. ✅ SSL/TLS-Zertifikate vorhanden (falls HTTPS verwendet)
@@ -132,7 +132,7 @@ UPLOAD_DIR=/app/uploads
 
 #### 3. WordPress-Plugin-Einstellungen aktualisieren
 
-In WordPress Admin → Einstellungen → AbsenzFlow:
+In WordPress Admin → Einstellungen → VertretungsFlow:
 
 1. **Proxy Secret** auf `WORDPRESS_PROXY_SECRET` aus `.env` setzen
 2. **Backend URL** auf die Backend-API-URL setzen
@@ -142,7 +142,7 @@ In WordPress Admin → Einstellungen → AbsenzFlow:
 
 ```bash
 # 1. Zum Projektverzeichnis navigieren
-cd AbsenzFlow
+cd VertretungsFlow
 
 # 2. Images bauen (nur beim ersten Mal)
 docker-compose -f docker-compose.prod.yml build
@@ -200,7 +200,7 @@ Vor dem Go-Live überprüfen:
 
 ### ✅ WordPress-Integration
 
-- [ ] AbsenzFlow-Plugin aktiviert
+- [ ] VertretungsFlow-Plugin aktiviert
 - [ ] Proxy Secret in WordPress Admin konfiguriert
 - [ ] Backend URL korrekt konfiguriert
 - [ ] Benutzerrollen korrekt gemappt
@@ -362,7 +362,7 @@ curl http://localhost:8000/health
 docker-compose -f docker-compose.prod.yml exec backend env | grep WORDPRESS_PROXY_SECRET
 
 # In WordPress:
-# Admin → Einstellungen → AbsenzFlow → Proxy Secret
+# Admin → Einstellungen → VertretungsFlow → Proxy Secret
 
 # 3. Backend-Logs auf Auth-Fehler prüfen
 docker-compose -f docker-compose.prod.yml logs backend | grep -i "proxy\|auth"
@@ -464,5 +464,5 @@ Nach erfolgreichem Deployment:
 ---
 
 **Zuletzt aktualisiert:** 2026-02-06
-**Betreuer:** AbsenzFlow Team
+**Betreuer:** VertretungsFlow Team
 **Fragen?** Siehe [CLAUDE.md](CLAUDE.md) für Entwickler-Dokumentation

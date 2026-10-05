@@ -1,10 +1,10 @@
-# Contributing to AbsenzFlow
+# Contributing to VertretungsFlow
 
-Vielen Dank für dein Interesse an AbsenzFlow!
+Vielen Dank für dein Interesse an VertretungsFlow!
 
 ## Repositories
 
-AbsenzFlow wird auf mehreren Plattformen gehostet:
+VertretungsFlow wird auf mehreren Plattformen gehostet:
 
 - **Lokales GitLab** (nur für Schüler & Lehrkräfte der HHS Karlsruhe)
 - **GitHub**: [github.com/digitale-Schulverwaltung-BW/absenzflow](https://github.com/digitale-Schulverwaltung-BW/absenzflow)

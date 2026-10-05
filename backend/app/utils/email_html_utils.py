@@ -69,7 +69,7 @@ def _wrap(header_html: str, content_html: str) -> str:
         f'<hr style="{_DIVIDER_STYLE}">'
         f"{content_html}"
         f"</div>"
-        f'<div style="{_FOOTER_STYLE}">AbsenzFlow System &ndash; Diese Nachricht wurde automatisch generiert.</div>'
+        f'<div style="{_FOOTER_STYLE}">VertretungsFlow System &ndash; Diese Nachricht wurde automatisch generiert.</div>'
         f"</body></html>"
     )
 
@@ -279,7 +279,7 @@ def deleted_html(
         + _detail_row("Bis", _esc(end_date))
         + "</table>"
         + f'<p style="color: #6b7280; font-size: 13px; margin-top: 16px;">'
-        f"Die Meldung wurde aus dem AbsenzFlow-System entfernt.</p>"
+        f"Die Meldung wurde aus dem VertretungsFlow-System entfernt.</p>"
     )
     return _wrap(header, content)
 

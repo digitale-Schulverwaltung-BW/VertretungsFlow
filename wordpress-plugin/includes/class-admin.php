@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin-Verwaltung für AbsenzFlow WordPress Plugin
+ * Admin-Verwaltung für VertretungsFlow WordPress Plugin
  */
 
 class AbsenzFlow_Admin {
@@ -24,8 +24,8 @@ class AbsenzFlow_Admin {
      */
     public function add_admin_menu() {
         add_menu_page(
-            'AbsenzFlow',              // Page title
-            'AbsenzFlow',              // Menu title
+            'VertretungsFlow',              // Page title
+            'VertretungsFlow',              // Menu title
             'manage_options',          // Capability
             'absenzflow',              // Menu slug
             array($this, 'render_admin_page'), // Callback
@@ -152,7 +152,7 @@ class AbsenzFlow_Admin {
      * Section Callback
      */
     public function section_callback() {
-        echo '<p>Konfigurieren Sie die Verbindung zum AbsenzFlow Backend.</p>';
+        echo '<p>Konfigurieren Sie die Verbindung zum VertretungsFlow Backend.</p>';
     }
     
     /**
@@ -219,15 +219,15 @@ class AbsenzFlow_Admin {
     public function render_admin_page() {
         ?>
         <div class="wrap">
-            <h1>AbsenzFlow Dashboard</h1>
-            <p>Willkommen im AbsenzFlow Verwaltungsbereich.</p>
+            <h1>VertretungsFlow Dashboard</h1>
+            <p>Willkommen im VertretungsFlow Verwaltungsbereich.</p>
             
             <div class="card">
                 <h2>Schnellstart</h2>
                 <ol>
                     <li>Konfigurieren Sie die <a href="<?php echo admin_url('admin.php?page=absenzflow-settings'); ?>">API-Einstellungen</a></li>
                     <li>Verwalten Sie <a href="<?php echo admin_url('admin.php?page=absenzflow-roles'); ?>">Benutzerrollen</a></li>
-                    <li>Binden Sie AbsenzFlow mit dem Shortcode <code>[absenzflow]</code> ein</li>
+                    <li>Binden Sie VertretungsFlow mit dem Shortcode <code>[absenzflow]</code> ein</li>
                 </ol>
             </div>
             
@@ -246,7 +246,7 @@ class AbsenzFlow_Admin {
     public function render_settings_page() {
         ?>
         <div class="wrap">
-            <h1>AbsenzFlow Einstellungen</h1>
+            <h1>VertretungsFlow Einstellungen</h1>
             <form method="post" action="options.php">
                 <?php
                 settings_fields('absenzflow_options_group');
@@ -324,8 +324,8 @@ class AbsenzFlow_Admin {
 
         ?>
         <div class="wrap">
-            <h1>AbsenzFlow Rollenverwaltung</h1>
-            <p>Weisen Sie WordPress-Benutzern AbsenzFlow-Rollen zu.</p>
+            <h1>VertretungsFlow Rollenverwaltung</h1>
+            <p>Weisen Sie WordPress-Benutzern VertretungsFlow-Rollen zu.</p>
 
             <form method="post">
                 <?php wp_nonce_field('absenzflow_roles_batch_update'); ?>
@@ -336,7 +336,7 @@ class AbsenzFlow_Admin {
                             <th>Benutzer</th>
                             <th>E-Mail</th>
                             <th>WordPress-Rolle</th>
-                            <th>AbsenzFlow-Rolle</th>
+                            <th>VertretungsFlow-Rolle</th>
                             <th>WebUntis-Kürzel</th>
                         </tr>
                     </thead>

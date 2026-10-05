@@ -1,6 +1,6 @@
-# AbsenzFlow API Dokumentation
+# VertretungsFlow API Dokumentation
 
-REST API für AbsenzFlow Backend
+REST API für VertretungsFlow Backend
 
 ## Base URL
 

@@ -1,6 +1,6 @@
 # PDF Form Field Tools
 
-Werkzeuge zum Arbeiten mit PDF-Formularfeldern für das AbsenzFlow-System.
+Werkzeuge zum Arbeiten mit PDF-Formularfeldern für das VertretungsFlow-System.
 
 ## Übersicht
 

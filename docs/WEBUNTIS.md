@@ -1,10 +1,10 @@
 # WebUntis Integration
 
-Dokumentation zur Integration von AbsenzFlow mit WebUntis.
+Dokumentation zur Integration von VertretungsFlow mit WebUntis.
 
 ## Überblick
 
-AbsenzFlow nutzt die WebUntis JSON-RPC API, um:
+VertretungsFlow nutzt die WebUntis JSON-RPC API, um:
 - Stundenpläne von Lehrkräften abzurufen
 - Betroffene Stunden bei Abwesenheiten zu identifizieren
 - Klassen-, Fach- und Rauminformationen zu erhalten
@@ -17,7 +17,7 @@ AbsenzFlow nutzt die WebUntis JSON-RPC API, um:
 2. **Verwaltung → Stammdaten → Lehrer**
 3. Neuen Lehrer anlegen:
    - Name: "API"
-   - Vorname: "AbsenzFlow"
+   - Vorname: "VertretungsFlow"
    - Kürzel: "API" oder ähnlich
    - E-Mail: optional
 4. Unter **Rechte** dem User folgende Berechtigungen geben:
@@ -33,7 +33,7 @@ AbsenzFlow nutzt die WebUntis JSON-RPC API, um:
 - **Username:** Benutzername des API-Users
 - **Password:** Passwort des API-Users
 
-### 3. In AbsenzFlow konfigurieren
+### 3. In VertretungsFlow konfigurieren
 
 In der `.env` Datei:
 
@@ -89,7 +89,7 @@ affected_lessons = await webuntis_service.get_lessons_for_absence(
 
 ## Stundennummern-Mapping
 
-Die WebUntis API gibt Zeiten zurück, keine Stundennummern. AbsenzFlow berechnet die Stundennummer basierend auf der Startzeit:
+Die WebUntis API gibt Zeiten zurück, keine Stundennummern. VertretungsFlow berechnet die Stundennummer basierend auf der Startzeit:
 
 ```python
 def _calculate_lesson_number(self, start_time: int) -> int:
@@ -178,12 +178,12 @@ https://help.untis.at/hc/de/articles/4403351094034-General-documentation-for-int
 #### authenticate
 ```json
 {
-  "id": "AbsenzFlow",
+  "id": "VertretungsFlow",
   "method": "authenticate",
   "params": {
     "user": "api-user",
     "password": "password",
-    "client": "AbsenzFlow"
+    "client": "VertretungsFlow"
   }
 }
 ```
@@ -191,7 +191,7 @@ https://help.untis.at/hc/de/articles/4403351094034-General-documentation-for-int
 #### getTimetable
 ```json
 {
-  "id": "AbsenzFlow",
+  "id": "VertretungsFlow",
   "method": "getTimetable",
   "params": {
     "id": 123,
@@ -212,7 +212,7 @@ https://help.untis.at/hc/de/articles/4403351094034-General-documentation-for-int
 #### getTeachers
 ```json
 {
-  "id": "AbsenzFlow",
+  "id": "VertretungsFlow",
   "method": "getTeachers"
 }
 ```

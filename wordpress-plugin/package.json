@@ -2,7 +2,7 @@
   "name": "absenzflow-wp",
   "version": "1.0.0",
   "type": "module",
-  "description": "AbsenzFlow WordPress Plugin Frontend",
+  "description": "VertretungsFlow WordPress Plugin Frontend",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"

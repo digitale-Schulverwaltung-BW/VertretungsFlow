@@ -2,7 +2,7 @@
 Unit Tests für app/api/auth.py
 
 Getestet:
-- map_wordpress_role()              - WordPress → AbsenzFlow role mapping
+- map_wordpress_role()              - WordPress → VertretungsFlow role mapping
 - _decode_wordpress_name()          - URL-decode header names
 - _update_wordpress_user_fields()   - Smart update logic (nur bei Änderungen)
 - _handle_wordpress_proxy_user()    - Create/Update flow (neue vs. bestehende User)
@@ -96,7 +96,7 @@ def make_mock_user(role=UserRole.TEACHER, is_active=True):
 
 
 class TestMapWordpressRole:
-    """Tests for WordPress → AbsenzFlow role mapping"""
+    """Tests for WordPress → VertretungsFlow role mapping"""
 
     def test_admin(self):
         assert map_wordpress_role("admin") == UserRole.ADMIN

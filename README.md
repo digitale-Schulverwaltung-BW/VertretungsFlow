@@ -1,11 +1,13 @@
-# AbsenzFlow
+<p align="center"><img src="wordpress-plugin/assets/logo-stacked.png" alt="VertretungsFlow" width="360"></p>
+
+# VertretungsFlow
 
 [![pipeline status](https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow/badges/main/pipeline.svg)](https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow/-/commits/main)
 [![coverage report](https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow/badges/main/coverage.svg)](https://gitlab.hhs.karlsruhe.de/digitale-schulverwaltung/absenzflow/-/graphs/main/charts)
 
 **Modernes Abwesenheitsmanagement für Schulen mit WebUntis-Integration**
 
-AbsenzFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abwesenheiten einfach zu melden und Vertretungsplanern eine übersichtliche Verwaltung bietet.
+VertretungsFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abwesenheiten einfach zu melden und Vertretungsplanern eine übersichtliche Verwaltung bietet.
 
 ## 🎯 Features
 
@@ -25,7 +27,7 @@ AbsenzFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abwesenh
 **Deployment-Modell:**
 ```
 ┌─────────────────────────────────────┐
-│  WordPress + AbsenzFlow Plugin      │  ← Frontend (React-App)
+│  WordPress + VertretungsFlow Plugin      │  ← Frontend (React-App)
 │  - PHP Plugin lädt React-Bundle     │    als Wordpress-Plugin
 │  - Shortcode: [absenzflow]          │    Benutzerdaten aus WP
 └──────────────┬──────────────────────┘
@@ -133,12 +135,12 @@ for file in absenzflow.php  assets  build  includes; do
   ln -s $(pwd)/wordpress-plugin/$file $WP_ROOT/wp-content/plugins/absenzflow/$file
 done
 ```
-**Hinweis:** der Vorteil der Softlinks ist, dass Updates im AbsenzFlow-Verzeichnis bereits im WebRoot liegen und nur noch
+**Hinweis:** der Vorteil der Softlinks ist, dass Updates im VertretungsFlow-Verzeichnis bereits im WebRoot liegen und nur noch
 ein ```npm run build``` erfolgen muss.
 
-3. In WordPress aktivieren: **Plugins → AbsenzFlow → Aktivieren**
+3. In WordPress aktivieren: **Plugins → VertretungsFlow → Aktivieren**
 
-4. Einstellungen konfigurieren (**AbsenzFlow → Einstellungen**):
+4. Einstellungen konfigurieren (**VertretungsFlow → Einstellungen**):
    - **Backend API URL**: `http://your-backend-server:8000/api`
    - **Backend API Secret**: Identischer Wert wie `WORDPRESS_PROXY_SECRET` aus Backend .env
 

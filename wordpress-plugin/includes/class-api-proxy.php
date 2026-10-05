@@ -42,7 +42,7 @@ class AbsenzFlow_API_Proxy {
             }
             // Debug: log why auth failed
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('AbsenzFlow: Cookie auth failed - user not logged in. User ID: ' . get_current_user_id());
+                error_log('VertretungsFlow: Cookie auth failed - user not logged in. User ID: ' . get_current_user_id());
             }
         }
 
@@ -142,7 +142,7 @@ class AbsenzFlow_API_Proxy {
     public function proxy_request($request) {
         // Debug logging (only when WP_DEBUG is enabled)
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow Proxy: Request received');
+            error_log('VertretungsFlow Proxy: Request received');
             error_log('User logged in: ' . (is_user_logged_in() ? 'yes' : 'no'));
             error_log('User ID: ' . get_current_user_id());
             error_log('Current user: ' . (is_user_logged_in() ? wp_get_current_user()->user_login : 'none'));
@@ -154,7 +154,7 @@ class AbsenzFlow_API_Proxy {
 
         // Security: only log whether the secret is configured, never its value
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow Proxy: API Secret configured: ' . (!empty($api_secret) ? 'yes' : 'NO'));
+            error_log('VertretungsFlow Proxy: API Secret configured: ' . (!empty($api_secret) ? 'yes' : 'NO'));
         }
 
         if (empty($api_url)) {
@@ -234,12 +234,12 @@ class AbsenzFlow_API_Proxy {
 
         // Request ausführen
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow Proxy: Calling backend URL: ' . $url);
+            error_log('VertretungsFlow Proxy: Calling backend URL: ' . $url);
         }
         $response = wp_remote_request($url, $args);
 
         if (is_wp_error($response)) {
-            error_log('AbsenzFlow Proxy: WP Error: ' . $response->get_error_message());
+            error_log('VertretungsFlow Proxy: WP Error: ' . $response->get_error_message());
             return new WP_Error('proxy_error', $response->get_error_message(), array('status' => 500));
         }
 
@@ -248,9 +248,9 @@ class AbsenzFlow_API_Proxy {
 
         // Debug: Log response (only when WP_DEBUG is enabled)
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow Proxy: Backend response status: ' . $status_code);
+            error_log('VertretungsFlow Proxy: Backend response status: ' . $status_code);
             if ($status_code >= 400) {
-                error_log('AbsenzFlow Proxy: Backend error response: ' . substr($response_body, 0, 200));
+                error_log('VertretungsFlow Proxy: Backend error response: ' . substr($response_body, 0, 200));
             }
         }
 
@@ -266,7 +266,7 @@ class AbsenzFlow_API_Proxy {
      */
     public function proxy_file_upload($request) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow File Upload Proxy: Request received');
+            error_log('VertretungsFlow File Upload Proxy: Request received');
             error_log('User logged in: ' . (is_user_logged_in() ? 'yes' : 'no'));
             error_log('User ID: ' . get_current_user_id());
         }
@@ -346,13 +346,13 @@ class AbsenzFlow_API_Proxy {
         curl_close($ch);
 
         if ($curl_error) {
-            error_log('AbsenzFlow File Upload: cURL error: ' . $curl_error);
+            error_log('VertretungsFlow File Upload: cURL error: ' . $curl_error);
             return new WP_Error('curl_error', $curl_error, array('status' => 500));
         }
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow File Upload: Response status: ' . $status_code);
-            error_log('AbsenzFlow File Upload: Response body: ' . substr($response_body, 0, 200));
+            error_log('VertretungsFlow File Upload: Response status: ' . $status_code);
+            error_log('VertretungsFlow File Upload: Response body: ' . substr($response_body, 0, 200));
         }
 
         // Return response
@@ -367,7 +367,7 @@ class AbsenzFlow_API_Proxy {
      */
     public function proxy_file_download($request) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow File Download Proxy: Request received');
+            error_log('VertretungsFlow File Download Proxy: Request received');
         }
 
         $options = get_option('absenzflow_options');
@@ -461,7 +461,7 @@ class AbsenzFlow_API_Proxy {
      */
     public function proxy_pdf_download($request) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow PDF Download Proxy: Request received');
+            error_log('VertretungsFlow PDF Download Proxy: Request received');
         }
 
         $options = get_option('absenzflow_options');
@@ -484,7 +484,7 @@ class AbsenzFlow_API_Proxy {
         $url = rtrim($api_url, '/') . '/absences/' . $absence_id . '/pdf-forms/' . $form_type;
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow PDF Download: URL: ' . $url);
+            error_log('VertretungsFlow PDF Download: URL: ' . $url);
         }
 
         // URL-encode names to handle UTF-8 characters (äöüß) in HTTP headers
@@ -521,7 +521,7 @@ class AbsenzFlow_API_Proxy {
         curl_close($ch);
 
         if ($curl_error) {
-            error_log('AbsenzFlow PDF Download: cURL error: ' . $curl_error);
+            error_log('VertretungsFlow PDF Download: cURL error: ' . $curl_error);
             return new WP_Error('curl_error', $curl_error, array('status' => 500));
         }
 
@@ -530,13 +530,13 @@ class AbsenzFlow_API_Proxy {
         $body = substr($response, $header_size);
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('AbsenzFlow PDF Download: Status: ' . $status_code . ', Body size: ' . strlen($body));
+            error_log('VertretungsFlow PDF Download: Status: ' . $status_code . ', Body size: ' . strlen($body));
         }
 
         // If error, return JSON error
         if ($status_code !== 200) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('AbsenzFlow PDF Download: Error response: ' . substr($body, 0, 200));
+                error_log('VertretungsFlow PDF Download: Error response: ' . substr($body, 0, 200));
             }
             return new WP_REST_Response(
                 json_decode($body, true),
@@ -568,7 +568,7 @@ class AbsenzFlow_API_Proxy {
     }
 
     /**
-     * Returns all WP users who have an AbsenzFlow WebUntis code set.
+     * Returns all WP users who have a VertretungsFlow WebUntis code set.
      * Used by the admin teacher-selection combobox when creating an absence on behalf of another teacher.
      *
      * @return WP_REST_Response JSON array of {username, full_name, email, webuntis_code}
@@ -615,10 +615,10 @@ class AbsenzFlow_API_Proxy {
     }
 
     /**
-     * Holt AbsenzFlow-Rolle aus User Meta
+     * Holt VertretungsFlow-Rolle aus User Meta
      *
      * @param WP_User $user WordPress User Objekt
-     * @return string AbsenzFlow Rolle (admin/teacher/dept_head/planner)
+     * @return string VertretungsFlow Rolle (admin/teacher/dept_head/planner)
      */
     private function map_wp_role_to_absenzflow($user) {
         // Rolle aus User Meta laden (wird über Rollenverwaltung gesetzt)

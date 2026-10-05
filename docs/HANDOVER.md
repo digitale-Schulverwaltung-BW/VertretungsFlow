@@ -1,8 +1,8 @@
-# AbsenzFlow - Handover für Claude Code
+# VertretungsFlow - Handover für Claude Code
 
 ## 🎯 Projekt-Übersicht
 
-**AbsenzFlow** ist ein Open-Source Tool für Schulen zur Verwaltung von Lehrkraft-Abwesenheiten und Vertretungsplanung.
+**VertretungsFlow** ist ein Open-Source Tool für Schulen zur Verwaltung von Lehrkraft-Abwesenheiten und Vertretungsplanung.
 
 - **Backend:** FastAPI (Python) mit PostgreSQL
 - **Frontend:** WordPress-Plugin (React) + geplante Standalone-Version

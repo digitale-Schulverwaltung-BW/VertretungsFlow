@@ -1,6 +1,6 @@
-# AbsenzFlow Setup Guide
+# VertretungsFlow Setup Guide
 
-Vollständige Anleitung zur Installation und Konfiguration von AbsenzFlow.
+Vollständige Anleitung zur Installation und Konfiguration von VertretungsFlow.
 
 ## Voraussetzungen
 
@@ -39,7 +39,7 @@ nvm use 20
 - Oder mit Chocolatey: `choco install nodejs-lts`
 
 ## Installations-Varianten
-AbsenzFlow lässt sich auf mehrere Arten deployen:
+VertretungsFlow lässt sich auf mehrere Arten deployen:
 1. Installation in ein bestehendes Wordpress, das die Benutzer beinhaltet
 1. Standalone-Installation (ToDo, noch nicht implementiert) ohne Wordpress mit LDAP-Anbindung
 
@@ -94,7 +94,7 @@ DB_NAME=absenzflow
 ```env
 LDAP_SERVER=ldap://dc.school.local:389
 LDAP_BASE_DN=DC=school,DC=local
-LDAP_BIND_DN=CN=AbsenzFlow Service,OU=Service Accounts,DC=school,DC=local
+LDAP_BIND_DN=CN=VertretungsFlow Service,OU=Service Accounts,DC=school,DC=local
 LDAP_BIND_PASSWORD=ihr_bind_passwort
 ```
 
@@ -236,10 +236,10 @@ wp-content/plugins/absenzflow/
 #### In WordPress aktivieren
 1. WordPress Admin-Bereich öffnen
 2. Plugins → Installierte Plugins
-3. "AbsenzFlow" aktivieren
+3. "VertretungsFlow" aktivieren
 
 #### Plugin konfigurieren
-1. AbsenzFlow → Einstellungen
+1. VertretungsFlow → Einstellungen
 2. Backend API URL eintragen: `https://api.school.de/absenzflow/api/v1`
 3. Einstellungen speichern
 
@@ -278,7 +278,7 @@ else:
 ```
 
 #### Rollen in WordPress zuweisen
-1. AbsenzFlow → Rollenverwaltung
+1. VertretungsFlow → Rollenverwaltung
 2. Benutzer suchen
 3. Rolle zuweisen:
    - `teacher`: Normale Lehrkraft

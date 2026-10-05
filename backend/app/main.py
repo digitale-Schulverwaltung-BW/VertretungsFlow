@@ -1,5 +1,5 @@
 """
-AbsenzFlow - Hauptanwendung
+VertretungsFlow - Hauptanwendung
 """
 
 import logging
@@ -41,7 +41,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 # FastAPI App initialisieren
 app = FastAPI(
-    title="AbsenzFlow API",
+    title="VertretungsFlow API",
     description="API für Abwesenheitsmanagement mit WebUntis-Integration",
     version="1.0.0",
     docs_url="/docs" if settings.DEBUG else None,
@@ -169,7 +169,7 @@ app.include_router(pdf_forms.router, prefix="/api", tags=["PDF Forms"])
 @limiter.limit("100/minute")
 async def root(request: Request):
     """Health check endpoint"""
-    return {"status": "online", "app": "AbsenzFlow", "version": "1.0.0"}
+    return {"status": "online", "app": "VertretungsFlow", "version": "1.0.0"}
 
 
 @app.get("/health")
@@ -182,7 +182,7 @@ async def health_check(request: Request):
 @app.on_event("startup")
 async def startup_event():
     """Wird beim Start der Anwendung ausgeführt"""
-    logger.info("🚀 AbsenzFlow Backend gestartet")
+    logger.info("🚀 VertretungsFlow Backend gestartet")
     logger.info("✅ Security validation passed - no default secrets detected")
     if settings.DEBUG:
         logger.warning("⚠️ DEBUG MODE ENABLED - NOT FOR PRODUCTION!")
@@ -224,4 +224,4 @@ async def shutdown_event():
     if scheduler.running:
         scheduler.shutdown()
         logger.info("Scheduler shut down")
-    logger.info("👋 AbsenzFlow Backend gestoppt")
+    logger.info("👋 VertretungsFlow Backend gestoppt")

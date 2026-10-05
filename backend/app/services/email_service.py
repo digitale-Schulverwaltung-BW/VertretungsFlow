@@ -380,7 +380,7 @@ Bis: {end_date}
 Falls Sie Fragen haben, wenden Sie sich bitte an die Schulleitung.
 
 Mit freundlichen Grüßen,
-AbsenzFlow System"""
+VertretungsFlow System"""
 
             teacher_html = deleted_teacher_html(
                 teacher_name, reason, start_date, end_date, absence_id, deleted_by_name

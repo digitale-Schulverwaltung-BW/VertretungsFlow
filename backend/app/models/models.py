@@ -1,5 +1,5 @@
 """
-SQLAlchemy Database Models für AbsenzFlow
+SQLAlchemy Database Models für VertretungsFlow
 """
 
 from datetime import datetime

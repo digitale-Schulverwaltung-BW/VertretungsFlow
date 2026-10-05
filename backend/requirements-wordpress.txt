@@ -1,4 +1,4 @@
-# AbsenzFlow WordPress-Modus Dependencies
+# VertretungsFlow WordPress-Modus Dependencies
 # Für WordPress-Integration (keine LDAP-Dependencies erforderlich)
 
 -r requirements-base.txt

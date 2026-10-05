@@ -1,4 +1,4 @@
-# Unit Tests - AbsenzFlow Backend
+# Unit Tests - VertretungsFlow Backend
 
 **Stand:** 2026-02-11
 **Test Framework:** pytest 7.4.4 + pytest-asyncio
@@ -320,7 +320,7 @@ backend/tests/
 ### ✅ test_api_auth.py (47 Tests)
 
 **Getestet:**
-- `map_wordpress_role()` - WordPress → AbsenzFlow role mapping (alle 4 Rollen + Unknown-Fallback + Uppercase)
+- `map_wordpress_role()` - WordPress → VertretungsFlow role mapping (alle 4 Rollen + Unknown-Fallback + Uppercase)
 - `_decode_wordpress_name()` - URL-decode Header-Namen (None, plain, Umlaute, Whitespace)
 - `_update_wordpress_user_fields()` - Smart Update: nur bei Änderungen (email, role, name, webuntis_code, multiple)
 - `_handle_wordpress_proxy_user()` - Create vs. Update Flow (neuer User, geänderter User, kein Commit wenn unverändert)

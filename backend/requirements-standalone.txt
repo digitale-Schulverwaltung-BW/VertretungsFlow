@@ -1,4 +1,4 @@
-# AbsenzFlow Standalone-Modus Dependencies
+# VertretungsFlow Standalone-Modus Dependencies
 # Für Standalone-Installation mit LDAP-Integration
 
 -r requirements-base.txt

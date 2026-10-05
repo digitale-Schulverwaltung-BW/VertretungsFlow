@@ -38,7 +38,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 def map_wordpress_role(wp_role: str) -> UserRole:
     """
-    Mapped WordPress-Rolle zu AbsenzFlow UserRole
+    Mapped WordPress-Rolle zu VertretungsFlow UserRole
 
     Args:
         wp_role: WordPress-Rolle (admin/teacher/student)

@@ -17,9 +17,9 @@ const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
           <div className="flex">
             <Link to="/" className="flex items-center px-2 py-2 text-gray-900">
               {logoUrl ? (
-                <img src={logoUrl} alt="AbsenzFlow" className="h-[30px]" />
+                <img src={logoUrl} alt="VertretungsFlow" className="h-[30px]" />
               ) : (
-                <span className="text-xl font-bold">AbsenzFlow</span>
+                <span className="text-xl font-bold">VertretungsFlow</span>
               )}
             </Link>
             {user && (

@@ -1,6 +1,6 @@
-# AbsenzFlow Authentifizierungs-Modi
+# VertretungsFlow Authentifizierungs-Modi
 
-AbsenzFlow unterstützt zwei Authentifizierungs-Modi:
+VertretungsFlow unterstützt zwei Authentifizierungs-Modi:
 
 ## WordPress-Modus (Standard)
 
@@ -90,7 +90,7 @@ LDAP_USE_SSL=false
 
 ### Von Standalone zu WordPress
 
-1. WordPress installieren und AbsenzFlow-Plugin aktivieren
+1. WordPress installieren und VertretungsFlow-Plugin aktivieren
 2. `.env` anpassen: `AUTH_MODE=wordpress`
 3. Shared Secret konfigurieren
 4. Backend neu starten

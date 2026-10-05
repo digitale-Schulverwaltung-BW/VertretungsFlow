@@ -1,4 +1,4 @@
-# AbsenzFlow Standard Requirements (WordPress-Modus)
+# VertretungsFlow Standard Requirements (WordPress-Modus)
 # Für andere Modi siehe:
 #   - requirements-standalone.txt (mit LDAP)
 #   - requirements-wordpress.txt (ohne LDAP, identisch mit diesem File)

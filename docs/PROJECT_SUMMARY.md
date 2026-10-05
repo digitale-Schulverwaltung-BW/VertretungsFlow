@@ -1,6 +1,6 @@
-# 🎯 AbsenzFlow - Projekt-Zusammenfassung
+# 🎯 VertretungsFlow - Projekt-Zusammenfassung
 
-## Was ist AbsenzFlow?
+## Was ist VertretungsFlow?
 
 Ein **Open-Source Tool** für Schulen zur Verwaltung von Lehrkraft-Abwesenheiten und Vertretungsplanung mit:
 - ✅ Einfacher Abwesenheitsmeldung

@@ -1,6 +1,6 @@
 <?php
 /**
- * Shortcode-Handler für AbsenzFlow
+ * Shortcode-Handler für VertretungsFlow
  */
 
 class AbsenzFlow_Shortcode {
@@ -45,7 +45,7 @@ class AbsenzFlow_Shortcode {
             true
         );
         
-        // AbsenzFlow React App
+        // VertretungsFlow React App
         $js_file = ABSENZFLOW_PLUGIN_DIR . 'build/index.js';
         $css_file = ABSENZFLOW_PLUGIN_DIR . 'build/index.css';
 

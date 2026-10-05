@@ -1,6 +1,6 @@
-# DATA-MIGRATION.md — AbsenzFlow Backend-Umzug
+# DATA-MIGRATION.md — VertretungsFlow Backend-Umzug
 
-Dieses Dokument beschreibt den vollständigen Umzug einer laufenden AbsenzFlow-Instanz
+Dieses Dokument beschreibt den vollständigen Umzug einer laufenden VertretungsFlow-Instanz
 auf eine neue Maschine, inklusive Wechsel von Development- auf Production-Modus.
 
 **Was migriert wird:**
@@ -75,8 +75,8 @@ Alternativ via `rsync`, USB, SFTP — Hauptsache die drei Dateien kommen an:
 ### 4a — Code auschecken
 
 ```bash
-git clone <repo-url> AbsenzFlow
-cd AbsenzFlow
+git clone <repo-url> VertretungsFlow
+cd VertretungsFlow
 ```
 
 Oder falls bereits ausgecheckt:
@@ -224,7 +224,7 @@ curl http://localhost:8000/docs
 
 ## Schritt 9 — WordPress-Plugin umschalten
 
-Im WordPress-Admin unter **Einstellungen → AbsenzFlow**:
+Im WordPress-Admin unter **Einstellungen → VertretungsFlow**:
 
 1. **Backend API URL** auf die neue Maschine setzen (z.B. `http://neue-maschine:8000/api`)
 2. **Backend API Secret** — muss identisch mit `WORDPRESS_PROXY_SECRET` in der neuen `.env` sein

@@ -1,6 +1,6 @@
-# AbsenzFlow Authentication Guide
+# VertretungsFlow Authentication Guide
 
-This document explains the two authentication modes in AbsenzFlow and their security implications.
+This document explains the two authentication modes in VertretungsFlow and their security implications.
 
 ## 📋 Table of Contents
 
@@ -15,7 +15,7 @@ This document explains the two authentication modes in AbsenzFlow and their secu
 
 ## Authentication Modes Overview
 
-AbsenzFlow supports two authentication modes:
+VertretungsFlow supports two authentication modes:
 
 | Mode | Use Case | Token Storage | Security Level |
 |------|----------|---------------|----------------|
@@ -53,7 +53,7 @@ AbsenzFlow supports two authentication modes:
        ↓
 ┌─────────────────┐
 │  WordPress      │
-│  + AbsenzFlow   │
+│  + VertretungsFlow   │
 │    Plugin       │
 └──────┬──────────┘
        │ 2. Proxy API requests with headers:
@@ -88,7 +88,7 @@ AUTH_MODE=wordpress  # Default
 WORDPRESS_PROXY_SECRET=<generated-secret>  # Must match WordPress Admin
 
 # WordPress Admin
-# Settings → AbsenzFlow → Proxy Secret: <same-secret>
+# Settings → VertretungsFlow → Proxy Secret: <same-secret>
 ```
 
 ### API Client Configuration
@@ -390,8 +390,8 @@ LDAP_BASE_DN=dc=school,dc=local
 
 2. **Configure WordPress**
    ```
-   WordPress Admin → Plugins → Activate "AbsenzFlow"
-   WordPress Admin → Settings → AbsenzFlow
+   WordPress Admin → Plugins → Activate "VertretungsFlow"
+   WordPress Admin → Settings → VertretungsFlow
    - Backend URL: https://backend.school.com/api
    - Proxy Secret: <generated-secret>
    ```
@@ -566,5 +566,5 @@ safety check  # Python dependencies
 ---
 
 **Last Updated:** 2026-02-06
-**Maintainer:** AbsenzFlow Team
+**Maintainer:** VertretungsFlow Team
 **Related Docs:** [DEPLOYMENT.md](DEPLOYMENT.md), [CLAUDE.md](CLAUDE.md), [SEC-AUDIT.md](SEC-AUDIT.md)

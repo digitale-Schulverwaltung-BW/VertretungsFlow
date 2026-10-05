@@ -84,7 +84,7 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('AbsenzFlow')).toBeInTheDocument()
+      expect(screen.getByText('VertretungsFlow')).toBeInTheDocument()
     })
   })
 
