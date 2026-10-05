@@ -405,13 +405,13 @@ backend/tests/
 - `download_pdf_form()` - Absence laden, Permission-Check, Form-Type validieren, PDF generieren, Response bauen
 
 **Test-Coverage:**
-- ✅ 404 wenn Absenz nicht gefunden (beide Endpoints)
+- ✅ 404 wenn Abwesenheit nicht gefunden (beide Endpoints)
 - ✅ 403 ohne Berechtigung (beide Endpoints)
-- ✅ 400 wenn `form_type` nicht zur Absenz passt (inkl. Fehlermeldung mit ungültigem Type)
+- ✅ 400 wenn `form_type` nicht zur Abwesenheit passt (inkl. Fehlermeldung mit ungültigem Type)
 - ✅ Response enthält PDF-Bytes und korrekten `application/pdf` MIME-Type
-- ✅ `Content-Disposition`-Header enthält Absenz-ID und Form-Label
+- ✅ `Content-Disposition`-Header enthält Abwesenheits-ID und Form-Label
 - ✅ Filename-Sanitizer ersetzt Sonderzeichen (`/`, `(`, `)`, `§`) durch `_`
-- ✅ `pdf_service.get_available_forms()` wird mit der gequeryten Absenz aufgerufen
+- ✅ `pdf_service.get_available_forms()` wird mit der gequeryten Abwesenheit aufgerufen
 - ✅ `AsyncMock` für `generate_filled_pdf()`
 
 ---

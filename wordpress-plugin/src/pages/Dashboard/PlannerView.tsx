@@ -66,7 +66,7 @@ const PlannerView: React.FC<PlannerViewProps> = ({ user }) => {
     ? absences
     : absences.filter(a => a.status !== 'completed');
 
-  // To-Do Liste: Absenzen die Aktion benötigen
+  // To-Do Liste: Abwesenheiten die Aktion benötigen
   const todoAbsences = absences.filter(a => {
     if (user.role === 'dept_head') {
       return a.status === 'submitted';

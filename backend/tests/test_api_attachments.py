@@ -115,7 +115,7 @@ class TestUploadAttachment:
 
     @pytest.mark.asyncio
     async def test_raises_404_when_absence_not_found(self, teacher):
-        """404 wenn Absenz nicht in DB"""
+        """404 wenn Abwesenheit nicht in DB"""
         db = make_mock_db(result=None)
         request = make_mock_request()
 

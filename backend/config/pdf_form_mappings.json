@@ -151,7 +151,7 @@
       "  1. Passe 'defaults' Abschnitt an deine Schule an",
       "  2. Öffne backend/docs/1201_fields.txt für vollständige Feldliste",
       "  3. Aktualisiere field_mappings mit tatsächlichen PDF-Feldnamen",
-      "  4. Teste mit einer echten Absenz"
+      "  4. Teste mit einer echten Abwesenheit"
     ]
   }
 }

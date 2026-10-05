@@ -4,7 +4,7 @@ Dieses Dokument beschreibt den vollständigen Umzug einer laufenden VertretungsF
 auf eine neue Maschine, inklusive Wechsel von Development- auf Production-Modus.
 
 **Was migriert wird:**
-- PostgreSQL-Datenbank (alle Absenzen, User, Lektionen, Anhänge-Metadaten)
+- PostgreSQL-Datenbank (alle Abwesenheiten, User, Lektionen, Anhänge-Metadaten)
 - `backend/uploads/` — hochgeladene Dateien (Arztbescheinigungen etc.)
 - `.env` — Konfiguration und Secrets
 

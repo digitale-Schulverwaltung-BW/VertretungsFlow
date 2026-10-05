@@ -243,7 +243,7 @@ export const PDF_FORMS: Record<AbsenceReason, PDFFormInfo[]> = {
 
 1. Backend neu starten: `docker-compose restart backend`
 2. Frontend neu bauen: `cd wordpress-plugin && npm run build`
-3. Absenz erstellen und PDF herunterladen
+3. Abwesenheit erstellen und PDF herunterladen
 4. Prüfen, ob Felder korrekt ausgefüllt sind
 
 ---

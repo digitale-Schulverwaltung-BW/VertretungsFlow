@@ -198,7 +198,7 @@ class TestListAbsences:
 
     @pytest.mark.asyncio
     async def test_planner_sees_all_absences(self, planner):
-        """Planner bekommt alle Absenzen ohne teacher_id-Filter"""
+        """Planner bekommt alle Abwesenheiten ohne teacher_id-Filter"""
         mock_absences = [
             make_mock_absence(absence_id=1, teacher_id=1),
             make_mock_absence(absence_id=2, teacher_id=2),
@@ -219,7 +219,7 @@ class TestListAbsences:
 
     @pytest.mark.asyncio
     async def test_returns_empty_list_when_no_absences(self, teacher):
-        """Leere Liste wenn keine Absenzen vorhanden"""
+        """Leere Liste wenn keine Abwesenheiten vorhanden"""
         db = make_list_mock_db(absences=[])
         request = make_mock_request()
 
@@ -264,7 +264,7 @@ class TestGetAbsence:
 
     @pytest.mark.asyncio
     async def test_raises_404_when_not_found(self, teacher):
-        """404 wenn Absenz nicht in DB"""
+        """404 wenn Abwesenheit nicht in DB"""
         db = make_mock_db(absence=None)
         request = make_mock_request()
 
@@ -301,7 +301,7 @@ class TestGetAbsence:
 
     @pytest.mark.asyncio
     async def test_returns_absence_when_authorized(self, teacher):
-        """Absenz wird zurückgegeben wenn Berechtigung vorhanden"""
+        """Abwesenheit wird zurückgegeben wenn Berechtigung vorhanden"""
         mock_absence = make_mock_absence()
         db = make_mock_db(absence=mock_absence)
         request = make_mock_request()
@@ -330,7 +330,7 @@ class TestUpdateLessonNotes:
 
     @pytest.mark.asyncio
     async def test_raises_404_when_absence_not_found(self, teacher):
-        """404 wenn Absenz nicht gefunden"""
+        """404 wenn Abwesenheit nicht gefunden"""
         db = make_two_query_db(absence=None, lesson=None)
         request = make_mock_request()
 
@@ -452,7 +452,7 @@ class TestApproveAbsence:
 
     @pytest.mark.asyncio
     async def test_raises_404_when_absence_not_found(self, planner):
-        """404 wenn Absenz nicht in DB"""
+        """404 wenn Abwesenheit nicht in DB"""
         db = make_mock_db(absence=None)
         request = make_mock_request()
 
@@ -503,7 +503,7 @@ class TestApproveAbsence:
             with patch(
                 "app.api.absences.absence_service.approve_absence",
                 new_callable=AsyncMock,
-                return_value="Absenz genehmigt",
+                return_value="Abwesenheit genehmigt",
             ) as mock_approve:
                 result = await unwrap(approve_absence)(
                     request=request,
@@ -514,7 +514,7 @@ class TestApproveAbsence:
                 )
 
         mock_approve.assert_called_once()
-        assert result == {"message": "Absenz genehmigt"}
+        assert result == {"message": "Abwesenheit genehmigt"}
 
 
 # ============================================================================
@@ -582,7 +582,7 @@ class TestCompleteAbsence:
             with patch(
                 "app.api.absences.absence_service.complete_absence",
                 new_callable=AsyncMock,
-                return_value="Absenz erledigt",
+                return_value="Abwesenheit erledigt",
             ) as mock_complete:
                 result = await unwrap(complete_absence)(
                     request=request,
@@ -592,7 +592,7 @@ class TestCompleteAbsence:
                 )
 
         mock_complete.assert_called_once()
-        assert result == {"message": "Absenz erledigt"}
+        assert result == {"message": "Abwesenheit erledigt"}
 
 
 # ============================================================================
@@ -605,7 +605,7 @@ class TestDeleteAbsence:
 
     @pytest.mark.asyncio
     async def test_raises_404_when_absence_not_found(self, teacher):
-        """404 wenn Absenz nicht in DB"""
+        """404 wenn Abwesenheit nicht in DB"""
         db = make_mock_db(absence=None)
         request = make_mock_request()
 
@@ -653,7 +653,7 @@ class TestDeleteAbsence:
         ):
             with patch(
                 "app.api.absences.absence_service.delete_absence",
-                return_value="Absenz gelöscht",
+                return_value="Abwesenheit gelöscht",
             ) as mock_delete:
                 result = await unwrap(delete_absence)(
                     request=request,
@@ -663,4 +663,4 @@ class TestDeleteAbsence:
                 )
 
         mock_delete.assert_called_once_with(1, teacher, db)
-        assert result == {"message": "Absenz gelöscht"}
+        assert result == {"message": "Abwesenheit gelöscht"}

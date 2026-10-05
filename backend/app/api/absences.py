@@ -66,7 +66,7 @@ async def get_absence_config(
     request: Request, current_user: User = Depends(get_wordpress_proxy_user)
 ):
     """
-    Gibt die für das Frontend relevanten Absenz-Einstellungen zurück
+    Gibt die für das Frontend relevanten Abwesenheits-Einstellungen zurück
 
     Returns:
         min_advance_days: Mindestvorlauf in Tagen (0 für Planer/Admins und wenn

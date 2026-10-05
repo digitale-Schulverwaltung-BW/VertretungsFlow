@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     # Absence Auto-Deletion Configuration
     ABSENCE_RETENTION_DAYS: int = 90
 
-    # Mindestvorlauf für neue Absenzmeldungen in Kalendertagen (0 = deaktiviert)
+    # Mindestvorlauf für neue Abwesenheitsmeldungen in Kalendertagen (0 = deaktiviert)
     # Gilt nicht für Planer/Admins
     ABSENCE_MIN_ADVANCE_DAYS: int = 0
     ABSENCE_AUTO_DELETE_ENABLED: bool = True

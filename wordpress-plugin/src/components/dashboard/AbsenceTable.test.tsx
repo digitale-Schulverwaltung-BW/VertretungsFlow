@@ -167,7 +167,7 @@ describe('AbsenceTable', () => {
 
     render(<AbsenceTable absences={absences} onDeleteAbsence={vi.fn()} />)
 
-    // Card- und Tabellen-Layout rendern je einen Button pro löschbarer Absenz
+    // Card- und Tabellen-Layout rendern je einen Button pro löschbarer Abwesenheit
     expect(screen.getAllByTitle('Abwesenheit löschen')).toHaveLength(4)
   })
 })

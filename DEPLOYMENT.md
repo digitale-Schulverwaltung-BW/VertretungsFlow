@@ -273,7 +273,7 @@ Vor dem Go-Live überprüfen:
 - [ ] Proxy Secret in WordPress Admin konfiguriert
 - [ ] Backend URL korrekt konfiguriert
 - [ ] Benutzerrollen korrekt gemappt
-- [ ] Test-Absenz-Erstellung funktioniert
+- [ ] Test-Abwesenheitserstellung funktioniert
 
 ---
 

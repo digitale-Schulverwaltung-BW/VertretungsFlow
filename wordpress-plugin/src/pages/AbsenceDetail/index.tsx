@@ -147,7 +147,7 @@ const AbsenceDetail: React.FC = () => {
   const hasPrevious = currentIndex > 0;
   const hasNext = currentIndex >= 0 && currentIndex < allAbsences.length - 1;
 
-  // Nächste/vorige unerledigte Absenz relativ zur aktuellen Position
+  // Nächste/vorige unerledigte Abwesenheit relativ zur aktuellen Position
   const nextOpenIndex = currentIndex < 0
     ? -1
     : allAbsences.findIndex((e, i) => i > currentIndex && isOpen(e.status));

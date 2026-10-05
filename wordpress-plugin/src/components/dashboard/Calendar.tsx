@@ -28,7 +28,7 @@ const Calendar: React.FC<CalendarProps> = ({ absences, currentMonth, onMonthChan
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Finde Absenzen für einen bestimmten Tag
+  // Finde Abwesenheiten für einen bestimmten Tag
   const getAbsencesForDay = (day: Date): Absence[] => {
     const dayStart = startOfDay(day);
 

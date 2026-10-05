@@ -334,7 +334,7 @@ VertretungsFlow System
             reason: Grund
             start_date: Startdatum
             end_date: Enddatum
-            teacher_email: E-Mail der Lehrkraft (nur wenn Absenz in Zukunft & nicht genehmigt)
+            teacher_email: E-Mail der Lehrkraft (nur wenn Abwesenheit in Zukunft & nicht genehmigt)
 
         Returns:
             True wenn erfolgreich

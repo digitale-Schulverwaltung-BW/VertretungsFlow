@@ -42,7 +42,7 @@ async def upload_attachment(
 
     Security:
     - Authentifizierung erforderlich
-    - Nur eigene Absenzen (oder Admin/Planner)
+    - Nur eigene Abwesenheiten (oder Admin/Planner)
     - Dateivalidierung (Typ, Größe)
     - Storage außerhalb webroot
     """
