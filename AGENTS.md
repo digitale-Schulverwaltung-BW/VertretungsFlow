@@ -252,7 +252,7 @@ const createAbsence = async (data: AbsenceCreate): Promise<Absence> => {
 ### WordPress Proxy Authentication
 - All requests must include `withCredentials: true`
 - Include `X-WP-Nonce` header for CSRF protection
-- Use `X-WP-Nonce: window.absenzflowConfig?.nonce`
+- Use `X-WP-Nonce: window.vertretungsflowConfig?.nonce`
 
 ### File Uploads
 - Uploads stored in `/app/uploads/absence_{id}/`
@@ -360,7 +360,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 docker-compose exec backend env | grep WORDPRESS_PROXY_SECRET
 
 # Check WordPress nonce
-window.absenzflowConfig?.nonce
+window.vertretungsflowConfig?.nonce
 
 # Check uploads
 docker-compose exec backend ls -la /app/uploads/absence_*/

@@ -3,10 +3,10 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 
-// WordPress stellt Config via absenzflowConfig bereit
+// WordPress stellt Config via vertretungsflowConfig bereit
 declare global {
   interface Window {
-    absenzflowConfig: {
+    vertretungsflowConfig: {
       apiUrl: string
       nonce: string
       user: {
@@ -21,7 +21,7 @@ declare global {
 }
 
 // Root Element
-const rootElement = document.getElementById('absenzflow-root')
+const rootElement = document.getElementById('vertretungsflow-root')
 
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(

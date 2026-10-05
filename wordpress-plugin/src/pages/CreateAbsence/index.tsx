@@ -13,7 +13,7 @@ const CreateAbsence: React.FC = () => {
   const navigate = useNavigate();
 
   const scrollToTop = () => {
-    const rootElement = document.getElementById('absenzflow-root');
+    const rootElement = document.getElementById('vertretungsflow-root');
     if (rootElement) {
       rootElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }

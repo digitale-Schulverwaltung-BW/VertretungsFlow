@@ -18,7 +18,7 @@ VertretungsFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abw
 - 🔐 LDAP/AD-Authentifizierung
 - 📧 E-Mail-Benachrichtigungen
 - 🎨 WordPress-Plugin mit React-Frontend
-  - Shortcode-Integration: `[absenzflow]`
+  - Shortcode-Integration: `[vertretungsflow]`
   - 2-Schritt-Workflow für Abwesenheitsmeldungen
 - In Planung: Frontend ohne Wordpress.
 
@@ -29,7 +29,7 @@ VertretungsFlow ist ein Open-Source-Tool, das Lehrkräften ermöglicht, ihre Abw
 ┌─────────────────────────────────────┐
 │  WordPress + VertretungsFlow Plugin      │  ← Frontend (React-App)
 │  - PHP Plugin lädt React-Bundle     │    als Wordpress-Plugin
-│  - Shortcode: [absenzflow]          │    Benutzerdaten aus WP
+│  - Shortcode: [vertretungsflow]          │    Benutzerdaten aus WP
 └──────────────┬──────────────────────┘
                │ REST API (HTTPS)
 ┌──────────────▼──────────────────────┐
@@ -144,7 +144,7 @@ ein ```npm run build``` erfolgen muss.
    - **Backend API URL**: `http://your-backend-server:8000/api`
    - **Backend API Secret**: Identischer Wert wie `WORDPRESS_PROXY_SECRET` aus Backend .env
 
-5. Shortcode `[absenzflow]` auf eine Seite einfügen
+5. Shortcode `[vertretungsflow]` auf eine Seite einfügen
 
 ## 📚 Dokumentation
 

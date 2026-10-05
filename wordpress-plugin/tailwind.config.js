@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Scope all Tailwind styles to #absenzflow-root for isolation
-  important: '#absenzflow-root',
+  // Scope all Tailwind styles to #vertretungsflow-root for isolation
+  important: '#vertretungsflow-root',
 
   content: [
     "./index.html",

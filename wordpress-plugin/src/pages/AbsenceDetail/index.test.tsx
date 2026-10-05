@@ -14,7 +14,7 @@ vi.mock('../../api/client', () => ({
     completeAbsence: vi.fn(),
     deleteAbsence: vi.fn(),
     getAttachmentDownloadUrl: vi.fn((absenceId, attachmentId) =>
-      `/wp-json/absenzflow/v1/proxy/download/${absenceId}/${attachmentId}`
+      `/wp-json/vertretungsflow/v1/proxy/download/${absenceId}/${attachmentId}`
     ),
   },
 }))
@@ -151,7 +151,7 @@ describe('AbsenceDetail - Phase 1: Basic Rendering & States', () => {
     vi.clearAllMocks()
 
     // Setup default window config
-    window.absenzflowConfig = {
+    window.vertretungsflowConfig = {
       apiUrl: 'http://localhost:8000/api',
       useProxy: true,
       nonce: 'test-nonce',
@@ -331,7 +331,7 @@ describe('AbsenceDetail - Unerledigt-Navigation & Rückmeldung', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    window.absenzflowConfig = {
+    window.vertretungsflowConfig = {
       apiUrl: 'http://localhost:8000/api',
       useProxy: true,
       nonce: 'test-nonce',

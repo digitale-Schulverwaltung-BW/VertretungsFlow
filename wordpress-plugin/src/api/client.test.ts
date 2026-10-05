@@ -28,7 +28,7 @@ describe('APIClient (Integration Tests)', () => {
 
   describe('Configuration Setup', () => {
     it('accepts WordPress config', () => {
-      window.absenzflowConfig = {
+      window.vertretungsflowConfig = {
         apiUrl: 'http://localhost:8000/api',
         useProxy: false,
         nonce: 'test-nonce',
@@ -41,15 +41,15 @@ describe('APIClient (Integration Tests)', () => {
         }
       }
 
-      expect(window.absenzflowConfig.apiUrl).toBe('http://localhost:8000/api')
-      expect(window.absenzflowConfig.useProxy).toBe(false)
-      expect(window.absenzflowConfig.nonce).toBe('test-nonce')
+      expect(window.vertretungsflowConfig.apiUrl).toBe('http://localhost:8000/api')
+      expect(window.vertretungsflowConfig.useProxy).toBe(false)
+      expect(window.vertretungsflowConfig.nonce).toBe('test-nonce')
     })
   })
 
   describe('Proxy Mode Configuration', () => {
     it('supports proxy mode setting', () => {
-      window.absenzflowConfig = {
+      window.vertretungsflowConfig = {
         useProxy: true,
         apiUrl: 'http://localhost:8000/api',
         nonce: 'test-nonce',
@@ -62,16 +62,16 @@ describe('APIClient (Integration Tests)', () => {
         }
       }
 
-      expect(window.absenzflowConfig.useProxy).toBe(true)
+      expect(window.vertretungsflowConfig.useProxy).toBe(true)
     })
 
     it('provides proxy endpoint URLs', () => {
-      const proxyUrl = '/wp-json/absenzflow/v1/proxy'
-      const uploadUrl = `/wp-json/absenzflow/v1/proxy/upload/1`
-      const downloadUrl = `/wp-json/absenzflow/v1/proxy/download/1/1`
-      const pdfUrl = `/wp-json/absenzflow/v1/proxy/pdf/1/form_type`
+      const proxyUrl = '/wp-json/vertretungsflow/v1/proxy'
+      const uploadUrl = `/wp-json/vertretungsflow/v1/proxy/upload/1`
+      const downloadUrl = `/wp-json/vertretungsflow/v1/proxy/download/1/1`
+      const pdfUrl = `/wp-json/vertretungsflow/v1/proxy/pdf/1/form_type`
 
-      expect(proxyUrl).toMatch(/wp-json\/absenzflow/)
+      expect(proxyUrl).toMatch(/wp-json\/vertretungsflow/)
       expect(uploadUrl).toContain('upload')
       expect(downloadUrl).toContain('download')
       expect(pdfUrl).toContain('pdf')
@@ -128,9 +128,9 @@ describe('APIClient (Integration Tests)', () => {
 
     it('constructs correct attachment endpoints', () => {
       const endpoints = {
-        uploadAttachment: '/wp-json/absenzflow/v1/proxy/upload/1',
+        uploadAttachment: '/wp-json/vertretungsflow/v1/proxy/upload/1',
         deleteAttachment: '/absences/1/attachments/1',
-        downloadAttachment: '/wp-json/absenzflow/v1/proxy/download/1/1'
+        downloadAttachment: '/wp-json/vertretungsflow/v1/proxy/download/1/1'
       }
 
       expect(endpoints.uploadAttachment).toContain('upload')
@@ -141,7 +141,7 @@ describe('APIClient (Integration Tests)', () => {
     it('constructs correct PDF endpoints', () => {
       const endpoints = {
         downloadPDFDirect: '/absences/1/pdf-forms/excursion_form',
-        downloadPDFProxy: '/wp-json/absenzflow/v1/proxy/pdf/1/excursion_form'
+        downloadPDFProxy: '/wp-json/vertretungsflow/v1/proxy/pdf/1/excursion_form'
       }
 
       expect(endpoints.downloadPDFDirect).toContain('pdf-forms')
@@ -210,9 +210,9 @@ describe('APIClient (Integration Tests)', () => {
       const absenceId = 1
       const attachmentId = 42
 
-      const url = `/wp-json/absenzflow/v1/proxy/download/${absenceId}/${attachmentId}`
+      const url = `/wp-json/vertretungsflow/v1/proxy/download/${absenceId}/${attachmentId}`
 
-      expect(url).toBe('/wp-json/absenzflow/v1/proxy/download/1/42')
+      expect(url).toBe('/wp-json/vertretungsflow/v1/proxy/download/1/42')
       expect(url).toMatch(/download\/\d+\/\d+/)
     })
 
@@ -229,9 +229,9 @@ describe('APIClient (Integration Tests)', () => {
       const absenceId = 5
       const formType = 'business_trip_form'
 
-      const url = `/wp-json/absenzflow/v1/proxy/pdf/${absenceId}/${formType}`
+      const url = `/wp-json/vertretungsflow/v1/proxy/pdf/${absenceId}/${formType}`
 
-      expect(url).toBe('/wp-json/absenzflow/v1/proxy/pdf/5/business_trip_form')
+      expect(url).toBe('/wp-json/vertretungsflow/v1/proxy/pdf/5/business_trip_form')
     })
   })
 

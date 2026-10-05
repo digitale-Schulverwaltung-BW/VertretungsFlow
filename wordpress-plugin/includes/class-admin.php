@@ -3,7 +3,7 @@
  * Admin-Verwaltung für VertretungsFlow WordPress Plugin
  */
 
-class AbsenzFlow_Admin {
+class VertretungsFlow_Admin {
     
     private static $instance = null;
     
@@ -27,7 +27,7 @@ class AbsenzFlow_Admin {
             'VertretungsFlow',              // Page title
             'VertretungsFlow',              // Menu title
             'manage_options',          // Capability
-            'absenzflow',              // Menu slug
+            'vertretungsflow',              // Menu slug
             array($this, 'render_admin_page'), // Callback
             'dashicons-calendar-alt',  // Icon
             30                         // Position
@@ -35,31 +35,31 @@ class AbsenzFlow_Admin {
         
         // Untermenü: Einstellungen
         add_submenu_page(
-            'absenzflow',
+            'vertretungsflow',
             'Einstellungen',
             'Einstellungen',
             'manage_options',
-            'absenzflow-settings',
+            'vertretungsflow-settings',
             array($this, 'render_settings_page')
         );
         
         // Untermenü: Rollenverwaltung
         add_submenu_page(
-            'absenzflow',
+            'vertretungsflow',
             'Rollenverwaltung',
             'Rollenverwaltung',
             'manage_options',
-            'absenzflow-roles',
+            'vertretungsflow-roles',
             array($this, 'render_roles_page')
         );
 
         // Untermenü: WebUntis Cache
         add_submenu_page(
-            'absenzflow',
+            'vertretungsflow',
             'WebUntis Cache',
             'WebUntis Cache',
             'manage_options',
-            'absenzflow-cache',
+            'vertretungsflow-cache',
             array($this, 'render_cache_page')
         );
     }
@@ -68,16 +68,16 @@ class AbsenzFlow_Admin {
      * Registriert Plugin-Einstellungen
      */
     public function register_settings() {
-        register_setting('absenzflow_options_group', 'absenzflow_options', array(
+        register_setting('vertretungsflow_options_group', 'vertretungsflow_options', array(
             'sanitize_callback' => array($this, 'sanitize_options')
         ));
         
         // Settings Section
         add_settings_section(
-            'absenzflow_main_section',
+            'vertretungsflow_main_section',
             'API-Einstellungen',
             array($this, 'section_callback'),
-            'absenzflow-settings'
+            'vertretungsflow-settings'
         );
         
         // API URL Field
@@ -85,8 +85,8 @@ class AbsenzFlow_Admin {
             'api_url',
             'Backend API URL',
             array($this, 'api_url_field_callback'),
-            'absenzflow-settings',
-            'absenzflow_main_section'
+            'vertretungsflow-settings',
+            'vertretungsflow_main_section'
         );
 
         // API Secret Field
@@ -94,8 +94,8 @@ class AbsenzFlow_Admin {
             'api_secret',
             'Backend API Secret',
             array($this, 'api_secret_field_callback'),
-            'absenzflow-settings',
-            'absenzflow_main_section'
+            'vertretungsflow-settings',
+            'vertretungsflow_main_section'
         );
 
         // SSL Verify Field
@@ -103,16 +103,16 @@ class AbsenzFlow_Admin {
             'ssl_verify',
             'SSL-Zertifikat verifizieren',
             array($this, 'ssl_verify_field_callback'),
-            'absenzflow-settings',
-            'absenzflow_main_section'
+            'vertretungsflow-settings',
+            'vertretungsflow_main_section'
         );
 
         // Permissions Section
         add_settings_section(
-            'absenzflow_permissions_section',
+            'vertretungsflow_permissions_section',
             'Berechtigungen',
             array($this, 'permissions_section_callback'),
-            'absenzflow-settings'
+            'vertretungsflow-settings'
         );
 
         // Dept Heads Can Complete Field
@@ -120,8 +120,8 @@ class AbsenzFlow_Admin {
             'dept_heads_can_complete',
             'Abteilungsleitungen können erledigen',
             array($this, 'dept_heads_can_complete_field_callback'),
-            'absenzflow-settings',
-            'absenzflow_permissions_section'
+            'vertretungsflow-settings',
+            'vertretungsflow_permissions_section'
         );
     }
     
@@ -159,21 +159,21 @@ class AbsenzFlow_Admin {
      * API URL Field
      */
     public function api_url_field_callback() {
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         $api_url = isset($options['api_url']) ? $options['api_url'] : '';
 
-        echo '<input type="text" name="absenzflow_options[api_url]" value="' . esc_attr($api_url) . '" class="regular-text" />';
-        echo '<p class="description">Backend API URL <strong>mit /api Suffix</strong>, z.B. http://localhost:8000/api oder https://absenzflow.schule.de/api</p>';
+        echo '<input type="text" name="vertretungsflow_options[api_url]" value="' . esc_attr($api_url) . '" class="regular-text" />';
+        echo '<p class="description">Backend API URL <strong>mit /api Suffix</strong>, z.B. http://localhost:8000/api oder https://vertretungsflow.schule.de/api</p>';
     }
 
     /**
      * API Secret Field
      */
     public function api_secret_field_callback() {
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
 
-        echo '<input type="password" name="absenzflow_options[api_secret]" value="' . esc_attr($api_secret) . '" class="regular-text" />';
+        echo '<input type="password" name="vertretungsflow_options[api_secret]" value="' . esc_attr($api_secret) . '" class="regular-text" />';
         echo '<p class="description">Shared Secret für sichere Kommunikation mit dem Backend. Muss identisch mit WORDPRESS_PROXY_SECRET im Backend sein.</p>';
     }
 
@@ -181,12 +181,12 @@ class AbsenzFlow_Admin {
      * SSL Verify Field
      */
     public function ssl_verify_field_callback() {
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         // Default to checked (SSL verified) when option is not yet set — secure by default
         $checked = !isset($options['ssl_verify']) || $options['ssl_verify'] ? 'checked' : '';
 
         echo '<label>';
-        echo '<input type="checkbox" name="absenzflow_options[ssl_verify]" value="1" ' . $checked . ' />';
+        echo '<input type="checkbox" name="vertretungsflow_options[ssl_verify]" value="1" ' . $checked . ' />';
         echo ' SSL-Zertifikate bei Backend-Verbindungen prüfen';
         echo '</label>';
         echo '<p class="description">Empfohlen für Produktionsumgebungen. Deaktivieren Sie diese Option nur, wenn Sie selbstsignierte Zertifikate in Entwicklungsumgebungen verwenden.</p>';
@@ -203,11 +203,11 @@ class AbsenzFlow_Admin {
      * Dept Heads Can Complete Field
      */
     public function dept_heads_can_complete_field_callback() {
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         $checked = isset($options['dept_heads_can_complete']) && $options['dept_heads_can_complete'] ? 'checked' : '';
 
         echo '<label>';
-        echo '<input type="checkbox" name="absenzflow_options[dept_heads_can_complete]" value="1" ' . $checked . ' />';
+        echo '<input type="checkbox" name="vertretungsflow_options[dept_heads_can_complete]" value="1" ' . $checked . ' />';
         echo ' Abteilungsleitungen können Abwesenheiten als erledigt markieren';
         echo '</label>';
         echo '<p class="description">Wenn aktiviert, können Abteilungsleitungen Abwesenheiten direkt als erledigt markieren, ohne dass ein Vertretungsplaner sie erst eintragen muss.</p>';
@@ -225,16 +225,16 @@ class AbsenzFlow_Admin {
             <div class="card">
                 <h2>Schnellstart</h2>
                 <ol>
-                    <li>Konfigurieren Sie die <a href="<?php echo admin_url('admin.php?page=absenzflow-settings'); ?>">API-Einstellungen</a></li>
-                    <li>Verwalten Sie <a href="<?php echo admin_url('admin.php?page=absenzflow-roles'); ?>">Benutzerrollen</a></li>
-                    <li>Binden Sie VertretungsFlow mit dem Shortcode <code>[absenzflow]</code> ein</li>
+                    <li>Konfigurieren Sie die <a href="<?php echo admin_url('admin.php?page=vertretungsflow-settings'); ?>">API-Einstellungen</a></li>
+                    <li>Verwalten Sie <a href="<?php echo admin_url('admin.php?page=vertretungsflow-roles'); ?>">Benutzerrollen</a></li>
+                    <li>Binden Sie VertretungsFlow mit dem Shortcode <code>[vertretungsflow]</code> ein</li>
                 </ol>
             </div>
             
             <div class="card">
                 <h2>Shortcode-Verwendung</h2>
                 <p>Fügen Sie folgenden Shortcode zu einer Seite hinzu:</p>
-                <pre><code>[absenzflow]</code></pre>
+                <pre><code>[vertretungsflow]</code></pre>
             </div>
         </div>
         <?php
@@ -249,8 +249,8 @@ class AbsenzFlow_Admin {
             <h1>VertretungsFlow Einstellungen</h1>
             <form method="post" action="options.php">
                 <?php
-                settings_fields('absenzflow_options_group');
-                do_settings_sections('absenzflow-settings');
+                settings_fields('vertretungsflow_options_group');
+                do_settings_sections('vertretungsflow-settings');
                 submit_button();
                 ?>
             </form>
@@ -266,7 +266,7 @@ class AbsenzFlow_Admin {
         global $wpdb;
 
         // Batch form submitted - save all role changes at once
-        if (isset($_POST['absenzflow_batch_update_roles']) && check_admin_referer('absenzflow_roles_batch_update')) {
+        if (isset($_POST['vertretungsflow_batch_update_roles']) && check_admin_referer('vertretungsflow_roles_batch_update')) {
             $roles = isset($_POST['roles']) ? $_POST['roles'] : array();
             $webuntis_codes = isset($_POST['webuntis_codes']) ? $_POST['webuntis_codes'] : array();
 
@@ -282,27 +282,27 @@ class AbsenzFlow_Admin {
                 }
 
                 // Update role only if it changed
-                $old_role = get_user_meta($user_id, 'absenzflow_role', true);
+                $old_role = get_user_meta($user_id, 'vertretungsflow_role', true);
                 if ($old_role !== $role) {
-                    update_user_meta($user_id, 'absenzflow_role', $role);
+                    update_user_meta($user_id, 'vertretungsflow_role', $role);
                     $updated_count++;
                 }
 
                 // Update WebUntis code only if provided
                 if (isset($webuntis_codes[$user_id])) {
                     $code = sanitize_text_field(trim($webuntis_codes[$user_id]));
-                    $old_code = get_user_meta($user_id, 'absenzflow_webuntis_code', true);
+                    $old_code = get_user_meta($user_id, 'vertretungsflow_webuntis_code', true);
 
                     if (!empty($code)) {
                         // Only update if code changed
                         if ($old_code !== $code) {
-                            update_user_meta($user_id, 'absenzflow_webuntis_code', $code);
+                            update_user_meta($user_id, 'vertretungsflow_webuntis_code', $code);
                             $updated_count++;
                         }
                     } else {
                         // Delete if empty and previously set
                         if ($old_code !== '') {
-                            delete_user_meta($user_id, 'absenzflow_webuntis_code');
+                            delete_user_meta($user_id, 'vertretungsflow_webuntis_code');
                             $updated_count++;
                         }
                     }
@@ -328,7 +328,7 @@ class AbsenzFlow_Admin {
             <p>Weisen Sie WordPress-Benutzern VertretungsFlow-Rollen zu.</p>
 
             <form method="post">
-                <?php wp_nonce_field('absenzflow_roles_batch_update'); ?>
+                <?php wp_nonce_field('vertretungsflow_roles_batch_update'); ?>
 
                 <table class="wp-list-table widefat fixed striped">
                     <thead>
@@ -342,11 +342,11 @@ class AbsenzFlow_Admin {
                     </thead>
                     <tbody>
                         <?php foreach ($users as $user):
-                            $current_role = get_user_meta($user->ID, 'absenzflow_role', true);
+                            $current_role = get_user_meta($user->ID, 'vertretungsflow_role', true);
                             if (!$current_role) {
                                 $current_role = 'teacher'; // Default
                             }
-                            $webuntis_code = get_user_meta($user->ID, 'absenzflow_webuntis_code', true);
+                            $webuntis_code = get_user_meta($user->ID, 'vertretungsflow_webuntis_code', true);
                         ?>
                         <tr>
                             <td><?php echo esc_html($user->display_name); ?></td>
@@ -374,7 +374,7 @@ class AbsenzFlow_Admin {
                 </table>
 
                 <p class="submit">
-                    <button type="submit" name="absenzflow_batch_update_roles" class="button button-primary">
+                    <button type="submit" name="vertretungsflow_batch_update_roles" class="button button-primary">
                         Alle Änderungen speichern
                     </button>
                 </p>
@@ -393,7 +393,7 @@ class AbsenzFlow_Admin {
         }
 
         // Get API settings
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         $api_url = isset($options['api_url']) ? rtrim($options['api_url'], '/') : '';
         $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
 
@@ -403,7 +403,7 @@ class AbsenzFlow_Admin {
         }
 
         // Handle refresh action
-        if (isset($_POST['refresh_cache']) && check_admin_referer('absenzflow_refresh_cache')) {
+        if (isset($_POST['refresh_cache']) && check_admin_referer('vertretungsflow_refresh_cache')) {
             $ssl_verify = !isset($options['ssl_verify']) || (bool)$options['ssl_verify'];
             $response = wp_remote_post($api_url . '/absences/admin/webuntis-cache/refresh', array(
                 'headers' => array(
@@ -509,7 +509,7 @@ class AbsenzFlow_Admin {
                     (z.B. neue Lehrkräfte, neue Räume, geändertes Stundenraster).
                 </p>
                 <form method="post">
-                    <?php wp_nonce_field('absenzflow_refresh_cache'); ?>
+                    <?php wp_nonce_field('vertretungsflow_refresh_cache'); ?>
                     <button type="submit" name="refresh_cache" class="button button-primary">
                         <span class="dashicons dashicons-update"></span>
                         WebUntis Stammdaten jetzt aktualisieren

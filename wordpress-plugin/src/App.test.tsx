@@ -31,8 +31,8 @@ vi.mock('./pages/AbsenceDetail', () => ({
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Ensure window.absenzflowConfig is set
-    window.absenzflowConfig = {
+    // Ensure window.vertretungsflowConfig is set
+    window.vertretungsflowConfig = {
       apiUrl: 'http://localhost:8000/api',
       nonce: 'test-nonce',
       useProxy: false,
@@ -105,8 +105,8 @@ describe('App', () => {
   })
 
   it('calls getCurrentUser in proxy mode without token', async () => {
-    window.absenzflowConfig = {
-      ...window.absenzflowConfig!,
+    window.vertretungsflowConfig = {
+      ...window.vertretungsflowConfig!,
       useProxy: true,
     }
     vi.mocked(api.getToken).mockReturnValue(null)
@@ -128,7 +128,7 @@ describe('App', () => {
   })
 
   it('handles missing config gracefully', async () => {
-    window.absenzflowConfig = undefined
+    window.vertretungsflowConfig = undefined
 
     render(<App />)
 

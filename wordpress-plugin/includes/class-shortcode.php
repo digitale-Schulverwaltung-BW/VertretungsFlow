@@ -3,7 +3,7 @@
  * Shortcode-Handler für VertretungsFlow
  */
 
-class AbsenzFlow_Shortcode {
+class VertretungsFlow_Shortcode {
     
     private static $instance = null;
     
@@ -15,6 +15,8 @@ class AbsenzFlow_Shortcode {
     }
     
     private function __construct() {
+        add_shortcode('vertretungsflow', array($this, 'render_shortcode'));
+        // Alter Shortcode bleibt als Alias erhalten (steht in bestehenden Seiten)
         add_shortcode('absenzflow', array($this, 'render_shortcode'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_assets'));
     }
@@ -24,7 +26,13 @@ class AbsenzFlow_Shortcode {
      */
     public function enqueue_assets() {
         // Prüfe ob Shortcode auf Seite vorhanden
-        if (!is_singular() || !has_shortcode(get_post()->post_content, 'absenzflow')) {
+        if (
+            !is_singular()
+            || !(
+                has_shortcode(get_post()->post_content, 'vertretungsflow')
+                || has_shortcode(get_post()->post_content, 'absenzflow')
+            )
+        ) {
             return;
         }
         
@@ -46,34 +54,34 @@ class AbsenzFlow_Shortcode {
         );
         
         // VertretungsFlow React App
-        $js_file = ABSENZFLOW_PLUGIN_DIR . 'build/index.js';
-        $css_file = ABSENZFLOW_PLUGIN_DIR . 'build/index.css';
+        $js_file = VERTRETUNGSFLOW_PLUGIN_DIR . 'build/index.js';
+        $css_file = VERTRETUNGSFLOW_PLUGIN_DIR . 'build/index.css';
 
         wp_enqueue_script(
-            'absenzflow-app',
-            ABSENZFLOW_PLUGIN_URL . 'build/index.js',
+            'vertretungsflow-app',
+            VERTRETUNGSFLOW_PLUGIN_URL . 'build/index.js',
             array('react', 'react-dom'),
-            ABSENZFLOW_VERSION . '-' . (file_exists($js_file) ? filemtime($js_file) : time()),
+            VERTRETUNGSFLOW_VERSION . '-' . (file_exists($js_file) ? filemtime($js_file) : time()),
             true
         );
 
         // CSS
         wp_enqueue_style(
-            'absenzflow-styles',
-            ABSENZFLOW_PLUGIN_URL . 'build/index.css',
+            'vertretungsflow-styles',
+            VERTRETUNGSFLOW_PLUGIN_URL . 'build/index.css',
             array(),
-            ABSENZFLOW_VERSION . '-' . (file_exists($css_file) ? filemtime($css_file) : time())
+            VERTRETUNGSFLOW_VERSION . '-' . (file_exists($css_file) ? filemtime($css_file) : time())
         );
         
         // Config für React App
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         $current_user = wp_get_current_user();
 
         $config = array(
             'apiUrl' => isset($options['api_url']) ? $options['api_url'] : '',
-            'pluginUrl' => ABSENZFLOW_PLUGIN_URL,
+            'pluginUrl' => VERTRETUNGSFLOW_PLUGIN_URL,
             'useProxy' => true, // Use WordPress proxy to avoid HTTPS/HTTP mixed content
-            'proxyUrl' => rest_url('absenzflow/v1/proxy'),
+            'proxyUrl' => rest_url('vertretungsflow/v1/proxy'),
             'nonce' => wp_create_nonce('wp_rest'), // WordPress REST API nonce for cookie auth
             'deptHeadsCanComplete' => isset($options['dept_heads_can_complete']) && $options['dept_heads_can_complete'] ? true : false,
             'user' => array(
@@ -81,11 +89,11 @@ class AbsenzFlow_Shortcode {
                 'username' => $current_user->user_login,
                 'email' => $current_user->user_email,
                 'displayName' => $current_user->display_name,
-                'role' => get_user_meta($current_user->ID, 'absenzflow_role', true) ?: 'teacher'
+                'role' => get_user_meta($current_user->ID, 'vertretungsflow_role', true) ?: 'teacher'
             )
         );
 
-        wp_localize_script('absenzflow-app', 'absenzflowConfig', $config);
+        wp_localize_script('vertretungsflow-app', 'vertretungsflowConfig', $config);
     }
     
     /**
@@ -97,7 +105,7 @@ class AbsenzFlow_Shortcode {
             // Redirect zur WordPress-Login-Seite mit Rücksprung zur aktuellen Seite
             $login_url = wp_login_url(get_permalink());
 
-            return '<div class="absenzflow-login-redirect">
+            return '<div class="vertretungsflow-login-redirect">
                 <p>Sie werden zum Login weitergeleitet...</p>
                 <script>window.location.href = ' . json_encode($login_url) . ';</script>
                 <noscript>
@@ -107,16 +115,16 @@ class AbsenzFlow_Shortcode {
         }
         
         // API URL muss konfiguriert sein
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         if (empty($options['api_url'])) {
             if (current_user_can('manage_options')) {
-                return '<div class="absenzflow-error">Bitte konfigurieren Sie die API-URL in den <a href="' . admin_url('admin.php?page=absenzflow-settings') . '">Einstellungen</a>.</div>';
+                return '<div class="vertretungsflow-error">Bitte konfigurieren Sie die API-URL in den <a href="' . admin_url('admin.php?page=vertretungsflow-settings') . '">Einstellungen</a>.</div>';
             }
-            return '<div class="absenzflow-error">Das System ist noch nicht konfiguriert. Bitte wenden Sie sich an einen Administrator.</div>';
+            return '<div class="vertretungsflow-error">Das System ist noch nicht konfiguriert. Bitte wenden Sie sich an einen Administrator.</div>';
         }
         
         // Container für React App
         // alignfull: WordPress-natives Escape-Hatch für .is-layout-constrained (Block Themes)
-        return '<div id="absenzflow-root" class="alignfull"></div>';
+        return '<div id="vertretungsflow-root" class="alignfull"></div>';
     }
 }

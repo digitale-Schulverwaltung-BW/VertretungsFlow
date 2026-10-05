@@ -134,7 +134,7 @@ const AbsenceDetail: React.FC = () => {
   };
 
   // Check WordPress config for dept_heads_can_complete setting
-  const config = window.absenzflowConfig;
+  const config = window.vertretungsflowConfig;
   const deptHeadsCanComplete = config?.deptHeadsCanComplete || false;
 
   // Admin und Planner sehen immer alle Buttons, unabhängig vom Status

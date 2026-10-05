@@ -197,7 +197,7 @@ export const NewComponent: React.FC<NewComponentProps> = ({ title }) => {
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: window.absenzflowConfig.apiUrl
+  baseURL: window.vertretungsflowConfig.apiUrl
 })
 
 export const getAbsences = async () => {

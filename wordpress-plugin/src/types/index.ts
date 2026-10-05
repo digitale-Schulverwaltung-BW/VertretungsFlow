@@ -133,6 +133,6 @@ export interface WordPressConfig {
 
 declare global {
   interface Window {
-    absenzflowConfig: WordPressConfig;
+    vertretungsflowConfig: WordPressConfig;
   }
 }

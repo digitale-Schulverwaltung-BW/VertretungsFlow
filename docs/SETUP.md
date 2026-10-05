@@ -245,7 +245,7 @@ wp-content/plugins/absenzflow/
 
 #### Shortcode auf Seite einfügen
 1. Neue Seite erstellen (z.B. "Abwesenheiten")
-2. Shortcode einfügen: `[absenzflow]`
+2. Shortcode einfügen: `[vertretungsflow]`
 3. Seite veröffentlichen
 
 ### 7. Rollenverwaltung einrichten

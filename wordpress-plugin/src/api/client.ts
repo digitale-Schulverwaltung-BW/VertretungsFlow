@@ -13,7 +13,7 @@ import type {
   Attachment,
 } from '../types';
 
-// Note: Window.absenzflowConfig type is defined in types/index.ts
+// Note: Window.vertretungsflowConfig type is defined in types/index.ts
 
 class APIClient {
   private baseURL: string;
@@ -26,7 +26,7 @@ class APIClient {
     this.baseURL = 'http://localhost:8000/api';
     this.token = null;
     this.useProxy = false;
-    this.proxyURL = '/wp-json/absenzflow/v1/proxy';
+    this.proxyURL = '/wp-json/vertretungsflow/v1/proxy';
     this.client = axios.create({
       baseURL: this.baseURL,
     });
@@ -39,8 +39,8 @@ class APIClient {
    * Initialize from WordPress config
    */
   private initializeFromConfig(): void {
-    if (typeof window !== 'undefined' && window.absenzflowConfig) {
-      const config = window.absenzflowConfig;
+    if (typeof window !== 'undefined' && window.vertretungsflowConfig) {
+      const config = window.vertretungsflowConfig;
       if (config.apiUrl) {
         this.setBaseURL(config.apiUrl);
       }
@@ -109,7 +109,7 @@ class APIClient {
       };
 
       // Get WordPress nonce from config
-      const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
+      const nonce = typeof window !== 'undefined' && window.vertretungsflowConfig?.nonce;
 
       const response = await axios.post(this.proxyURL, proxyData, {
         withCredentials: true, // WordPress session cookies for authentication
@@ -263,11 +263,11 @@ class APIClient {
 
   /**
    * Get teachers (admin only) — reads directly from WordPress user meta,
-   * returns all WP users with an absenzflow_webuntis_code set.
+   * returns all WP users with an vertretungsflow_webuntis_code set.
    */
   async getTeachers(): Promise<TeacherInfo[]> {
-    const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
-    const response = await axios.get('/wp-json/absenzflow/v1/teachers', {
+    const nonce = typeof window !== 'undefined' && window.vertretungsflowConfig?.nonce;
+    const response = await axios.get('/wp-json/vertretungsflow/v1/teachers', {
       withCredentials: true,
       headers: { 'X-WP-Nonce': nonce || '' },
     });
@@ -304,10 +304,10 @@ class APIClient {
     formData.append('file', file);
 
     // Get WordPress nonce
-    const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
+    const nonce = typeof window !== 'undefined' && window.vertretungsflowConfig?.nonce;
 
     // Use dedicated file upload proxy endpoint (not the regular JSON proxy)
-    const uploadUrl = `/wp-json/absenzflow/v1/proxy/upload/${absenceId}`;
+    const uploadUrl = `/wp-json/vertretungsflow/v1/proxy/upload/${absenceId}`;
 
     const response = await axios.post(uploadUrl, formData, {
       headers: {
@@ -335,7 +335,7 @@ class APIClient {
    */
   getAttachmentDownloadUrl(absenceId: number, attachmentId: number): string {
     // Use WordPress proxy for auth-protected download
-    return `/wp-json/absenzflow/v1/proxy/download/${absenceId}/${attachmentId}`;
+    return `/wp-json/vertretungsflow/v1/proxy/download/${absenceId}/${attachmentId}`;
   }
 
   /**
@@ -345,8 +345,8 @@ class APIClient {
   async downloadPDFForm(absenceId: number, formType: string): Promise<Blob> {
     if (this.useProxy) {
       // Use dedicated WordPress PDF proxy endpoint
-      const nonce = typeof window !== 'undefined' && window.absenzflowConfig?.nonce;
-      const pdfProxyUrl = `/wp-json/absenzflow/v1/proxy/pdf/${absenceId}/${formType}`;
+      const nonce = typeof window !== 'undefined' && window.vertretungsflowConfig?.nonce;
+      const pdfProxyUrl = `/wp-json/vertretungsflow/v1/proxy/pdf/${absenceId}/${formType}`;
 
       const response = await axios.get(
         pdfProxyUrl,

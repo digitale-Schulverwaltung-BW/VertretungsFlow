@@ -96,9 +96,9 @@ WORDPRESS_PROXY_SECRET=<generated-secret>  # Must match WordPress Admin
 ```typescript
 // wordpress-plugin/src/api/client.ts
 const api = new AbsenzFlowAPI({
-  baseURL: window.absenzflowConfig.apiUrl,
+  baseURL: window.vertretungsflowConfig.apiUrl,
   useProxy: true,  // ✅ Use WordPress proxy
-  wpNonce: window.absenzflowConfig.nonce
+  wpNonce: window.vertretungsflowConfig.nonce
 });
 
 // Requests include:
@@ -320,7 +320,7 @@ async def login(
 **WordPress Proxy Mode:**
 ```html
 <!-- Attacker's malicious site -->
-<form action="https://school.com/wp-json/absenzflow/v1/proxy" method="POST">
+<form action="https://school.com/wp-json/vertretungsflow/v1/proxy" method="POST">
   <!-- WordPress validates X-WP-Nonce -->
 </form>
 ```
@@ -407,7 +407,7 @@ LDAP_BASE_DN=dc=school,dc=local
    // Use WordPress proxy
    const api = new AbsenzFlowAPI({
      useProxy: true,
-     wpNonce: window.absenzflowConfig.nonce
+     wpNonce: window.vertretungsflowConfig.nonce
    });
    ```
 
@@ -462,7 +462,7 @@ LDAP_BASE_DN=dc=school,dc=local
    docker-compose exec backend env | grep WORDPRESS_PROXY_SECRET
 
    # WordPress
-   wp option get absenzflow_options --format=json
+   wp option get vertretungsflow_options --format=json
    ```
 
 2. Ensure secrets match exactly (no extra spaces)

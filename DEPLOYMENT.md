@@ -94,7 +94,7 @@ DEBUG=false
 ENVIRONMENT=production
 CORS_ORIGINS=https://your-production-domain.com
 FRONTEND_URL=https://your-production-domain.com/absenzflow
-# FRONTEND_URL zeigt auf die Seite, wo der [absenzflow]-Shortcode platziert wurde.
+# FRONTEND_URL zeigt auf die Seite, wo der [vertretungsflow]-Shortcode platziert wurde.
 # In den E-Mails des Systems werden hier noch Parameter angehängt, um direkt zu einer
 # Abwesenheit zu springen.
 

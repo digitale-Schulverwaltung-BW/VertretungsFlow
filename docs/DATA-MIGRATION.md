@@ -100,7 +100,7 @@ Pflichtfelder für Production:
 | `SECRET_KEY` | JWT-Secret | `openssl rand -hex 32` |
 | `WORDPRESS_PROXY_SECRET` | Proxy-Auth-Secret | `openssl rand -hex 32` |
 | `CORS_ORIGINS` | Nur Production-Domain, kein localhost | — |
-| `FRONTEND_URL` | WordPress-Seite mit `[absenzflow]` | — |
+| `FRONTEND_URL` | WordPress-Seite mit `[vertretungsflow]` | — |
 
 > ⚠️ `WORDPRESS_PROXY_SECRET` muss identisch mit dem Wert in den WordPress Admin-Einstellungen sein.
 > Wenn du es änderst, musst du es auch dort aktualisieren.

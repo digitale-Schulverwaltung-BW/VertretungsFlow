@@ -24,7 +24,7 @@ Dieses Dokument hilft Claude (und anderen Entwicklern) beim Arbeiten mit dem Ver
 Das System nutzt **WordPress-Cookie-Authentication** über einen Proxy:
 
 1. User ist in WordPress eingeloggt (Session-Cookie)
-2. Frontend ruft WordPress REST API Proxy auf (`/wp-json/absenzflow/v1/proxy`)
+2. Frontend ruft WordPress REST API Proxy auf (`/wp-json/vertretungsflow/v1/proxy`)
 3. WordPress-Proxy leitet Request an FastAPI Backend weiter mit Custom Headers:
    - `X-WordPress-Secret`: Shared Secret zur Authentifizierung
    - `X-WordPress-User`: Username
@@ -53,8 +53,8 @@ Siehe: `backend/app/api/auth.py:get_wordpress_proxy_user()` und [AUTHENTICATION.
 ### File Uploads
 
 **Separate Proxy-Endpoints** für Uploads/Downloads wegen multipart/form-data:
-- Upload: `POST /wp-json/absenzflow/v1/proxy/upload/{absence_id}`
-- Download: `GET /wp-json/absenzflow/v1/proxy/download/{absence_id}/{attachment_id}`
+- Upload: `POST /wp-json/vertretungsflow/v1/proxy/upload/{absence_id}`
+- Download: `GET /wp-json/vertretungsflow/v1/proxy/download/{absence_id}/{attachment_id}`
 
 **Storage:**
 - Container: `/app/uploads/absence_{id}/` (gemountet auf `./backend/uploads`)
@@ -114,7 +114,7 @@ AbsenzFlow/
 │   │       └── index.ts       # TypeScript Type Definitions
 │   ├── includes/              # PHP Backend
 │   │   ├── class-api-proxy.php    # WordPress REST API Proxy
-│   │   ├── class-shortcode.php    # [absenzflow] Shortcode
+│   │   ├── class-shortcode.php    # [vertretungsflow] Shortcode
 │   │   └── class-admin.php        # Admin-Einstellungen
 │   ├── build/                 # Vite Build Output (zu WordPress kopieren)
 │   └── package.json
@@ -268,7 +268,7 @@ cp -r includes/* /pfad/zu/wordpress/wp-content/plugins/absenzflow/includes/
 
 **Wichtig:**
 - WordPress-Nonce generieren: `wp_create_nonce('wp_rest')`
-- Config an Frontend übergeben: `wp_localize_script('absenzflow-app', 'absenzflowConfig', $config)`
+- Config an Frontend übergeben: `wp_localize_script('absenzflow-app', 'vertretungsflowConfig', $config)`
 
 ## Deployment
 
@@ -423,7 +423,7 @@ tail -f /pfad/zu/wordpress/wp-content/debug.log | grep VertretungsFlow
 docker-compose exec backend env | grep WORDPRESS_PROXY_SECRET
 
 # WordPress Secret prüfen (MySQL)
-wp option get absenzflow_options --format=json
+wp option get vertretungsflow_options --format=json
 ```
 
 ### 401 "Not authenticated" (ohne "Invalid proxy secret")
@@ -432,11 +432,11 @@ wp option get absenzflow_options --format=json
 1. Ist User in WordPress eingeloggt?
 2. Wird `X-WP-Nonce` Header mitgeschickt?
 3. Ist `withCredentials: true` bei axios-Request?
-4. Ist WordPress-Nonce in `window.absenzflowConfig.nonce` verfügbar?
+4. Ist WordPress-Nonce in `window.vertretungsflowConfig.nonce` verfügbar?
 
 **Fix:**
 - PHP: `wp_create_nonce('wp_rest')` generieren und in `wp_localize_script()` übergeben
-- TypeScript: `'X-WP-Nonce': window.absenzflowConfig?.nonce` in Request-Header
+- TypeScript: `'X-WP-Nonce': window.vertretungsflowConfig?.nonce` in Request-Header
 
 ### N+1 Query Problem
 

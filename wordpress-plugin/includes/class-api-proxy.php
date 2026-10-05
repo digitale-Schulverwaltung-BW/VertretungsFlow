@@ -4,7 +4,7 @@
  * Verhindert dass API-Credentials im Frontend exposed werden
  */
 
-class AbsenzFlow_API_Proxy {
+class VertretungsFlow_API_Proxy {
     
     private static $instance = null;
     
@@ -32,6 +32,8 @@ class AbsenzFlow_API_Proxy {
         // Check if this is one of our endpoints
         $uri = $_SERVER['REQUEST_URI'];
         if (
+            strpos($uri, '/vertretungsflow/v1/proxy') !== false ||
+            strpos($uri, '/vertretungsflow/v1/teachers') !== false ||
             strpos($uri, '/absenzflow/v1/proxy') !== false ||
             strpos($uri, '/absenzflow/v1/teachers') !== false
         ) {
@@ -50,11 +52,25 @@ class AbsenzFlow_API_Proxy {
     }
     
     /**
-     * Registriert REST API Routes
+     * Registriert REST API Routes (neuer und alter Namespace)
+     *
+     * Der alte Namespace absenzflow/v1 bleibt als Alias erhalten, damit
+     * bereits geladene Frontends (Browser-Cache) weiter funktionieren.
      */
     public function register_routes() {
+        foreach (array('vertretungsflow/v1', 'absenzflow/v1') as $namespace) {
+            $this->register_namespace_routes($namespace);
+        }
+    }
+
+    /**
+     * Registriert alle Routes unter einem Namespace
+     *
+     * @param string $namespace REST-Namespace, z.B. vertretungsflow/v1
+     */
+    private function register_namespace_routes($namespace) {
         // Proxy Route
-        register_rest_route('absenzflow/v1', '/proxy', array(
+        register_rest_route($namespace, '/proxy', array(
             'methods' => 'POST',
             'callback' => array($this, 'proxy_request'),
             'permission_callback' => 'is_user_logged_in', // WordPress handles cookie auth + nonce validation
@@ -65,7 +81,7 @@ class AbsenzFlow_API_Proxy {
         ));
 
         // File Upload Proxy (separate endpoint for multipart/form-data)
-        register_rest_route('absenzflow/v1', '/proxy/upload/(?P<absence_id>\d+)', array(
+        register_rest_route($namespace, '/proxy/upload/(?P<absence_id>\d+)', array(
             'methods' => 'POST',
             'callback' => array($this, 'proxy_file_upload'),
             'permission_callback' => 'is_user_logged_in',
@@ -80,7 +96,7 @@ class AbsenzFlow_API_Proxy {
         ));
 
         // File Download Proxy (auth-protected download)
-        register_rest_route('absenzflow/v1', '/proxy/download/(?P<absence_id>\d+)/(?P<attachment_id>\d+)', array(
+        register_rest_route($namespace, '/proxy/download/(?P<absence_id>\d+)/(?P<attachment_id>\d+)', array(
             'methods' => 'GET',
             'callback' => array($this, 'proxy_file_download'),
             'permission_callback' => 'is_user_logged_in',
@@ -101,21 +117,21 @@ class AbsenzFlow_API_Proxy {
         ));
 
         // Teachers endpoint (returns WP users with WebUntis code, for admin teacher selection)
-        register_rest_route('absenzflow/v1', '/teachers', array(
+        register_rest_route($namespace, '/teachers', array(
             'methods' => 'GET',
             'callback' => array($this, 'get_teachers'),
             'permission_callback' => function() {
-                // Only admins (users with absenzflow_role = 'admin') may query this
+                // Only admins (users with vertretungsflow_role = 'admin') may query this
                 if (!is_user_logged_in()) {
                     return false;
                 }
-                $role = get_user_meta(get_current_user_id(), 'absenzflow_role', true);
+                $role = get_user_meta(get_current_user_id(), 'vertretungsflow_role', true);
                 return $role === 'admin';
             },
         ));
 
         // PDF Form Download Proxy (auth-protected PDF download)
-        register_rest_route('absenzflow/v1', '/proxy/pdf/(?P<absence_id>\d+)/(?P<form_type>[a-z_]+)', array(
+        register_rest_route($namespace, '/proxy/pdf/(?P<absence_id>\d+)/(?P<form_type>[a-z_]+)', array(
             'methods' => 'GET',
             'callback' => array($this, 'proxy_pdf_download'),
             'permission_callback' => 'is_user_logged_in',
@@ -148,7 +164,7 @@ class AbsenzFlow_API_Proxy {
             error_log('Current user: ' . (is_user_logged_in() ? wp_get_current_user()->user_login : 'none'));
         }
 
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         $api_url = $options['api_url'];
         $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
 
@@ -214,8 +230,8 @@ class AbsenzFlow_API_Proxy {
                 'X-WordPress-Name' => $current_user->display_name,
                 'X-WordPress-First-Name' => rawurlencode($first_name),
                 'X-WordPress-Last-Name' => rawurlencode($last_name),
-                'X-WordPress-Role' => $this->map_wp_role_to_absenzflow($current_user),
-                'X-WordPress-WebUntis-Code' => rawurlencode(get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)),
+                'X-WordPress-Role' => $this->map_wp_role_to_vertretungsflow($current_user),
+                'X-WordPress-WebUntis-Code' => rawurlencode(get_user_meta($current_user->ID, 'vertretungsflow_webuntis_code', true)),
                 'X-WordPress-Dept-Heads-Can-Complete' => $dept_heads_can_complete
             ),
             'timeout' => 30,
@@ -271,7 +287,7 @@ class AbsenzFlow_API_Proxy {
             error_log('User ID: ' . get_current_user_id());
         }
 
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         $api_url = $options['api_url'];
         $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
 
@@ -326,8 +342,8 @@ class AbsenzFlow_API_Proxy {
             'X-WordPress-Name: ' . $current_user->display_name,
             'X-WordPress-First-Name: ' . rawurlencode($first_name),
             'X-WordPress-Last-Name: ' . rawurlencode($last_name),
-            'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
-            'X-WordPress-WebUntis-Code: ' . rawurlencode(get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)),
+            'X-WordPress-Role: ' . $this->map_wp_role_to_vertretungsflow($current_user),
+            'X-WordPress-WebUntis-Code: ' . rawurlencode(get_user_meta($current_user->ID, 'vertretungsflow_webuntis_code', true)),
             'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
         );
 
@@ -370,7 +386,7 @@ class AbsenzFlow_API_Proxy {
             error_log('VertretungsFlow File Download Proxy: Request received');
         }
 
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         $api_url = $options['api_url'];
         $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
 
@@ -401,8 +417,8 @@ class AbsenzFlow_API_Proxy {
             'X-WordPress-Name: ' . $current_user->display_name,
             'X-WordPress-First-Name: ' . rawurlencode($first_name),
             'X-WordPress-Last-Name: ' . rawurlencode($last_name),
-            'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
-            'X-WordPress-WebUntis-Code: ' . rawurlencode(get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)),
+            'X-WordPress-Role: ' . $this->map_wp_role_to_vertretungsflow($current_user),
+            'X-WordPress-WebUntis-Code: ' . rawurlencode(get_user_meta($current_user->ID, 'vertretungsflow_webuntis_code', true)),
             'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
         );
 
@@ -464,7 +480,7 @@ class AbsenzFlow_API_Proxy {
             error_log('VertretungsFlow PDF Download Proxy: Request received');
         }
 
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         $api_url = $options['api_url'];
         $api_secret = isset($options['api_secret']) ? $options['api_secret'] : '';
 
@@ -499,8 +515,8 @@ class AbsenzFlow_API_Proxy {
             'X-WordPress-Name: ' . $current_user->display_name,
             'X-WordPress-First-Name: ' . rawurlencode($first_name),
             'X-WordPress-Last-Name: ' . rawurlencode($last_name),
-            'X-WordPress-Role: ' . $this->map_wp_role_to_absenzflow($current_user),
-            'X-WordPress-WebUntis-Code: ' . rawurlencode(get_user_meta($current_user->ID, 'absenzflow_webuntis_code', true)),
+            'X-WordPress-Role: ' . $this->map_wp_role_to_vertretungsflow($current_user),
+            'X-WordPress-WebUntis-Code: ' . rawurlencode(get_user_meta($current_user->ID, 'vertretungsflow_webuntis_code', true)),
             'X-WordPress-Dept-Heads-Can-Complete: ' . $dept_heads_can_complete
         );
 
@@ -575,7 +591,7 @@ class AbsenzFlow_API_Proxy {
      */
     public function get_teachers() {
         $users = get_users(array(
-            'meta_key'     => 'absenzflow_webuntis_code',
+            'meta_key'     => 'vertretungsflow_webuntis_code',
             'meta_value'   => '',
             'meta_compare' => '!=',
             'fields'       => 'all',
@@ -596,7 +612,7 @@ class AbsenzFlow_API_Proxy {
                 'username'      => $user->user_login,
                 'full_name'     => $full_name,
                 'email'         => $user->user_email,
-                'webuntis_code' => get_user_meta($user->ID, 'absenzflow_webuntis_code', true),
+                'webuntis_code' => get_user_meta($user->ID, 'vertretungsflow_webuntis_code', true),
             );
         }
 
@@ -610,7 +626,7 @@ class AbsenzFlow_API_Proxy {
      * @return bool
      */
     private function get_ssl_verify() {
-        $options = get_option('absenzflow_options');
+        $options = get_option('vertretungsflow_options');
         return !isset($options['ssl_verify']) || (bool)$options['ssl_verify'];
     }
 
@@ -620,9 +636,9 @@ class AbsenzFlow_API_Proxy {
      * @param WP_User $user WordPress User Objekt
      * @return string VertretungsFlow Rolle (admin/teacher/dept_head/planner)
      */
-    private function map_wp_role_to_absenzflow($user) {
+    private function map_wp_role_to_vertretungsflow($user) {
         // Rolle aus User Meta laden (wird über Rollenverwaltung gesetzt)
-        $role = get_user_meta($user->ID, 'absenzflow_role', true);
+        $role = get_user_meta($user->ID, 'vertretungsflow_role', true);
 
         // Fallback zu 'teacher' wenn keine Rolle gesetzt
         if (empty($role)) {

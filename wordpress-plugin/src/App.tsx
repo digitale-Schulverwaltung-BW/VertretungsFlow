@@ -7,7 +7,7 @@ import AbsenceDetail from './pages/AbsenceDetail';
 import type { User } from './types';
 
 const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
-  const config = window.absenzflowConfig;
+  const config = window.vertretungsflowConfig;
   const logoUrl = config?.pluginUrl ? `${config.pluginUrl}assets/logo.png` : '';
 
   return (
@@ -48,7 +48,7 @@ const Navigation: React.FC<{ user: User | null }> = ({ user }) => {
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const config = window.absenzflowConfig;
+  const config = window.vertretungsflowConfig;
 
   const initializeApp = async () => {
     try {

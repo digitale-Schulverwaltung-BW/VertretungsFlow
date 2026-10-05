@@ -3,7 +3,7 @@
  * Plugin Name: VertretungsFlow
  * Plugin URI: https://github.com/your-org/absenzflow
  * Description: Abwesenheitsmanagement für Schulen mit WebUntis-Integration
- * Version: 1.0.1
+ * Version: 1.1.0
  * Author: Your School IT Team
  * Author URI: https://your-school.de
  * License: MIT
@@ -16,14 +16,14 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin Konstanten
-define('ABSENZFLOW_VERSION', '1.0.1');
-define('ABSENZFLOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('ABSENZFLOW_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('VERTRETUNGSFLOW_VERSION', '1.1.0');
+define('VERTRETUNGSFLOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('VERTRETUNGSFLOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 /**
  * VertretungsFlow Plugin Hauptklasse
  */
-class AbsenzFlow_Plugin {
+class VertretungsFlow_Plugin {
     
     /**
      * Singleton Instanz
@@ -52,15 +52,19 @@ class AbsenzFlow_Plugin {
      * Lade Abhängigkeiten
      */
     private function load_dependencies() {
-        require_once ABSENZFLOW_PLUGIN_DIR . 'includes/class-admin.php';
-        require_once ABSENZFLOW_PLUGIN_DIR . 'includes/class-shortcode.php';
-        require_once ABSENZFLOW_PLUGIN_DIR . 'includes/class-api-proxy.php';
+        require_once VERTRETUNGSFLOW_PLUGIN_DIR . 'includes/class-migration.php';
+        require_once VERTRETUNGSFLOW_PLUGIN_DIR . 'includes/class-admin.php';
+        require_once VERTRETUNGSFLOW_PLUGIN_DIR . 'includes/class-shortcode.php';
+        require_once VERTRETUNGSFLOW_PLUGIN_DIR . 'includes/class-api-proxy.php';
     }
     
     /**
      * Registriere WordPress Hooks
      */
     private function register_hooks() {
+        // Daten-Migration von AbsenzFlow (Option, User-Meta); idempotent
+        add_action('plugins_loaded', array('VertretungsFlow_Migration', 'run'), 1);
+
         // Aktivierung
         register_activation_hook(__FILE__, array($this, 'activate'));
         
@@ -69,14 +73,14 @@ class AbsenzFlow_Plugin {
         
         // Admin-Seite
         if (is_admin()) {
-            AbsenzFlow_Admin::get_instance();
+            VertretungsFlow_Admin::get_instance();
         }
         
         // Shortcode
-        AbsenzFlow_Shortcode::get_instance();
+        VertretungsFlow_Shortcode::get_instance();
         
         // API Proxy (für sichere Backend-Kommunikation)
-        AbsenzFlow_API_Proxy::get_instance();
+        VertretungsFlow_API_Proxy::get_instance();
     }
     
     /**
@@ -89,7 +93,7 @@ class AbsenzFlow_Plugin {
             'enabled' => false
         );
         
-        add_option('absenzflow_options', $default_options);
+        add_option('vertretungsflow_options', $default_options);
         
         // Flush Rewrite Rules
         flush_rewrite_rules();
@@ -107,9 +111,9 @@ class AbsenzFlow_Plugin {
 /**
  * Plugin initialisieren
  */
-function absenzflow_init() {
-    return AbsenzFlow_Plugin::get_instance();
+function vertretungsflow_init() {
+    return VertretungsFlow_Plugin::get_instance();
 }
 
 // Plugin starten
-absenzflow_init();
+vertretungsflow_init();
