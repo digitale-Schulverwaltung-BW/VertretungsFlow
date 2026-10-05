@@ -44,16 +44,16 @@ const AbsenceSuccessModal: React.FC<AbsenceSuccessModalProps> = ({
         {/* Header */}
         <div className="modal-header">
           <div className="success-icon">✓</div>
-          <h2>Absenz erfolgreich eingereicht</h2>
+          <h2>Abwesenheit erfolgreich eingereicht</h2>
         </div>
 
         {/* Content */}
         <div className="modal-content">
           <p className="success-message">
-            Ihre Absenzmeldung wurde erfolgreich eingereicht.
+            Ihre Abwesenheitsmeldung wurde erfolgreich eingereicht.
           </p>
           <p className="absence-id">
-            Absenz-ID: <strong>#{absence.id}</strong>
+            Abwesenheits-ID: <strong>#{absence.id}</strong>
           </p>
 
           {/* Info text for specific reasons */}

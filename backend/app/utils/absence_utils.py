@@ -71,7 +71,7 @@ def validate_min_advance(start_date: datetime, min_days: int, role: UserRole) ->
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                f"Absenzen müssen mindestens {min_days} Tage im Voraus gemeldet "
+                f"Abwesenheiten müssen mindestens {min_days} Tage im Voraus gemeldet "
                 "werden. Bei kurzfristigen Meldungen wenden Sie sich bitte "
                 "persönlich an das Vertretungsplanungs-Team."
             ),

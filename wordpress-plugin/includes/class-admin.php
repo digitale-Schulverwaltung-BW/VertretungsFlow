@@ -459,7 +459,7 @@ class VertretungsFlow_Admin {
                 <h2>Performance-Optimierung</h2>
                 <p>
                     WebUntis Stammdaten (Fächer, Klassen, Räume, Stundenraster) werden gecacht,
-                    um die Absenzerstellung zu beschleunigen.
+                    um die Abwesenheitserstellung zu beschleunigen.
                 </p>
                 <p>
                     <strong>Cache-Gültigkeit:</strong> 7 Tage (konfigurierbar in .env)

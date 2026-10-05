@@ -45,7 +45,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
 
   const today = startOfDay(new Date());
   const earliestDate = addDays(today, minAdvanceDays);
-  const tooSoonMessage = `Absenzen müssen mindestens ${minAdvanceDays} Tage im Voraus gemeldet werden. Bei kurzfristigen Meldungen wenden Sie sich bitte persönlich an das Vertretungsplanungs-Team.`;
+  const tooSoonMessage = `Abwesenheiten müssen mindestens ${minAdvanceDays} Tage im Voraus gemeldet werden. Bei kurzfristigen Meldungen wenden Sie sich bitte persönlich an das Vertretungsplanungs-Team.`;
   const isTooSoon = (day: Date) => minAdvanceDays > 0 && day >= today && day < earliestDate;
 
   // Kalendertage vor dem frühesten Datum: klickbar, aber mit Hinweis statt Auswahl
@@ -85,7 +85,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     if (dateRange?.to && newStartDate > dateRange.to) {
       setDateRange({ from: newStartDate, to: newStartDate });
     } else {
-      // Wenn kein End-Datum existiert, setze es auf Start-Datum (eintägige Absenz)
+      // Wenn kein End-Datum existiert, setze es auf Start-Datum (eintägige Abwesenheit)
       setDateRange({ from: newStartDate, to: dateRange?.to || newStartDate });
     }
   };
@@ -121,7 +121,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     if (dateRange?.from && newEndDate < dateRange.from) {
       setDateRange({ from: newEndDate, to: newEndDate });
     } else {
-      // Wenn kein Start-Datum existiert, setze es auf End-Datum (eintägige Absenz)
+      // Wenn kein Start-Datum existiert, setze es auf End-Datum (eintägige Abwesenheit)
       setDateRange({ from: dateRange?.from || newEndDate, to: newEndDate });
     }
   };
@@ -149,7 +149,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
     const newErrors: string[] = [];
 
     if (reason === 'undefined') {
-      newErrors.push('Bitte wählen Sie einen Absenzgrund aus.');
+      newErrors.push('Bitte wählen Sie einen Abwesenheitsgrund aus.');
     }
 
     if (!dateRange?.from || !dateRange?.to) {
@@ -232,7 +232,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
       });
     } catch (err) {
       console.error('Error checking for duplicates:', err);
-      setErrors(['Fehler beim Überprüfen auf bestehende Absenzen. Bitte versuchen Sie es erneut.']);
+      setErrors(['Fehler beim Überprüfen auf bestehende Abwesenheiten. Bitte versuchen Sie es erneut.']);
     } finally {
       setCheckingDuplicates(false);
     }
@@ -493,7 +493,7 @@ const StepOne: React.FC<StepOneProps> = ({ onNext }) => {
               >
                 {showTooSoonNotice
                   ? tooSoonMessage
-                  : `Absenzen sind frühestens ab ${format(earliestDate, 'd.M.yyyy', { locale: de })} möglich (mind. ${minAdvanceDays} Tage Vorlauf). Bei kurzfristigen Meldungen bitte persönlich beim Vertretungsplanungs-Team melden.`}
+                  : `Abwesenheiten sind frühestens ab ${format(earliestDate, 'd.M.yyyy', { locale: de })} möglich (mind. ${minAdvanceDays} Tage Vorlauf). Bei kurzfristigen Meldungen bitte persönlich beim Vertretungsplanungs-Team melden.`}
               </p>
             )}
             <div className="af-date-pickers-root">

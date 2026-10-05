@@ -143,7 +143,7 @@ async def download_pdf_form(
     safe_label = "".join(
         c if c.isalnum() or c in (" ", "-", "_") else "_" for c in form_label
     )
-    filename = f"Antrag_Absenz_{absence_id}_{safe_label}.pdf"
+    filename = f"Antrag_Abwesenheit_{absence_id}_{safe_label}.pdf"
 
     logger.info(f"✅ PDF generated: {len(pdf_bytes)} bytes, filename: {filename}")
 

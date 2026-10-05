@@ -4,14 +4,14 @@ Dieses Dokument hilft Claude (und anderen Entwicklern) beim Arbeiten mit dem Ver
 
 ## Projektübersicht
 
-**VertretungsFlow** ist ein Absenzverwaltungssystem für Schulen mit:
+**VertretungsFlow** ist ein Abwesenheitsverwaltungssystem für Schulen mit:
 - **FastAPI Backend** (Python) für Geschäftslogik und Datenhaltung
 - **React Frontend** (TypeScript) als WordPress-Plugin
 - **PostgreSQL** Datenbank
 - **Docker-Compose** für Deployment
 
 ### Hauptfunktionen
-- Lehrkräfte melden Absenzen (Krankheit, Fortbildung, Exkursion, etc.)
+- Lehrkräfte melden Abwesenheiten (Krankheit, Fortbildung, Exkursion, etc.)
 - Automatischer Import von Stunden aus WebUntis
 - Workflow: Eingereicht → Genehmigt (Abteilungsleitung) → Erledigt (Vertretungsplaner)
 - File-Uploads für Nachweise (Arztbescheinigungen, Einladungen, etc.)
@@ -59,7 +59,7 @@ Siehe: `backend/app/api/auth.py:get_wordpress_proxy_user()` und [AUTHENTICATION.
 **Storage:**
 - Container: `/app/uploads/absence_{id}/` (gemountet auf `./backend/uploads`)
 - Sicherheit: UUID-basierte Dateinamen, auth-geschützter Download
-- Auto-Deletion: Dateien werden gelöscht wenn Absenz auf "erledigt" gesetzt wird
+- Auto-Deletion: Dateien werden gelöscht wenn Abwesenheit auf "erledigt" gesetzt wird
 
 Siehe: `backend/app/api/attachments.py` und `backend/app/services/attachment_service.py`
 
@@ -70,7 +70,7 @@ AbsenzFlow/
 ├── backend/                    # FastAPI Backend
 │   ├── app/
 │   │   ├── api/               # REST API Endpoints (dünn, delegieren an Services)
-│   │   │   ├── absences.py    # CRUD Endpoints für Absenzen (317 LOC)
+│   │   │   ├── absences.py    # CRUD Endpoints für Abwesenheiten (317 LOC)
 │   │   │   ├── attachments.py # File Upload/Download/Delete (183 LOC)
 │   │   │   ├── webuntis.py    # WebUntis Timetable Integration (72 LOC)
 │   │   │   ├── auth.py        # WordPress Proxy Auth
@@ -171,8 +171,8 @@ AbsenzFlow/
 | Datei | Beschreibung | Wichtige Features |
 |-------|--------------|-------------------|
 | `wordpress-plugin/src/api/client.ts` | API Client | Proxy-Support, Nonce-Header, Upload/Download |
-| `wordpress-plugin/src/pages/CreateAbsence/StepOne.tsx` | Absenz-Wizard Schritt 1 | Conditional Inputs (Exkursion, Privat) |
-| `wordpress-plugin/src/pages/CreateAbsence/StepTwo.tsx` | Absenz-Wizard Schritt 2 | Stunden-Tabelle, File-Upload, Bemerkungen |
+| `wordpress-plugin/src/pages/CreateAbsence/StepOne.tsx` | Abwesenheits-Wizard Schritt 1 | Conditional Inputs (Exkursion, Privat) |
+| `wordpress-plugin/src/pages/CreateAbsence/StepTwo.tsx` | Abwesenheits-Wizard Schritt 2 | Stunden-Tabelle, File-Upload, Bemerkungen |
 | `wordpress-plugin/src/pages/AbsenceDetail/index.tsx` | Detailansicht | Download-Links, conditional "Kann entfallen" |
 | `wordpress-plugin/includes/class-api-proxy.php` | WordPress Proxy | Leitet Requests an Backend weiter mit Auth-Headers |
 
@@ -268,7 +268,7 @@ cp -r includes/* /pfad/zu/wordpress/wp-content/plugins/absenzflow/includes/
 
 **Wichtig:**
 - WordPress-Nonce generieren: `wp_create_nonce('wp_rest')`
-- Config an Frontend übergeben: `wp_localize_script('absenzflow-app', 'vertretungsflowConfig', $config)`
+- Config an Frontend übergeben: `wp_localize_script('vertretungsflow-app', 'vertretungsflowConfig', $config)`
 
 ## Deployment
 
@@ -551,7 +551,7 @@ black . --check
 ### Manueller E2E-Test
 
 1. **Login** als Lehrkraft in WordPress
-2. **Absenz erstellen:**
+2. **Abwesenheit erstellen:**
    - Grund wählen (z.B. "Exkursion")
    - Conditional Input erscheint (Klassen-Feld)
    - Datum wählen, Weiter
@@ -560,12 +560,12 @@ black . --check
    - Datei hochladen (PDF/JPG)
    - Absenden
 3. **Prüfen:**
-   - Dashboard zeigt Absenz
+   - Dashboard zeigt Abwesenheit
    - Detailansicht: Alle Felder korrekt, Download-Link funktioniert
    - Backend: `ls backend/uploads/absence_X/` zeigt Datei
 4. **Als Planner einloggen:**
-   - Absenz genehmigen
-   - Absenz auf "Erledigt" setzen
+   - Abwesenheit genehmigen
+   - Abwesenheit auf "Erledigt" setzen
    - Prüfen: Datei wurde gelöscht (`ls backend/uploads/absence_X/` leer)
 
 ### Backend Unit Tests (TODO)

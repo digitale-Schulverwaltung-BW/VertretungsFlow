@@ -382,7 +382,7 @@ describe('StepOne - Absence Wizard Step 1', () => {
       const submitButton = screen.getByRole('button', { name: /Weiter/i })
       await user.click(submitButton)
 
-      expect(screen.getByText(/Bitte wählen Sie einen Absenzgrund aus/i)).toBeInTheDocument()
+      expect(screen.getByText(/Bitte wählen Sie einen Abwesenheitsgrund aus/i)).toBeInTheDocument()
 
       // Then select a reason
       const reasonSelect = screen.getByLabelText(/Grund/i)
@@ -393,7 +393,7 @@ describe('StepOne - Absence Wizard Step 1', () => {
 
       // The first error about reason should still be gone after selecting reason
       // But we'd still have the date error
-      const reasonError = screen.queryByText(/Bitte wählen Sie einen Absenzgrund aus/i)
+      const reasonError = screen.queryByText(/Bitte wählen Sie einen Abwesenheitsgrund aus/i)
       expect(reasonError).not.toBeInTheDocument()
     })
   })

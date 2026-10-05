@@ -29,7 +29,7 @@ const FormDownloadButton: React.FC<FormDownloadButtonProps> = ({
       const blob = await api.downloadPDFForm(absenceId, formType);
 
       // Generate filename
-      const filename = `Antrag_Absenz_${absenceId}_${formType}.pdf`;
+      const filename = `Antrag_Abwesenheit_${absenceId}_${formType}.pdf`;
 
       // Create blob URL
       const url = window.URL.createObjectURL(blob);
